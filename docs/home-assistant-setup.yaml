@@ -1,0 +1,194 @@
+# =============================================================================
+# OccupancyIQ - Home Assistant Camera Bridge Configuration
+# =============================================================================
+# 
+# This configuration sends periodic camera snapshots from your Reolink E1 Pro
+# cameras to OccupancyIQ via Supabase Edge Functions.
+#
+# SETUP INSTRUCTIONS:
+# 1. Copy the relevant sections below into your Home Assistant configuration.yaml
+# 2. Replace YOUR_SUPABASE_PROJECT_ID with: nxjgwifaolhdlcaoljsb
+# 3. Restart Home Assistant
+# 4. The automation will start sending snapshots every 5 minutes (configurable)
+#
+# WEBHOOK ENDPOINT:
+# https://nxjgwifaolhdlcaoljsb.supabase.co/functions/v1/home-assistant-webhook
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# STEP 1: Add Shell Commands (add to configuration.yaml)
+# -----------------------------------------------------------------------------
+# These commands capture and upload snapshots from your cameras
+
+shell_command:
+  # Generic command template - called by automation with camera entity_id
+  upload_camera_snapshot: >
+    curl -X POST 
+    "https://nxjgwifaolhdlcaoljsb.supabase.co/functions/v1/home-assistant-webhook"
+    -H "x-ha-webhook-id: {{ webhook_id }}"
+    -F "entity_id={{ entity_id }}"
+    -F "camera_name={{ friendly_name }}"
+    -F "snapshot=@{{ snapshot_path }}"
+
+# -----------------------------------------------------------------------------
+# STEP 2: Add Automations (add to automations.yaml or configuration.yaml)
+# -----------------------------------------------------------------------------
+
+automation:
+  # Periodic snapshot capture - runs every 5 minutes for all cameras
+  - id: occupancyiq_periodic_snapshots
+    alias: "OccupancyIQ: Capture Periodic Snapshots"
+    description: "Sends camera snapshots to OccupancyIQ every 5 minutes"
+    trigger:
+      - platform: time_pattern
+        minutes: "/5"  # Every 5 minutes - adjust as needed (e.g., "/1" for every minute)
+    action:
+      # Repeat for each camera - add/remove cameras as needed
+      - repeat:
+          for_each:
+            # List your Reolink E1 Pro camera entity IDs here
+            - camera.reolink_e1_pro_living_room
+            - camera.reolink_e1_pro_kitchen
+            - camera.reolink_e1_pro_office
+            # Add more cameras as needed...
+          sequence:
+            # Take snapshot
+            - service: camera.snapshot
+              target:
+                entity_id: "{{ repeat.item }}"
+              data:
+                filename: "/config/www/snapshots/{{ repeat.item | replace('.', '_') }}.jpg"
+            
+            # Small delay to ensure file is written
+            - delay:
+                seconds: 2
+            
+            # Upload to OccupancyIQ
+            - service: shell_command.upload_camera_snapshot
+              data:
+                webhook_id: "{{ now().timestamp() | int }}_{{ repeat.item }}"
+                entity_id: "{{ repeat.item }}"
+                friendly_name: "{{ state_attr(repeat.item, 'friendly_name') }}"
+                snapshot_path: "/config/www/snapshots/{{ repeat.item | replace('.', '_') }}.jpg"
+    mode: single
+
+  # Optional: Motion-triggered snapshot capture
+  - id: occupancyiq_motion_snapshots
+    alias: "OccupancyIQ: Capture Motion-Triggered Snapshots"
+    description: "Sends camera snapshot when motion is detected"
+    trigger:
+      # Add motion sensor triggers for each camera
+      - platform: state
+        entity_id:
+          - binary_sensor.reolink_e1_pro_living_room_motion
+          - binary_sensor.reolink_e1_pro_kitchen_motion
+          - binary_sensor.reolink_e1_pro_office_motion
+        to: "on"
+    action:
+      - variables:
+          # Map motion sensor to camera entity
+          camera_map:
+            binary_sensor.reolink_e1_pro_living_room_motion: camera.reolink_e1_pro_living_room
+            binary_sensor.reolink_e1_pro_kitchen_motion: camera.reolink_e1_pro_kitchen
+            binary_sensor.reolink_e1_pro_office_motion: camera.reolink_e1_pro_office
+          camera_entity: "{{ camera_map[trigger.entity_id] }}"
+      
+      # Take snapshot
+      - service: camera.snapshot
+        target:
+          entity_id: "{{ camera_entity }}"
+        data:
+          filename: "/config/www/snapshots/{{ camera_entity | replace('.', '_') }}_motion.jpg"
+      
+      - delay:
+          seconds: 1
+      
+      # Upload to OccupancyIQ with motion flag
+      - service: shell_command.upload_camera_snapshot
+        data:
+          webhook_id: "motion_{{ now().timestamp() | int }}_{{ camera_entity }}"
+          entity_id: "{{ camera_entity }}"
+          friendly_name: "{{ state_attr(camera_entity, 'friendly_name') }} (Motion)"
+          snapshot_path: "/config/www/snapshots/{{ camera_entity | replace('.', '_') }}_motion.jpg"
+    mode: parallel
+    max: 10
+
+# -----------------------------------------------------------------------------
+# STEP 3: Create snapshot directory
+# -----------------------------------------------------------------------------
+# Run this command in your HA terminal or SSH:
+#
+#   mkdir -p /config/www/snapshots
+#
+# This creates the directory where snapshots are temporarily stored before upload.
+
+# -----------------------------------------------------------------------------
+# STEP 4: Alternative - Using REST Commands (if shell_command doesn't work)
+# -----------------------------------------------------------------------------
+# Some HA installations may have issues with curl. Use this alternative:
+
+rest_command:
+  occupancyiq_upload_snapshot:
+    url: "https://nxjgwifaolhdlcaoljsb.supabase.co/functions/v1/home-assistant-webhook"
+    method: POST
+    headers:
+      x-ha-webhook-id: "{{ webhook_id }}"
+      Content-Type: "application/json"
+    payload: >
+      {
+        "event_type": "camera_snapshot_request",
+        "entity_id": "{{ entity_id }}",
+        "data": {
+          "friendly_name": "{{ friendly_name }}",
+          "timestamp": "{{ now().isoformat() }}"
+        }
+      }
+
+# -----------------------------------------------------------------------------
+# STEP 5: Python Script Alternative (for complex snapshot handling)
+# -----------------------------------------------------------------------------
+# If you need more control, create this file at /config/python_scripts/upload_snapshot.py
+# Then enable python_scripts in configuration.yaml: python_scripts:
+
+# /config/python_scripts/upload_snapshot.py:
+# """
+# import requests
+# import base64
+# 
+# entity_id = data.get('entity_id')
+# snapshot_path = data.get('snapshot_path')
+# friendly_name = data.get('friendly_name', entity_id)
+# 
+# with open(snapshot_path, 'rb') as f:
+#     files = {
+#         'snapshot': (f'{entity_id}.jpg', f, 'image/jpeg'),
+#         'entity_id': (None, entity_id),
+#         'camera_name': (None, friendly_name)
+#     }
+#     response = requests.post(
+#         'https://nxjgwifaolhdlcaoljsb.supabase.co/functions/v1/home-assistant-webhook',
+#         files=files
+#     )
+#     logger.info(f'OccupancyIQ upload response: {response.status_code}')
+# """
+
+# -----------------------------------------------------------------------------
+# TROUBLESHOOTING
+# -----------------------------------------------------------------------------
+# 
+# 1. Check HA logs for errors:
+#    Settings > System > Logs
+#
+# 2. Test the webhook manually:
+#    curl -X POST "https://nxjgwifaolhdlcaoljsb.supabase.co/functions/v1/home-assistant-webhook" \
+#      -H "Content-Type: application/json" \
+#      -d '{"event_type": "test", "entity_id": "camera.test"}'
+#
+# 3. Verify camera entities exist:
+#    Developer Tools > States > Search for "camera."
+#
+# 4. Check snapshot directory permissions:
+#    ls -la /config/www/snapshots/
+#
+# 5. View webhook logs in Supabase:
+#    SELECT * FROM ha_webhook_logs ORDER BY created_at DESC LIMIT 10;
