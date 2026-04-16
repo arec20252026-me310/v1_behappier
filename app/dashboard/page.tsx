@@ -61,7 +61,7 @@ export default async function DashboardPage() {
         />
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SpaceHeatmap zones={zones || []} />
+          <SpaceHeatmap zones={zones || []} insights={insights || []} />
           <OccupancyChart />
         </div>
         
