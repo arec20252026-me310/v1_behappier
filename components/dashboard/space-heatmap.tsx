@@ -1,11 +1,19 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Users } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { MapPin, Users, AlertTriangle, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import type { Zone } from "@/lib/types"
+import type { Zone, Insight } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 interface ZoneWithOccupancy extends Zone {
@@ -15,18 +23,29 @@ interface ZoneWithOccupancy extends Zone {
 
 interface SpaceHeatmapProps {
   zones: Zone[]
+  insights?: Insight[]
 }
 
-// Convert zones to include occupancy data (starts at 0 until real data flows in)
+// Convert zones to include occupancy data (mock data for now)
 function getZonesWithOccupancy(zones: Zone[]): ZoneWithOccupancy[] {
-  return zones.map((zone) => ({
-    ...zone,
-    currentOccupancy: 0,
-    occupancyPercentage: 0,
-  }))
+  // Mock occupancy data - Zone 2 has high occupancy to match the insight
+  const mockOccupancy: Record<string, { current: number; percentage: number }> = {
+    "Zone 1": { current: 8, percentage: 45 },
+    "Zone 2": { current: 28, percentage: 92 }, // High occupancy - matches insight
+    "Zone 3": { current: 5, percentage: 35 },
+    "Zone 4": { current: 12, percentage: 60 },
+    "Zone 5": { current: 3, percentage: 20 },
+  }
+
+  return zones.map((zone) => {
+    const occupancy = mockOccupancy[zone.name] || { current: 0, percentage: 0 }
+    return {
+      ...zone,
+      currentOccupancy: occupancy.current,
+      occupancyPercentage: occupancy.percentage,
+    }
+  })
 }
-
-
 
 // Get heatmap color based on occupancy percentage
 function getHeatmapColor(percentage: number): string {
@@ -43,10 +62,21 @@ function getTextColor(percentage: number): string {
   return "text-foreground"
 }
 
+// Check if a zone has an unacknowledged critical/warning insight
+function getZoneInsight(zoneId: string, insights: Insight[]): Insight | null {
+  return insights.find(
+    (insight) =>
+      insight.related_zones?.includes(zoneId) &&
+      !insight.is_acknowledged &&
+      (insight.severity === "critical" || insight.severity === "warning")
+  ) || null
+}
+
 const GRID_SIZE = 8
 const CELL_SIZE = 50
 
-export function SpaceHeatmap({ zones }: SpaceHeatmapProps) {
+export function SpaceHeatmap({ zones, insights = [] }: SpaceHeatmapProps) {
+  const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
 
   if (zones.length === 0) {
@@ -70,6 +100,13 @@ export function SpaceHeatmap({ zones }: SpaceHeatmapProps) {
         </CardContent>
       </Card>
     )
+  }
+
+  const handleZoneClick = (zone: ZoneWithOccupancy) => {
+    const insight = getZoneInsight(zone.id, insights)
+    if (insight) {
+      setSelectedInsight(insight)
+    }
   }
 
   return (
@@ -122,12 +159,18 @@ export function SpaceHeatmap({ zones }: SpaceHeatmapProps) {
             }}
           >
             {/* Zones with heatmap colors */}
-            {zonesWithOccupancy.map((zone) => (
+            {zonesWithOccupancy.map((zone) => {
+              const zoneInsight = getZoneInsight(zone.id, insights)
+              const hasInsight = !!zoneInsight
+              
+              return (
                 <div
                   key={zone.id}
+                  onClick={() => handleZoneClick(zone)}
                   className={cn(
                     "absolute rounded-md border transition-all",
-                    "hover:scale-[1.02] hover:shadow-lg hover:z-10"
+                    "hover:scale-[1.02] hover:shadow-lg hover:z-10",
+                    hasInsight && "zone-flashing"
                   )}
                   style={{
                     left: zone.grid_x * CELL_SIZE,
@@ -135,14 +178,20 @@ export function SpaceHeatmap({ zones }: SpaceHeatmapProps) {
                     width: zone.grid_width * CELL_SIZE - 4,
                     height: zone.grid_height * CELL_SIZE - 4,
                     backgroundColor: getHeatmapColor(zone.occupancyPercentage),
-                    borderColor: "rgba(255,255,255,0.2)",
-                    borderWidth: 1,
+                    borderColor: hasInsight ? "rgba(239, 68, 68, 1)" : "rgba(255,255,255,0.2)",
+                    borderWidth: hasInsight ? 2 : 1,
+                    cursor: hasInsight ? "pointer" : "default",
                   }}
                 >
                   <div className={cn("p-1.5 h-full flex flex-col justify-between", getTextColor(zone.occupancyPercentage))}>
-                    <span className="text-[10px] font-medium truncate leading-tight">
-                      {zone.name}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-medium truncate leading-tight">
+                        {zone.name}
+                      </span>
+                      {hasInsight && (
+                        <AlertTriangle className="h-2.5 w-2.5 text-white animate-pulse" />
+                      )}
+                    </div>
                     <div className="flex items-center gap-1 text-[9px] opacity-90">
                       <Users className="h-2.5 w-2.5" />
                       <span>{zone.currentOccupancy}</span>
@@ -150,7 +199,8 @@ export function SpaceHeatmap({ zones }: SpaceHeatmapProps) {
                     </div>
                   </div>
                 </div>
-              ))}
+              )
+            })}
           </div>
 
           {/* Summary Stats */}
@@ -177,6 +227,66 @@ export function SpaceHeatmap({ zones }: SpaceHeatmapProps) {
         </CardContent>
       </Card>
 
+      {/* Insight Modal */}
+      <Dialog open={!!selectedInsight} onOpenChange={(open) => !open && setSelectedInsight(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "p-1.5 rounded-full",
+                selectedInsight?.severity === "critical" ? "bg-destructive/20" : "bg-warning/20"
+              )}>
+                <AlertTriangle className={cn(
+                  "h-4 w-4",
+                  selectedInsight?.severity === "critical" ? "text-destructive" : "text-warning"
+                )} />
+              </div>
+              <Badge 
+                variant={selectedInsight?.severity === "critical" ? "destructive" : "outline"}
+                className="text-xs"
+              >
+                {selectedInsight?.severity?.toUpperCase()}
+              </Badge>
+            </div>
+            <DialogTitle className="text-lg font-semibold mt-2">
+              {selectedInsight?.title}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              {selectedInsight?.description}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Action Items Preview */}
+          {selectedInsight?.action_items && selectedInsight.action_items.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Recommended Actions:</p>
+              <ul className="space-y-1.5">
+                {selectedInsight.action_items.slice(0, 2).map((action) => (
+                  <li key={action.id} className="flex items-start gap-2 text-sm">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                    <span>{action.title}</span>
+                  </li>
+                ))}
+                {selectedInsight.action_items.length > 2 && (
+                  <li className="text-xs text-muted-foreground pl-3.5">
+                    +{selectedInsight.action_items.length - 2} more actions
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {/* Read More Link */}
+          <div className="mt-6 flex justify-end">
+            <Link href="/dashboard/insights">
+              <Button variant="default" size="sm" className="gap-2">
+                Read More
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

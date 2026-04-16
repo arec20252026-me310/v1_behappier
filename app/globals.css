@@ -99,3 +99,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Flashing zone animation for insights */
+@keyframes zone-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    border-color: rgba(239, 68, 68, 1);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(239, 68, 68, 0.5);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+.zone-flashing {
+  animation: zone-pulse 1.5s ease-in-out infinite;
+  border-width: 2px !important;
+  cursor: pointer;
+}
