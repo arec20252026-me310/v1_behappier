@@ -3,10 +3,7 @@
 import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Save, Trash2, Settings } from "lucide-react"
+import { Plus, Save, Settings, Upload } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import type { Space, Zone, Camera } from "@/lib/types"
@@ -41,14 +38,34 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
   const addZone = useCallback(async () => {
     if (!currentSpace) return
 
+    // Find a free spot on the grid
+    const gridRes = currentSpace.grid_resolution || 8
+    let foundSpot = false
+    let gridX = 0
+    let gridY = 0
+
+    for (let y = 0; y < gridRes && !foundSpot; y++) {
+      for (let x = 0; x < gridRes && !foundSpot; x++) {
+        const isOccupied = zones.some(z => 
+          x >= z.grid_x && x < z.grid_x + z.grid_width &&
+          y >= z.grid_y && y < z.grid_y + z.grid_height
+        )
+        if (!isOccupied) {
+          gridX = x
+          gridY = y
+          foundSpot = true
+        }
+      }
+    }
+
     const newZone: Partial<Zone> = {
       space_id: currentSpace.id,
       name: `Zone ${zones.length + 1}`,
       zone_type: 'workspace',
-      grid_x: 0,
-      grid_y: zones.length,
+      grid_x: gridX,
+      grid_y: gridY,
       grid_width: 2,
-      grid_height: 1,
+      grid_height: 2,
       color: ZONE_TYPES.find(t => t.value === 'workspace')?.color || '#3B82F6',
       capacity: 10,
     }
@@ -149,12 +166,22 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
               <p className="text-sm text-muted-foreground mt-0.5">
                 {currentSpace.building_type ? `${currentSpace.building_type} - ` : ''} 
                 {zones.length} zones configured
+                {currentSpace.grid_resolution && ` • ${currentSpace.grid_resolution}x${currentSpace.grid_resolution} grid`}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowSetupDialog(true)}>
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
+                {currentSpace.floor_plan_url ? (
+                  <>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Plan
+                  </>
+                )}
               </Button>
               <Button 
                 variant={saveStatus === 'success' ? 'default' : 'secondary'}
@@ -177,6 +204,8 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
               selectedZone={selectedZone}
               onSelectZone={setSelectedZone}
               onUpdateZone={updateZone}
+              floorPlanUrl={currentSpace.floor_plan_url}
+              gridResolution={currentSpace.grid_resolution || 8}
             />
           </CardContent>
         </Card>

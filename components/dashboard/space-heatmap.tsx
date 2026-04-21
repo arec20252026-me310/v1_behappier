@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { MapPin, Users, AlertTriangle, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import type { Zone, Insight } from "@/lib/types"
+import type { Zone, Insight, Space } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 interface ZoneWithOccupancy extends Zone {
@@ -24,6 +24,7 @@ interface ZoneWithOccupancy extends Zone {
 interface SpaceHeatmapProps {
   zones: Zone[]
   insights?: Insight[]
+  space?: Space | null
 }
 
 // Convert zones to include occupancy data (mock data for now)
@@ -72,12 +73,16 @@ function getZoneInsight(zoneId: string, insights: Insight[]): Insight | null {
   ) || null
 }
 
-const GRID_SIZE = 8
-const CELL_SIZE = 50
-
-export function SpaceHeatmap({ zones, insights = [] }: SpaceHeatmapProps) {
+export function SpaceHeatmap({ zones, insights = [], space }: SpaceHeatmapProps) {
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
+  
+  const gridResolution = space?.grid_resolution || 8
+  const floorPlanUrl = space?.floor_plan_url
+  
+  // Calculate cell size based on grid resolution - fit within 400px
+  const CONTAINER_SIZE = 400
+  const CELL_SIZE = Math.floor(CONTAINER_SIZE / gridResolution)
 
   if (zones.length === 0) {
     return (
@@ -108,6 +113,9 @@ export function SpaceHeatmap({ zones, insights = [] }: SpaceHeatmapProps) {
       setSelectedInsight(insight)
     }
   }
+
+  const gridWidth = gridResolution * CELL_SIZE
+  const gridHeight = gridResolution * CELL_SIZE
 
   return (
     <>
@@ -145,19 +153,39 @@ export function SpaceHeatmap({ zones, insights = [] }: SpaceHeatmapProps) {
             </div>
           </div>
 
-          {/* Heatmap Grid */}
+          {/* Heatmap Grid with Floor Plan */}
           <div
-            className="relative bg-secondary/20 rounded-lg overflow-hidden mx-auto"
+            className="relative rounded-lg overflow-hidden mx-auto border border-border"
             style={{
-              width: GRID_SIZE * CELL_SIZE,
-              height: GRID_SIZE * CELL_SIZE,
-              backgroundImage: `
-                linear-gradient(to right, oklch(0.28 0.01 260 / 0.3) 1px, transparent 1px),
-                linear-gradient(to bottom, oklch(0.28 0.01 260 / 0.3) 1px, transparent 1px)
-              `,
-              backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
+              width: gridWidth,
+              height: gridHeight,
             }}
           >
+            {/* Floor plan background */}
+            {floorPlanUrl ? (
+              <img
+                src={floorPlanUrl}
+                alt="Floor plan"
+                className="absolute inset-0 w-full h-full object-contain opacity-50"
+                style={{ pointerEvents: 'none' }}
+                crossOrigin="anonymous"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-secondary/20" />
+            )}
+
+            {/* Grid overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(100, 100, 100, ${floorPlanUrl ? '0.15' : '0.25'}) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(100, 100, 100, ${floorPlanUrl ? '0.15' : '0.25'}) 1px, transparent 1px)
+                `,
+                backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
+              }}
+            />
+
             {/* Zones with heatmap colors */}
             {zonesWithOccupancy.map((zone) => {
               const zoneInsight = getZoneInsight(zone.id, insights)
@@ -175,28 +203,33 @@ export function SpaceHeatmap({ zones, insights = [] }: SpaceHeatmapProps) {
                   style={{
                     left: zone.grid_x * CELL_SIZE,
                     top: zone.grid_y * CELL_SIZE,
-                    width: zone.grid_width * CELL_SIZE - 4,
-                    height: zone.grid_height * CELL_SIZE - 4,
+                    width: zone.grid_width * CELL_SIZE - 2,
+                    height: zone.grid_height * CELL_SIZE - 2,
                     backgroundColor: getHeatmapColor(zone.occupancyPercentage),
                     borderColor: hasInsight ? "rgba(239, 68, 68, 1)" : "rgba(255,255,255,0.2)",
                     borderWidth: hasInsight ? 2 : 1,
                     cursor: hasInsight ? "pointer" : "default",
                   }}
                 >
-                  <div className={cn("p-1.5 h-full flex flex-col justify-between", getTextColor(zone.occupancyPercentage))}>
+                  <div className={cn("p-1 h-full flex flex-col justify-between", getTextColor(zone.occupancyPercentage))}>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-medium truncate leading-tight">
+                      <span 
+                        className="text-[10px] font-medium truncate leading-tight"
+                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                      >
                         {zone.name}
                       </span>
                       {hasInsight && (
-                        <AlertTriangle className="h-2.5 w-2.5 text-white animate-pulse" />
+                        <AlertTriangle className="h-2.5 w-2.5 text-white animate-pulse shrink-0" />
                       )}
                     </div>
-                    <div className="flex items-center gap-1 text-[9px] opacity-90">
-                      <Users className="h-2.5 w-2.5" />
-                      <span>{zone.currentOccupancy}</span>
-                      <span className="opacity-70">({zone.occupancyPercentage}%)</span>
-                    </div>
+                    {zone.grid_height * CELL_SIZE > 40 && (
+                      <div className="flex items-center gap-1 text-[9px] opacity-90">
+                        <Users className="h-2.5 w-2.5" />
+                        <span>{zone.currentOccupancy}</span>
+                        <span className="opacity-70">({zone.occupancyPercentage}%)</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
@@ -213,7 +246,7 @@ export function SpaceHeatmap({ zones, insights = [] }: SpaceHeatmapProps) {
             </div>
             <div className="p-2 rounded-lg bg-secondary/50">
               <p className="text-lg font-semibold text-foreground">
-                {Math.round(zonesWithOccupancy.reduce((sum, z) => sum + z.occupancyPercentage, 0) / zonesWithOccupancy.length)}%
+                {Math.round(zonesWithOccupancy.reduce((sum, z) => sum + z.occupancyPercentage, 0) / Math.max(1, zonesWithOccupancy.length))}%
               </p>
               <p className="text-[10px] text-muted-foreground">Avg. Utilization</p>
             </div>

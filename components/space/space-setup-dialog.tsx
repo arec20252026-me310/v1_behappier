@@ -1,15 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
 import { createClient } from "@/lib/supabase/client"
 import type { Space } from "@/lib/types"
 import { Spinner } from "@/components/ui/spinner"
+import { Upload, X, Image as ImageIcon } from "lucide-react"
 
 interface SpaceSetupDialogProps {
   open: boolean
@@ -32,14 +34,54 @@ const BUILDING_TYPES = [
 
 export function SpaceSetupDialog({ open, onOpenChange, onSpaceCreated, existingSpace }: SpaceSetupDialogProps) {
   const supabase = createClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [formData, setFormData] = useState({
     name: existingSpace?.name || '',
     description: existingSpace?.description || '',
     address: existingSpace?.address || '',
     building_type: existingSpace?.building_type || 'office',
     total_area_sqft: existingSpace?.total_area_sqft?.toString() || '',
+    floor_plan_url: existingSpace?.floor_plan_url || '',
+    grid_resolution: existingSpace?.grid_resolution || 8,
   })
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const formDataUpload = new FormData()
+      formDataUpload.append('file', file)
+
+      const response = await fetch('/api/upload/floor-plan', {
+        method: 'POST',
+        body: formDataUpload,
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+
+      const { url } = await response.json()
+      setFormData({ ...formData, floor_plan_url: url })
+    } catch (error) {
+      console.error('Error uploading floor plan:', error)
+      alert(error instanceof Error ? error.message : 'Failed to upload floor plan')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeFloorPlan = () => {
+    setFormData({ ...formData, floor_plan_url: '' })
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,6 +93,8 @@ export function SpaceSetupDialog({ open, onOpenChange, onSpaceCreated, existingS
       address: formData.address || null,
       building_type: formData.building_type,
       total_area_sqft: formData.total_area_sqft ? parseInt(formData.total_area_sqft) : null,
+      floor_plan_url: formData.floor_plan_url || null,
+      grid_resolution: formData.grid_resolution,
     }
 
     if (existingSpace) {
@@ -81,18 +125,92 @@ export function SpaceSetupDialog({ open, onOpenChange, onSpaceCreated, existingS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{existingSpace ? 'Edit Space' : 'Set Up Your Space'}</DialogTitle>
           <DialogDescription>
             {existingSpace 
-              ? 'Update your space configuration'
-              : 'Tell us about the space you want to analyze. This helps our AI agents understand your environment.'
+              ? 'Update your space configuration and floor plan'
+              : 'Upload a floor plan and configure your space. This helps our AI agents understand your environment.'
             }
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Floor Plan Upload */}
+          <div className="space-y-2">
+            <Label>Floor Plan Image</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            {formData.floor_plan_url ? (
+              <div className="relative rounded-lg border border-border overflow-hidden">
+                <img
+                  src={formData.floor_plan_url}
+                  alt="Floor plan preview"
+                  className="w-full h-40 object-contain bg-muted/30"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 h-8 w-8"
+                  onClick={removeFloorPlan}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
+              >
+                {uploading ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <Spinner className="h-8 w-8" />
+                    <span className="text-sm text-muted-foreground">Uploading...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium">Upload floor plan</span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        PNG, JPEG, or WebP (max 10MB)
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Grid Resolution Slider */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Grid Resolution</Label>
+              <span className="text-sm text-muted-foreground">{formData.grid_resolution} x {formData.grid_resolution}</span>
+            </div>
+            <Slider
+              value={[formData.grid_resolution]}
+              onValueChange={(value) => setFormData({ ...formData, grid_resolution: value[0] })}
+              min={4}
+              max={32}
+              step={1}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              Higher resolution allows for more precise zone placement
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="name">Space Name *</Label>
             <Input

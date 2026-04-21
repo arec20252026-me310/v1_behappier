@@ -7,6 +7,8 @@ export interface Space {
   address: string | null
   total_area_sqft: number | null
   building_type: string | null
+  floor_plan_url: string | null
+  grid_resolution: number
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string

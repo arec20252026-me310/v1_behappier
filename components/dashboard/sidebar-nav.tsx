@@ -25,7 +25,7 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Space Editor",
+    title: "Space Builder",
     href: "/dashboard/space",
     icon: Map,
   },
