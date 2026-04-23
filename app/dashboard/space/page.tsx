@@ -31,7 +31,7 @@ export default async function SpacePage() {
   return (
     <div className="flex flex-col h-full">
       <DashboardHeader 
-        title="Space Editor" 
+        title="Space Builder" 
         subtitle="Configure your building layout and zones"
       />
       
