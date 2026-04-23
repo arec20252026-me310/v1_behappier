@@ -103,12 +103,12 @@
 /* Flashing zone animation for insights */
 @keyframes zone-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-    border-color: rgba(239, 68, 68, 1);
+    box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7);
+    border-color: rgba(234, 179, 8, 0.8);
   }
   50% {
-    box-shadow: 0 0 20px 4px rgba(239, 68, 68, 0.5);
-    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 20px 4px rgba(234, 179, 8, 0.45);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 }
 

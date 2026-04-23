@@ -48,19 +48,15 @@ function getZonesWithOccupancy(zones: Zone[]): ZoneWithOccupancy[] {
   })
 }
 
-// Get heatmap color based on occupancy percentage
-function getHeatmapColor(percentage: number): string {
-  if (percentage >= 85) return "rgba(239, 68, 68, 0.7)" // Red - critical
-  if (percentage >= 70) return "rgba(249, 115, 22, 0.6)" // Orange - high
-  if (percentage >= 50) return "rgba(234, 179, 8, 0.5)" // Yellow - medium
-  if (percentage >= 25) return "rgba(34, 197, 94, 0.4)" // Green - low
-  return "rgba(59, 130, 246, 0.3)" // Blue - very low
+// Two-state color: green = Normal, yellow = Abnormal (has active insight)
+function getHeatmapColor(hasInsight: boolean): string {
+  return hasInsight
+    ? "rgba(234, 179, 8, 0.45)"   // Yellow - Abnormal
+    : "rgba(34, 197, 94, 0.35)"   // Green - Normal
 }
 
-// Get text color based on occupancy
-function getTextColor(percentage: number): string {
-  if (percentage >= 70) return "text-white"
-  return "text-foreground"
+function getTextColor(hasInsight: boolean): string {
+  return hasInsight ? "text-foreground" : "text-foreground"
 }
 
 // Check if a zone has an unacknowledged critical/warning insight
@@ -134,22 +130,14 @@ export function SpaceHeatmap({ zones, insights = [], space }: SpaceHeatmapProps)
         <CardContent>
           {/* Legend */}
           <div className="flex items-center gap-4 mb-4 text-xs">
-            <span className="text-muted-foreground">Occupancy:</span>
+            <span className="text-muted-foreground">Status:</span>
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(59, 130, 246, 0.5)" }} />
-              <span>Low</span>
+              <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} />
+              <span>Normal</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(234, 179, 8, 0.6)" }} />
-              <span>Medium</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(249, 115, 22, 0.7)" }} />
-              <span>High</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(239, 68, 68, 0.8)" }} />
-              <span>Critical</span>
+              <div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} />
+              <span>Abnormal</span>
             </div>
           </div>
 
@@ -205,13 +193,13 @@ export function SpaceHeatmap({ zones, insights = [], space }: SpaceHeatmapProps)
                     top: zone.grid_y * CELL_SIZE,
                     width: zone.grid_width * CELL_SIZE - 2,
                     height: zone.grid_height * CELL_SIZE - 2,
-                    backgroundColor: getHeatmapColor(zone.occupancyPercentage),
-                    borderColor: hasInsight ? "rgba(239, 68, 68, 1)" : "rgba(255,255,255,0.2)",
+                    backgroundColor: getHeatmapColor(hasInsight),
+                    borderColor: hasInsight ? "rgba(234, 179, 8, 0.8)" : "rgba(34, 197, 94, 0.4)",
                     borderWidth: hasInsight ? 2 : 1,
                     cursor: hasInsight ? "pointer" : "default",
                   }}
                 >
-                  <div className={cn("p-1 h-full flex flex-col justify-between", getTextColor(zone.occupancyPercentage))}>
+                  <div className={cn("p-1 h-full flex flex-col justify-between", getTextColor(hasInsight))}>
                     <div className="flex items-center gap-1">
                       <span 
                         className="text-[10px] font-medium truncate leading-tight"
@@ -251,10 +239,10 @@ export function SpaceHeatmap({ zones, insights = [], space }: SpaceHeatmapProps)
               <p className="text-[10px] text-muted-foreground">Avg. Utilization</p>
             </div>
             <div className="p-2 rounded-lg bg-secondary/50">
-              <p className="text-lg font-semibold text-warning">
-                {zonesWithOccupancy.filter(z => z.occupancyPercentage >= 85).length}
+              <p className="text-lg font-semibold text-yellow-500">
+                {zonesWithOccupancy.filter(z => !!getZoneInsight(z.id, insights)).length}
               </p>
-              <p className="text-[10px] text-muted-foreground">Critical Zones</p>
+              <p className="text-[10px] text-muted-foreground">Abnormal Zones</p>
             </div>
           </div>
         </CardContent>
