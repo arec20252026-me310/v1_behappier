@@ -33,12 +33,16 @@ export async function POST(request: NextRequest) {
     const extension = file.name.split('.').pop() || 'png'
     const filename = `floor-plans/${timestamp}.${extension}`
 
-    // Upload to Vercel Blob (public access for floor plan images)
+    // Upload to Vercel Blob (private access - serve via delivery route)
     const blob = await put(filename, file, {
-      access: 'public',
+      access: 'private',
     })
 
-    return NextResponse.json({ url: blob.url })
+    // Return the pathname for use with the delivery route
+    return NextResponse.json({ 
+      url: `/api/file?pathname=${encodeURIComponent(blob.pathname)}`,
+      pathname: blob.pathname 
+    })
   } catch (error) {
     console.error('Floor plan upload error:', error)
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
