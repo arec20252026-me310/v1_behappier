@@ -17,9 +17,11 @@ interface ZonePanelProps {
   onUpdate: (zone: Zone) => void
   onDelete: (zoneId: string) => void
   saving: boolean
+  gridResolution?: number
 }
 
-export function ZonePanel({ zone, cameras, onUpdate, onDelete, saving }: ZonePanelProps) {
+export function ZonePanel({ zone, cameras, onUpdate, onDelete, saving, gridResolution = 8 }: ZonePanelProps) {
+  const sizeOptions = Array.from({ length: gridResolution }, (_, i) => i + 1)
   if (!zone) {
     return (
       <Card className="bg-card border-border h-full">
@@ -122,7 +124,7 @@ export function ZonePanel({ zone, cameras, onUpdate, onDelete, saving }: ZonePan
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4].map((n) => (
+                {sizeOptions.map((n) => (
                   <SelectItem key={n} value={String(n)}>{n} cell{n > 1 ? 's' : ''}</SelectItem>
                 ))}
               </SelectContent>
@@ -138,7 +140,7 @@ export function ZonePanel({ zone, cameras, onUpdate, onDelete, saving }: ZonePan
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4].map((n) => (
+                {sizeOptions.map((n) => (
                   <SelectItem key={n} value={String(n)}>{n} cell{n > 1 ? 's' : ''}</SelectItem>
                 ))}
               </SelectContent>

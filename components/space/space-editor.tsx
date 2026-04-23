@@ -218,6 +218,7 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
           onUpdate={updateZone}
           onDelete={deleteZone}
           saving={saving}
+          gridResolution={currentSpace.grid_resolution || 8}
         />
       </div>
 
