@@ -12,9 +12,7 @@ Follow all instructions here before doing anything else.
 bash scripts/session-start.sh
 ```
 This will:
-1. Pull the latest code from GitHub
-2. Pull the latest workflow JSONs from n8n (capturing any UI edits)
-3. Commit and push any n8n UI changes to GitHub
+1. Pull the latest workflow JSONs from n8n into `n8n/workflows/`
 
 Wait for it to complete before making any changes. Do not skip this step.
 
@@ -23,11 +21,10 @@ Wait for it to complete before making any changes. Do not skip this step.
 bash scripts/session-end.sh
 ```
 This will:
-1. Push all updated workflow JSONs to n8n
-2. Commit and push all changes to GitHub
+1. Push all local workflow JSONs from `n8n/workflows/` back to n8n
 
 Do not close the session without running this. If any push fails, fix the
-error before closing.
+error before closing. GitHub syncing is handled manually via GitHub Desktop.
 
 ---
 
@@ -61,6 +58,7 @@ error before closing.
 - Never hardcode API keys or URLs anywhere in the repo
 - All n8n workflow changes must go through the local JSON files — not the n8n UI directly
 - If any workflow push fails during `session-end.sh`, fix the error before closing
+- GitHub syncing is done manually via GitHub Desktop — do not run git push in scripts
 
 ---
 
