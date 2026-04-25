@@ -1,0 +1,431 @@
+{
+  "name": "06 - Camera Behavior - Actionable Insights Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Actionable Insights Agent\n- Runs only on milestone or completion commands.\n- Converts structured detections into dashboard-ready charts, tables, insights, and recommendations.\n\n# Test Case\n{ \"study_id\": \"study_001\", \"output_mode\": \"final_insights\", \"study_plan\": {\"study_goal\":\"Find congestion\"}, \"graph_plan\": {\"charts\":[\"hotspot heatmap\"]}, \"detection_log\": [{\"zone_id\":\"east_lobby\",\"detected_behaviors\":[{\"name\":\"entry clustering\",\"confidence\":0.8}]}] }",
+        "width": 760,
+        "height": 220,
+        "color": 7
+      },
+      "id": "sticky-0106",
+      "name": "Insights Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "trigger-0107",
+      "name": "When Executed by Orchestrator",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{\n  json: {\n    study_id: $json.study_id ?? $json.study_plan?.study_id ?? null,\n    output_mode: $json.output_mode ?? 'final_insights',\n    study_plan: $json.study_plan ?? {},\n    graph_plan: $json.graph_plan ?? {},\n    detection_log: $json.detection_log ?? $json.aggregated_dataset ?? [],\n    setup_instructions: $json.actionable_insights_request?.instructions ?? $json.instructions ?? '',\n  }\n}];\n"
+      },
+      "id": "code-0108",
+      "name": "Prepare Insight Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify($json, null, 2) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are the reporting and visualization specialist.\nYour job is to convert structured study detections into dashboard-ready charts, tables, summaries, and recommendations.\nYou are only responsible for milestone-level or final insights.\nYou must not be invoked for high-frequency live preview updates.\nYou do not analyze images directly.\nYou must not invent findings not supported by the dataset.\nReturn JSON only."
+            }
+          ]
+        }
+      },
+      "id": "llm-0111",
+      "name": "Generate Dashboard Insights",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        760,
+        280
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "model-0109",
+      "name": "Insights Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        760,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"study_id\": \"string\",\n  \"output_mode\": \"milestone_summary|final_insights\",\n  \"dashboard_summary\": \"string\",\n  \"charts\": [\n    {\n      \"chart_id\": \"string\",\n      \"chart_type\": \"line|bar|heatmap|table|stat\",\n      \"title\": \"string\",\n      \"data\": {}\n    }\n  ],\n  \"tables\": [\n    {\n      \"table_id\": \"string\",\n      \"title\": \"string\",\n      \"columns\": [\"string\"],\n      \"rows\": [\"any\"]\n    }\n  ],\n  \"insights\": [\"string\"],\n  \"recommendations\": [\"string\"]\n}"
+      },
+      "id": "parser-0110",
+      "name": "Insights Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1000,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try {\n    parsed = JSON.parse(parsed);\n  } catch (error) {\n    errors.push('json_parse_failed');\n  }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"study_id\",\"output_mode\",\"dashboard_summary\",\"charts\",\"tables\",\"insights\",\"recommendations\"]) {\n  if (!(field in parsed)) errors.push(`missing_${field}`);\n}\nreturn [{\n  json: {\n    raw_ai_output: output,\n    parsed_output: parsed,\n    validation_passed: errors.length === 0,\n    validation_errors: errors,\n  }\n}];\n"
+      },
+      "id": "code-0112",
+      "name": "Validate Insights JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0113",
+              "leftValue": "={{ $json.validation_passed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-0114",
+      "name": "Needs Insight Repair?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1480,
+        280
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify({ raw_ai_output: $json.raw_ai_output, validation_errors: $json.validation_errors }, null, 2) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a JSON repair formatter.\nYou will receive invalid or partially valid output from another step.\nDo not add commentary.\nReturn JSON only.\nRepair the payload so it matches this contract: actionable insights contract.\nIf a required field is unknown, set it to null, an empty array, or \"needs_clarification\" as appropriate.\nPreserve any valid information already present."
+            }
+          ]
+        }
+      },
+      "id": "llm-0117",
+      "name": "Repair Insights JSON",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1740,
+        280
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "model-0115",
+      "name": "Insights Repair Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1740,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"study_id\": \"string\",\n  \"output_mode\": \"milestone_summary|final_insights\",\n  \"dashboard_summary\": \"string\",\n  \"charts\": [\n    {\n      \"chart_id\": \"string\",\n      \"chart_type\": \"line|bar|heatmap|table|stat\",\n      \"title\": \"string\",\n      \"data\": {}\n    }\n  ],\n  \"tables\": [\n    {\n      \"table_id\": \"string\",\n      \"title\": \"string\",\n      \"columns\": [\"string\"],\n      \"rows\": [\"any\"]\n    }\n  ],\n  \"insights\": [\"string\"],\n  \"recommendations\": [\"string\"]\n}"
+      },
+      "id": "parser-0116",
+      "name": "Insights Repair Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1980,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try {\n    parsed = JSON.parse(parsed);\n  } catch (error) {\n    errors.push('json_parse_failed');\n  }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"study_id\",\"output_mode\",\"dashboard_summary\",\"charts\",\"tables\",\"insights\",\"recommendations\"]) {\n  if (!(field in parsed)) errors.push(`missing_${field}`);\n}\nreturn [{\n  json: {\n    raw_ai_output: output,\n    parsed_output: parsed,\n    validation_passed: errors.length === 0,\n    validation_errors: errors,\n  }\n}];\n"
+      },
+      "id": "code-0118",
+      "name": "Validate Repaired Insights JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst source = $json.parsed_output ? $json : $items('Validate Insights JSON', 0, 0)[0].json;\nreturn [{ json: source.parsed_output ?? {} }];\n"
+      },
+      "id": "code-0119",
+      "name": "Finalize Insight Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2460,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/insight_outputs' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id,\n    output_mode: $json.output_mode,\n    status: $json.output_mode === 'final_insights' ? 'complete' : 'preview',\n    dashboard_summary: $json.dashboard_summary,\n    charts: $json.charts,\n    tables: $json.tables,\n    insights: $json.insights,\n    recommendations: $json.recommendations,\n    created_at: new Date().toISOString()\n  }) }}",
+        "options": {}
+      },
+      "id": "http-0120",
+      "name": "Store Insight Outputs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2700,
+        280
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "When Executed by Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Prepare Insight Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Insight Input": {
+      "main": [
+        [
+          {
+            "node": "Generate Dashboard Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insights Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Dashboard Insights",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insights Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Dashboard Insights",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Dashboard Insights": {
+      "main": [
+        [
+          {
+            "node": "Validate Insights JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Insights JSON": {
+      "main": [
+        [
+          {
+            "node": "Needs Insight Repair?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Insight Repair?": {
+      "main": [
+        [
+          {
+            "node": "Repair Insights JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Insight Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insights Repair Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Repair Insights JSON",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insights Repair Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Repair Insights JSON",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair Insights JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate Repaired Insights JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Repaired Insights JSON": {
+      "main": [
+        [
+          {
+            "node": "Finalize Insight Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Insight Output": {
+      "main": [
+        [
+          {
+            "node": "Store Insight Outputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "timezone": "America/Phoenix",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "executionOrder": "v1"
+  },
+  "versionId": "version-0121",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

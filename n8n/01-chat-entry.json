@@ -1,0 +1,1043 @@
+{
+  "name": "01 - Camera Behavior - Chat Entry",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Workflow Map\n- Input: `user_id`, `session_id`, `message_text`, optional `building_id`, optional `study_id`\n- Output: dashboard-safe JSON with `assistant_response_text`, `action_type`, `study_readiness_status`, optional `study_id`, optional `setup_request`\n- Routing: start study -> setup workflow, status -> stored study row, results -> stored insights, study Q&A -> stored context only, clarify -> direct response\n\n# Test Cases\n1. \"Run a congestion study for the east lobby for 2 weeks and give me hotspot charts.\"\n2. \"How is study_001 progressing?\"\n3. \"Show final results for study_001.\"\n4. \"I want to study behavior in my building\" -> should ask focused follow-up questions or offer presets.\n\n# Troubleshooting\n- If parsing fails, the repair step reformats the JSON.\n- If study lookup fails, the response stays dashboard-safe and asks the user to verify the study ID.\n- This workflow never receives image references.",
+        "width": 820,
+        "height": 380,
+        "color": 6
+      },
+      "id": "sticky-0004",
+      "name": "Chat Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "occupant-behavior-chat",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-0001",
+      "name": "Dashboard Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        320
+      ],
+      "webhookId": "hook-0002",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "trigger-0003",
+      "name": "When Executed by Main Entry",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst body = $json.body ?? $json;\nconst presets = [\n  {\n    template_name: 'Congestion Study',\n    goal: 'Identify where and when crowding occurs in a monitored space',\n    default_behaviors: ['entry clustering', 'standing clusters', 'queuing', 'high-density occupancy'],\n    recommended_duration: '2 weeks',\n    recommended_outputs: ['peak congestion times', 'zone hotspot chart', 'entry bottleneck summary', 'layout recommendations'],\n    example_user_friendly_explanation: 'Use this when you want to find crowding hotspots and understand when bottlenecks happen.'\n  },\n  {\n    template_name: 'Space Utilization Study',\n    goal: 'Understand which zones are underused, overused, or unevenly used over time',\n    default_behaviors: ['occupancy presence', 'seat use', 'linger duration', 'repeat zone use'],\n    recommended_duration: '2 to 4 weeks',\n    recommended_outputs: ['zone utilization chart', 'hourly occupancy trend', 'underused-area summary'],\n    example_user_friendly_explanation: 'Use this to see which areas people actually use and which layouts are being ignored.'\n  },\n  {\n    template_name: 'Interaction / Collaboration Study',\n    goal: 'Identify where collaboration and small-group interaction naturally emerge',\n    default_behaviors: ['small standing groups', 'seated collaboration', 'repeat gathering points'],\n    recommended_duration: '2 weeks',\n    recommended_outputs: ['interaction hotspots', 'time-of-day interaction summary', 'collaboration zone ranking'],\n    example_user_friendly_explanation: 'Use this to see where groups naturally form and whether the space supports collaboration.'\n  },\n  {\n    template_name: 'Thermal Comfort Proxy Study',\n    goal: 'Look for visible behaviors that may signal discomfort related to temperature or airflow conditions',\n    default_behaviors: ['layer adjustment', 'restlessness', 'frequent relocation', 'window/door proximity clustering'],\n    recommended_duration: '1 to 2 weeks',\n    recommended_outputs: ['comfort proxy timeline', 'zone discomfort signals', 'possible HVAC/layout follow-ups'],\n    example_user_friendly_explanation: 'Use this when you suspect discomfort but want visible behavior clues before deeper diagnostics.'\n  },\n  {\n    template_name: 'Entrance / Flow Study',\n    goal: 'Understand how people move through monitored entry and transition zones',\n    default_behaviors: ['entry surges', 'door hesitation', 'queue formation', 'directional flow imbalance'],\n    recommended_duration: '1 to 2 weeks',\n    recommended_outputs: ['entry flow trend', 'surge windows', 'bottleneck summary', 'wayfinding/layout recommendations'],\n    example_user_friendly_explanation: 'Use this to understand movement patterns, surges, and possible entry bottlenecks.'\n  }\n];\n\nreturn [{\n  json: {\n    user_id: body.user_id ?? null,\n    session_id: body.session_id ?? null,\n    message_text: body.message_text ?? body.message ?? '',\n    building_id: body.building_id ?? null,\n    study_id: body.study_id ?? null,\n    debug_mode: body.debug_mode ?? false,\n    recommended_presets_catalog: presets,\n    chat_request: body,\n  }\n}];\n"
+      },
+      "id": "code-0005",
+      "name": "Normalize Chat Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify($json, null, 2) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are the user-facing agent for a behavior monitoring dashboard.\nYour job is to understand the user's goal and translate it into a clear action.\nYou are not allowed to inspect or reason over images.\nYou must be concise, practical, and oriented toward building studies and results.\n\nFollow these rules:\n- Required actions: answer_question, start_study, check_study_status, get_results, clarify_request.\n- When the user wants to start a study, enforce the minimum readiness threshold:\n  study_goal, space_type or building context, target area or zone, study duration, desired output type.\n- Ask at most 2 to 3 focused follow-up questions.\n- If the user seems unsure, recommend one or more presets.\n- Do not claim results that have not been stored.\n- If critical information is missing, return needs-followup behavior rather than guessing.\n- Keep the assistant response dashboard-friendly and concise.\n\nUse the provided preset catalog if presets would help."
+            }
+          ]
+        }
+      },
+      "id": "llm-0008",
+      "name": "Chat Intent + Intake Planner",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        760,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "model-0006",
+      "name": "Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        760,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"action_type\": \"answer_question|start_study|check_study_status|get_results|clarify_request\",\n  \"user_goal_summary\": \"string\",\n  \"collected_fields\": {\n    \"study_goal\": \"string|null\",\n    \"space_type\": \"string|null\",\n    \"building_context\": \"string|null\",\n    \"target_area\": \"string|null\",\n    \"study_duration\": \"string|null\",\n    \"desired_output_type\": \"string|null\",\n    \"hours_of_interest\": \"string|null\",\n    \"known_issues\": \"string|null\",\n    \"study_mode\": \"exploratory|hypothesis-driven|null\",\n    \"preferred_visualization_type\": \"string|null\",\n    \"business_priority\": \"string|null\",\n    \"comparison_baseline\": \"string|null\"\n  },\n  \"missing_required_fields\": [\"string\"],\n  \"study_readiness_status\": \"ready|needs_followup|preset_recommended\",\n  \"recommended_presets\": [\n    {\n      \"template_name\": \"string\",\n      \"goal\": \"string\",\n      \"recommended_duration\": \"string\",\n      \"recommended_outputs\": [\"string\"]\n    }\n  ],\n  \"setup_request\": {\n    \"study_goal\": \"string|null\",\n    \"space_type\": \"string|null\",\n    \"target_area\": \"string|null\",\n    \"study_duration\": \"string|null\",\n    \"desired_output_type\": \"string|null\",\n    \"building_id\": \"string|null\",\n    \"study_mode\": \"exploratory|hypothesis-driven|null\"\n  },\n  \"assistant_response_text\": \"string\"\n}"
+      },
+      "id": "parser-0007",
+      "name": "Chat Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1000,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try {\n    parsed = JSON.parse(parsed);\n  } catch (error) {\n    errors.push('json_parse_failed');\n  }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"action_type\",\"assistant_response_text\"]) {\n  if (!(field in parsed)) errors.push(`missing_${field}`);\n}\nreturn [{\n  json: {\n    raw_ai_output: output,\n    parsed_output: parsed,\n    validation_passed: errors.length === 0,\n    validation_errors: errors,\n  }\n}];\n"
+      },
+      "id": "code-0009",
+      "name": "Validate Chat JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0010",
+              "leftValue": "={{ $json.validation_passed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-0011",
+      "name": "Needs Chat Repair?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1480,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify({ raw_ai_output: $json.raw_ai_output, validation_errors: $json.validation_errors }, null, 2) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a JSON repair formatter.\nYou will receive invalid or partially valid output from another step.\nDo not add commentary.\nReturn JSON only.\nRepair the payload so it matches this contract: chat routing contract with intake fields.\nIf a required field is unknown, set it to null, an empty array, or \"needs_clarification\" as appropriate.\nPreserve any valid information already present."
+            }
+          ]
+        }
+      },
+      "id": "llm-0014",
+      "name": "Repair Chat JSON",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1740,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "model-0012",
+      "name": "Chat Repair Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1740,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"action_type\": \"answer_question|start_study|check_study_status|get_results|clarify_request\",\n  \"user_goal_summary\": \"string\",\n  \"collected_fields\": {\n    \"study_goal\": \"string|null\",\n    \"space_type\": \"string|null\",\n    \"building_context\": \"string|null\",\n    \"target_area\": \"string|null\",\n    \"study_duration\": \"string|null\",\n    \"desired_output_type\": \"string|null\",\n    \"hours_of_interest\": \"string|null\",\n    \"known_issues\": \"string|null\",\n    \"study_mode\": \"exploratory|hypothesis-driven|null\",\n    \"preferred_visualization_type\": \"string|null\",\n    \"business_priority\": \"string|null\",\n    \"comparison_baseline\": \"string|null\"\n  },\n  \"missing_required_fields\": [\"string\"],\n  \"study_readiness_status\": \"ready|needs_followup|preset_recommended\",\n  \"recommended_presets\": [\n    {\n      \"template_name\": \"string\",\n      \"goal\": \"string\",\n      \"recommended_duration\": \"string\",\n      \"recommended_outputs\": [\"string\"]\n    }\n  ],\n  \"setup_request\": {\n    \"study_goal\": \"string|null\",\n    \"space_type\": \"string|null\",\n    \"target_area\": \"string|null\",\n    \"study_duration\": \"string|null\",\n    \"desired_output_type\": \"string|null\",\n    \"building_id\": \"string|null\",\n    \"study_mode\": \"exploratory|hypothesis-driven|null\"\n  },\n  \"assistant_response_text\": \"string\"\n}"
+      },
+      "id": "parser-0013",
+      "name": "Chat Repair Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1980,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try {\n    parsed = JSON.parse(parsed);\n  } catch (error) {\n    errors.push('json_parse_failed');\n  }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"action_type\",\"assistant_response_text\"]) {\n  if (!(field in parsed)) errors.push(`missing_${field}`);\n}\nreturn [{\n  json: {\n    raw_ai_output: output,\n    parsed_output: parsed,\n    validation_passed: errors.length === 0,\n    validation_errors: errors,\n  }\n}];\n"
+      },
+      "id": "code-0015",
+      "name": "Validate Repaired Chat JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst source = $json.parsed_output ? $json : $items('Validate Chat JSON', 0, 0)[0].json;\nconst raw = source.raw_ai_output ?? null;\nconst parsed = { ...(source.parsed_output ?? {}) };\n\n// Be forgiving during early testing: LLMs sometimes return useful fields with\n// slightly different names even when the intent is clear.\nif (!parsed.action_type && parsed.action) parsed.action_type = parsed.action;\nif (!parsed.user_goal_summary && parsed.study_goal) parsed.user_goal_summary = parsed.study_goal;\n\nconst collected = {\n  ...(parsed.collected_fields ?? {}),\n  study_goal: parsed.collected_fields?.study_goal ?? parsed.study_goal ?? parsed.setup_request?.study_goal ?? null,\n  space_type: parsed.collected_fields?.space_type ?? parsed.space_type ?? parsed.setup_request?.space_type ?? null,\n  building_context: parsed.collected_fields?.building_context ?? parsed.building_context ?? null,\n  target_area: parsed.collected_fields?.target_area ?? parsed.target_area ?? parsed.setup_request?.target_area ?? null,\n  study_duration: parsed.collected_fields?.study_duration ?? parsed.study_duration ?? parsed.setup_request?.study_duration ?? null,\n  desired_output_type: parsed.collected_fields?.desired_output_type ?? parsed.desired_output_type ?? parsed.setup_request?.desired_output_type ?? null,\n  hours_of_interest: parsed.collected_fields?.hours_of_interest ?? parsed.hours_of_interest ?? null,\n  known_issues: parsed.collected_fields?.known_issues ?? parsed.known_issues ?? null,\n  study_mode: parsed.collected_fields?.study_mode ?? parsed.study_mode ?? null,\n  preferred_visualization_type: parsed.collected_fields?.preferred_visualization_type ?? parsed.preferred_visualization_type ?? null,\n  business_priority: parsed.collected_fields?.business_priority ?? parsed.priority ?? parsed.business_priority ?? null,\n  comparison_baseline: parsed.collected_fields?.comparison_baseline ?? parsed.comparison_baseline ?? null,\n};\n\nconst required = ['study_goal', 'target_area', 'study_duration', 'desired_output_type'];\nconst hasSpaceContext = Boolean(collected.space_type || collected.building_context);\nconst missing = required.filter((field) => !collected[field]);\nif (!hasSpaceContext) missing.push('space_type_or_building_context');\n\nif (parsed.action_type === 'start_study') {\n  parsed.collected_fields = collected;\n  parsed.missing_required_fields = parsed.missing_required_fields?.length ? parsed.missing_required_fields : missing;\n  parsed.study_readiness_status = missing.length === 0 ? 'ready' : (parsed.study_readiness_status ?? 'needs_followup');\n  parsed.setup_request = parsed.setup_request ?? {};\n  parsed.setup_request.study_goal = parsed.setup_request.study_goal ?? collected.study_goal;\n  parsed.setup_request.space_type = parsed.setup_request.space_type ?? collected.space_type;\n  parsed.setup_request.target_area = parsed.setup_request.target_area ?? collected.target_area;\n  parsed.setup_request.study_duration = parsed.setup_request.study_duration ?? collected.study_duration;\n  parsed.setup_request.desired_output_type = parsed.setup_request.desired_output_type ?? collected.desired_output_type;\n  parsed.setup_request.building_id = parsed.setup_request.building_id ?? $('Normalize Chat Request').item.json.building_id ?? null;\n  parsed.setup_request.study_mode = parsed.setup_request.study_mode ?? collected.study_mode ?? 'hypothesis-driven';\n}\n\nif (!parsed.assistant_response_text) {\n  if (parsed.action_type === 'start_study' && parsed.study_readiness_status === 'ready') {\n    parsed.assistant_response_text = 'I have enough information to start this behavior study. I will create the study plan, run needfinding, and begin monitoring through the orchestrator.';\n  } else if (parsed.action_type === 'start_study') {\n    parsed.assistant_response_text = 'I can help start that study, but I need a little more information first.';\n  } else {\n    parsed.assistant_response_text = 'I understood the request, but I need one more detail before continuing.';\n  }\n}\n\nreturn [{ json: { ...parsed, raw_ai_output: raw } }];\n"
+      },
+      "id": "code-0016",
+      "name": "Select Chat Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2460,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0017",
+              "leftValue": "={{ $json.action_type }}",
+              "rightValue": "start_study",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-0018",
+      "name": "Route Start Study?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2700,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0019",
+              "leftValue": "={{ $json.study_readiness_status }}",
+              "rightValue": "ready",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-0020",
+      "name": "Study Ready For Setup?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2940,
+        160
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.WF_SETUP_AGENT_ID || 'SET_WF_SETUP_AGENT_ID' }}",
+          "cachedResultName": "02 - Setup Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "action_type": "={{ $json.action_type }}",
+            "user_goal_summary": "={{ $json.user_goal_summary }}",
+            "collected_fields": "={{ $json.collected_fields }}",
+            "missing_required_fields": "={{ $json.missing_required_fields }}",
+            "study_readiness_status": "={{ $json.study_readiness_status }}",
+            "setup_request": "={{ $json.setup_request }}",
+            "building_id": "={{ $(\"Normalize Chat Request\").item.json.building_id }}",
+            "study_id": "={{ $json.study_id }}",
+            "debug_mode": "={{ $(\"Normalize Chat Request\").item.json.debug_mode }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false,
+          "ignoreTypeMismatchErrors": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "exec-0021",
+      "name": "Call Setup Agent",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3180,
+        160
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0022",
+              "leftValue": "={{ $json.action_type }}",
+              "rightValue": "check_study_status",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-0023",
+      "name": "Route Study Status?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2940,
+        420
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/studies' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "study_id",
+              "value": "={{ \"eq.\" + $json.study_id }}"
+            },
+            {
+              "name": "select",
+              "value": "study_id,status,current_stage,live_preview_status,updated_at,study_goal"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-0024",
+      "name": "Fetch Study Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3180,
+        420
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0025",
+              "leftValue": "={{ $json.action_type }}",
+              "rightValue": "get_results",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-0026",
+      "name": "Route Results?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3180,
+        640
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/insight_outputs' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "study_id",
+              "value": "={{ \"eq.\" + $json.study_id }}"
+            },
+            {
+              "name": "select",
+              "value": "study_id,output_mode,status,dashboard_summary,charts,tables,insights,recommendations,created_at"
+            },
+            {
+              "name": "order",
+              "value": "created_at.desc"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-0027",
+      "name": "Fetch Stored Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3420,
+        640
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0028",
+              "leftValue": "={{ $json.action_type }}",
+              "rightValue": "answer_question",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-0029",
+      "name": "Route Study Q&A?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3420,
+        860
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/rpc/get_study_dashboard_context' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_study_id: $json.study_id }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-0030",
+      "name": "Fetch Study Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3660,
+        860
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify({ user_question: $('Select Chat Payload').item.json.user_goal_summary, stored_context: $json }, null, 2) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You answer user questions about an existing study using stored study metadata, preview metrics, and stored insight outputs only.\nDo not inspect or infer from images.\nIf the stored context is insufficient, say so clearly and concisely.\nReturn JSON only."
+            }
+          ]
+        }
+      },
+      "id": "llm-0033",
+      "name": "Answer From Stored Context",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        3900,
+        860
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "model-0031",
+      "name": "Study QA Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        3900,
+        1060
+      ]
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"assistant_response_text\": \"string\",\n  \"action_type\": \"answer_question\",\n  \"study_id\": \"string|null\"\n}"
+      },
+      "id": "parser-0032",
+      "name": "Study QA Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        4140,
+        1060
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst current = $json;\nif (current.study_plan || current.study_status || current.dashboard_summary || current.assistant_response_text) {\n  const base = current.assistant_response_text\n    ? current\n    : (() => {\n        if (Array.isArray(current) && current.length > 0) return current[0];\n        if (current.study_status) return current;\n        return null;\n      })();\n  if (base) return [{ json: base }];\n}\n\nconst sourceItems = $input.all().map(i => i.json);\nconst fallback = sourceItems.find(i => i.assistant_response_text) ?? sourceItems[0] ?? {};\nreturn [{\n  json: {\n    assistant_response_text: fallback.assistant_response_text ?? 'I could not complete that request safely. Please try again with a study ID or a clearer study goal.',\n    action_type: fallback.action_type ?? 'clarify_request',\n    study_readiness_status: fallback.study_readiness_status ?? null,\n    study_id: fallback.study_id ?? null,\n    setup_request: fallback.setup_request ?? null,\n    raw_ai_output: fallback.raw_ai_output ?? null,\n  }\n}];\n"
+      },
+      "id": "code-0034",
+      "name": "Build Dashboard Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4380,
+        480
+      ]
+    }
+  ],
+  "connections": {
+    "Dashboard Chat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Chat Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Main Entry": {
+      "main": [
+        [
+          {
+            "node": "Normalize Chat Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Chat Request": {
+      "main": [
+        [
+          {
+            "node": "Chat Intent + Intake Planner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chat Intent + Intake Planner",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Chat Intent + Intake Planner",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Intent + Intake Planner": {
+      "main": [
+        [
+          {
+            "node": "Validate Chat JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Chat JSON": {
+      "main": [
+        [
+          {
+            "node": "Needs Chat Repair?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Chat Repair?": {
+      "main": [
+        [
+          {
+            "node": "Repair Chat JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Select Chat Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Repair Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Repair Chat JSON",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Repair Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Repair Chat JSON",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair Chat JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate Repaired Chat JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Repaired Chat JSON": {
+      "main": [
+        [
+          {
+            "node": "Select Chat Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Chat Payload": {
+      "main": [
+        [
+          {
+            "node": "Route Start Study?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Start Study?": {
+      "main": [
+        [
+          {
+            "node": "Study Ready For Setup?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Study Status?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Study Ready For Setup?": {
+      "main": [
+        [
+          {
+            "node": "Call Setup Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Dashboard Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Setup Agent": {
+      "main": [
+        [
+          {
+            "node": "Build Dashboard Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Study Status?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Study Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Results?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Study Status": {
+      "main": [
+        [
+          {
+            "node": "Build Dashboard Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Results?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Stored Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route Study Q&A?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Stored Results": {
+      "main": [
+        [
+          {
+            "node": "Build Dashboard Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Study Q&A?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Study Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Dashboard Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Study Context": {
+      "main": [
+        [
+          {
+            "node": "Answer From Stored Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Study QA Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer From Stored Context",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Study QA Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Answer From Stored Context",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer From Stored Context": {
+      "main": [
+        [
+          {
+            "node": "Build Dashboard Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "timezone": "America/Phoenix",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "executionOrder": "v1"
+  },
+  "versionId": "version-0035",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
