@@ -94,6 +94,32 @@ export function StudiesManager({ space, initialStudies, zones, metrics }: Studie
   const getMetricNames = (metricIds: string[]) => 
     metricIds.map(id => metrics.find(m => m.id === id)?.name || 'Unknown').join(', ')
 
+  const formatDuration = (minutes: number | null): string => {
+    if (!minutes) return 'Not set'
+    
+    if (minutes < 60) {
+      return `${minutes}m`
+    }
+    
+    if (minutes < 1440) {
+      const hours = Math.floor(minutes / 60)
+      const mins = minutes % 60
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+    }
+    
+    const days = Math.floor(minutes / 1440)
+    const weeks = Math.floor(days / 7)
+    const remainingDays = days % 7
+    
+    if (weeks > 0 && remainingDays > 0) {
+      return `${weeks}w ${remainingDays}d`
+    } else if (weeks > 0) {
+      return `${weeks}w`
+    } else {
+      return `${days}d`
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -206,6 +232,13 @@ export function StudiesManager({ space, initialStudies, zones, metrics }: Studie
                     <div>
                       <p className="text-xs font-medium text-muted-foreground mb-1">Tracked Metrics</p>
                       <p className="text-sm text-foreground">{getMetricNames(study.target_metrics)}</p>
+                    </div>
+                  )}
+
+                  {study.planned_duration_minutes && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Planned Duration</p>
+                      <p className="text-sm text-foreground">{formatDuration(study.planned_duration_minutes)}</p>
                     </div>
                   )}
 

@@ -35,6 +35,7 @@ export function CreateStudyDialog({
     name: "",
     description: "",
     hypothesis: "",
+    planned_duration_minutes: null as number | null,
     target_zones: [] as string[],
     target_metrics: [] as string[],
   })
@@ -50,6 +51,7 @@ export function CreateStudyDialog({
         name: formData.name,
         description: formData.description || null,
         hypothesis: formData.hypothesis || null,
+        planned_duration_minutes: formData.planned_duration_minutes,
         target_zones: formData.target_zones,
         target_metrics: formData.target_metrics,
         status: 'draft',
@@ -63,6 +65,7 @@ export function CreateStudyDialog({
         name: "",
         description: "",
         hypothesis: "",
+        planned_duration_minutes: null,
         target_zones: [],
         target_metrics: [],
       })
@@ -130,6 +133,53 @@ export function CreateStudyDialog({
               placeholder="Additional context about this study..."
               rows={2}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="duration">Planned Duration</Label>
+            <select
+              id="duration"
+              value={formData.planned_duration_minutes ?? ""}
+              onChange={(e) => setFormData({ 
+                ...formData, 
+                planned_duration_minutes: e.target.value ? parseInt(e.target.value) : null 
+              })}
+              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="">Select a duration...</option>
+              {/* 5-minute increments up to 1 hour */}
+              {Array.from({ length: 12 }, (_, i) => (i + 1) * 5).map(minutes => (
+                <option key={minutes} value={minutes}>
+                  {minutes} minutes
+                </option>
+              ))}
+              {/* 1-2 hours by 5 minute increments */}
+              {Array.from({ length: 12 }, (_, i) => 65 + i * 5).map(minutes => (
+                <option key={minutes} value={minutes}>
+                  {Math.floor(minutes / 60)}h {minutes % 60}m
+                </option>
+              ))}
+              {/* 2-12 hours by 30 minute increments */}
+              {Array.from({ length: 21 }, (_, i) => 120 + i * 30).map(minutes => (
+                <option key={minutes} value={minutes}>
+                  {Math.floor(minutes / 60)}h {minutes % 60}m
+                </option>
+              ))}
+              {/* 1-12 weeks by day increments */}
+              {Array.from({ length: 84 }, (_, i) => (i + 1) * 1440).map(minutes => {
+                const days = Math.floor(minutes / 1440);
+                const weeks = Math.floor(days / 7);
+                const remainingDays = days % 7;
+                return (
+                  <option key={minutes} value={minutes}>
+                    {weeks > 0 ? `${weeks}w` : ""} {remainingDays > 0 ? `${remainingDays}d` : ""}
+                  </option>
+                );
+              })}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Range: 5 minutes to 12 weeks in 5-minute increments
+            </p>
           </div>
 
           <div className="space-y-2">

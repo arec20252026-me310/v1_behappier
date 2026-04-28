@@ -65,6 +65,7 @@ export interface Study {
   status: 'draft' | 'active' | 'paused' | 'completed'
   start_time: string | null
   end_time: string | null
+  planned_duration_minutes: number | null
   target_zones: string[]
   target_metrics: string[]
   findings: Record<string, unknown>
