@@ -13,7 +13,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Camera,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
@@ -28,11 +27,6 @@ const navItems = [
     title: "Space Builder",
     href: "/dashboard/space",
     icon: Map,
-  },
-  {
-    title: "Cameras",
-    href: "/dashboard/cameras",
-    icon: Camera,
   },
   {
     title: "Micro-Studies",
