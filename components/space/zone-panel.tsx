@@ -6,19 +6,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { Trash2, MapPin } from "lucide-react"
+import { Trash2, MapPin, Camera } from "lucide-react"
 import type { Zone } from "@/lib/types"
+import { Badge } from "@/components/ui/badge"
 import { ZONE_TYPES } from "@/lib/types"
 
 interface ZonePanelProps {
   zone: Zone | null
   onUpdate: (zone: Zone) => void
   onDelete: (zoneId: string) => void
+  onAddCamera?: (zoneId: string) => void
   saving: boolean
   gridResolution?: number
 }
 
-export function ZonePanel({ zone, onUpdate, onDelete, saving, gridResolution = 8 }: ZonePanelProps) {
+export function ZonePanel({ zone, onUpdate, onDelete, onAddCamera, saving, gridResolution = 8 }: ZonePanelProps) {
   const sizeOptions = Array.from({ length: gridResolution }, (_, i) => i + 1)
   if (!zone) {
     return (
@@ -144,6 +146,19 @@ export function ZonePanel({ zone, onUpdate, onDelete, saving, gridResolution = 8
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div className="pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-7"
+            onClick={() => zone && onAddCamera?.(zone.id)}
+            disabled={!onAddCamera}
+          >
+            <Camera className="h-3 w-3 mr-1" />
+            Add Camera
+          </Button>
         </div>
 
         <div className="pt-4">

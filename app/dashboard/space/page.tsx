@@ -23,6 +23,11 @@ export default async function SpacePage() {
     zones = data || []
   }
 
+  // Fetch cameras
+  const { data: cameras } = await supabase
+    .from('cameras')
+    .select('*')
+
   return (
     <div className="flex flex-col h-full">
       <DashboardHeader 
@@ -34,6 +39,7 @@ export default async function SpacePage() {
         <SpaceEditor 
           space={space} 
           initialZones={zones} 
+          cameras={cameras || []}
         />
       </div>
     </div>
