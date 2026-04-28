@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Save, Settings, Upload } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import type { Space, Zone, Camera } from "@/lib/types"
+import type { Space, Zone, Camera, CameraPlacement } from "@/lib/types"
 import { ZONE_TYPES } from "@/lib/types"
 import { ZoneGrid } from "./zone-grid"
 import { ZonePanel } from "./zone-panel"
@@ -28,6 +28,23 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
   const [currentSpace, setCurrentSpace] = useState<Space | null>(space)
   const [saving, setSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle')
+  const CAMERA_STORAGE_KEY = `camera-placements-${space?.id ?? 'default'}`
+
+  const [cameraPlacments, setCameraPlacments] = useState<CameraPlacement[]>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const stored = localStorage.getItem(`camera-placements-${space?.id ?? 'default'}`)
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CAMERA_STORAGE_KEY, JSON.stringify(cameraPlacments))
+    } catch {}
+  }, [cameraPlacments, CAMERA_STORAGE_KEY])
 
   const handleSpaceCreated = (newSpace: Space) => {
     setCurrentSpace(newSpace)
@@ -119,6 +136,22 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
     }
   }, [zones, selectedZone, supabase])
 
+  const handleAddCamera = useCallback((zoneId: string) => {
+    const zone = zones.find(z => z.id === zoneId)
+    if (!zone || !currentSpace) return
+    const cellSize = Math.max(30, Math.min(60, 480 / (currentSpace.grid_resolution || 8)))
+    // Place new camera in the center of the assigned zone
+    const newCamera: CameraPlacement = {
+      id: `cam-${Date.now()}`,
+      zoneId,
+      x: (zone.grid_x + zone.grid_width / 2) * cellSize,
+      y: (zone.grid_y + zone.grid_height / 2) * cellSize,
+      direction: 'down',
+      label: `Cam ${cameraPlacments.length + 1}`,
+    }
+    setCameraPlacments(prev => [...prev, newCamera])
+  }, [zones, currentSpace, cameraPlacments])
+
   const saveAllZones = useCallback(async () => {
     setSaveStatus('saving')
     try {
@@ -206,6 +239,8 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
               onUpdateZone={updateZone}
               floorPlanUrl={currentSpace.floor_plan_url}
               gridResolution={currentSpace.grid_resolution || 8}
+              cameras={cameraPlacments}
+              onUpdateCameras={setCameraPlacments}
             />
           </CardContent>
         </Card>
@@ -217,6 +252,7 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
           cameras={cameras.filter(c => c.zone_id === selectedZone?.id)}
           onUpdate={updateZone}
           onDelete={deleteZone}
+          onAddCamera={handleAddCamera}
           saving={saving}
           gridResolution={currentSpace.grid_resolution || 8}
         />

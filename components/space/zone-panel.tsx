@@ -6,21 +6,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { Trash2, Camera, MapPin } from "lucide-react"
-import type { Zone, Camera as CameraType } from "@/lib/types"
-import { ZONE_TYPES } from "@/lib/types"
+import { Trash2, MapPin, Camera } from "lucide-react"
+import type { Zone } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
+import { ZONE_TYPES } from "@/lib/types"
 
 interface ZonePanelProps {
   zone: Zone | null
-  cameras: CameraType[]
   onUpdate: (zone: Zone) => void
   onDelete: (zoneId: string) => void
+  onAddCamera?: (zoneId: string) => void
   saving: boolean
   gridResolution?: number
 }
 
-export function ZonePanel({ zone, cameras, onUpdate, onDelete, saving, gridResolution = 8 }: ZonePanelProps) {
+export function ZonePanel({ zone, onUpdate, onDelete, onAddCamera, saving, gridResolution = 8 }: ZonePanelProps) {
   const sizeOptions = Array.from({ length: gridResolution }, (_, i) => i + 1)
   if (!zone) {
     return (
@@ -148,39 +148,17 @@ export function ZonePanel({ zone, cameras, onUpdate, onDelete, saving, gridResol
           </div>
         </div>
 
-        <div className="pt-4 border-t border-border">
-          <div className="flex items-center justify-between mb-3">
-            <Label className="text-sm">Cameras</Label>
-            <Button variant="ghost" size="sm" className="text-xs h-7">
-              <Camera className="h-3 w-3 mr-1" />
-              Add Camera
-            </Button>
-          </div>
-          {cameras.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No cameras assigned to this zone
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {cameras.map((camera) => (
-                <div
-                  key={camera.id}
-                  className="flex items-center justify-between p-2 rounded bg-secondary/50"
-                >
-                  <div className="flex items-center gap-2">
-                    <Camera className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{camera.name}</span>
-                  </div>
-                  <Badge
-                    variant={camera.status === 'active' ? 'default' : 'secondary'}
-                    className="text-xs"
-                  >
-                    {camera.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-7"
+            onClick={() => zone && onAddCamera?.(zone.id)}
+            disabled={!onAddCamera}
+          >
+            <Camera className="h-3 w-3 mr-1" />
+            Add Camera
+          </Button>
         </div>
 
         <div className="pt-4">

@@ -12,8 +12,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { MapPin, Users, AlertTriangle, ArrowRight } from "lucide-react"
+import { CameraMapIcon } from "@/components/space/camera-map-icon"
 import Link from "next/link"
-import type { Zone, Insight, Space, Study } from "@/lib/types"
+import type { Zone, Insight, Space, Study, CameraPlacement } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 interface ZoneWithOccupancy extends Zone {
@@ -26,6 +27,7 @@ interface SpaceHeatmapProps {
   insights?: Insight[]
   space?: Space | null
   studies?: Study[]
+  cameras?: CameraPlacement[]
 }
 
 // Convert zones to include occupancy data (mock data for now)
@@ -70,13 +72,25 @@ function getZoneInsight(zoneId: string, insights: Insight[]): Insight | null {
   ) || null
 }
 
-export function SpaceHeatmap({ zones, insights = [], space, studies = [] }: SpaceHeatmapProps) {
+export function SpaceHeatmap({ zones, insights = [], space, studies = [], cameras: cameraProp = [] }: SpaceHeatmapProps) {
   const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
-  
+  const [cameras, setCameras] = useState<CameraPlacement[]>(cameraProp)
+
   useEffect(() => {
     setHasActiveStudy(studies.some(s => s.status === 'active'))
   }, [studies])
+
+  useEffect(() => {
+    // Load camera placements from localStorage (set by SpaceEditor)
+    try {
+      const key = `camera-placements-${space?.id ?? 'default'}`
+      const stored = localStorage.getItem(key)
+      if (stored) {
+        setCameras(JSON.parse(stored))
+      }
+    } catch {}
+  }, [space?.id])
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   
   const gridResolution = space?.grid_resolution || 8
@@ -229,6 +243,32 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [] }: Spac
                       </div>
                     )}
                   </div>
+                </div>
+              )
+            })}
+
+            {/* Camera icons — read-only overlay, positions scaled from builder cell size */}
+            {cameras.map((cam) => {
+              // Builder uses: cellSize = Math.max(30, Math.min(60, 480 / gridResolution))
+              const builderCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
+              const scale = CELL_SIZE / builderCellSize
+              return (
+                <div
+                  key={cam.id}
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: cam.x * scale,
+                    top: cam.y * scale,
+                    zIndex: 20,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  <CameraMapIcon
+                    direction={cam.direction}
+                    size={18}
+                    label={cam.label}
+                    showLabel={false}
+                  />
                 </div>
               )
             })}
