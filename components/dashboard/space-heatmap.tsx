@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { MapPin, Users, AlertTriangle, ArrowRight } from "lucide-react"
+import { MapPin, AlertTriangle, ArrowRight } from "lucide-react"
 import { CameraMapIcon } from "@/components/space/camera-map-icon"
 import Link from "next/link"
 import type { Zone, Insight, Space, Study, CameraPlacement } from "@/lib/types"
@@ -235,13 +235,6 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
                         <AlertTriangle className="h-2.5 w-2.5 text-white animate-pulse shrink-0" />
                       )}
                     </div>
-                    {zone.grid_height * CELL_SIZE > 40 && (
-                      <div className="flex items-center gap-1 text-[9px] opacity-90">
-                        <Users className="h-2.5 w-2.5" />
-                        <span>{zone.currentOccupancy}</span>
-                        <span className="opacity-70">({zone.occupancyPercentage}%)</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               )
@@ -275,20 +268,8 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
           </div>
 
           {/* Summary Stats */}
-          <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-            <div className="p-2 rounded-lg bg-secondary/50">
-              <p className="text-lg font-semibold text-foreground">
-                {zonesWithOccupancy.reduce((sum, z) => sum + z.currentOccupancy, 0)}
-              </p>
-              <p className="text-[10px] text-muted-foreground">Total Occupants</p>
-            </div>
-            <div className="p-2 rounded-lg bg-secondary/50">
-              <p className="text-lg font-semibold text-foreground">
-                {Math.round(zonesWithOccupancy.reduce((sum, z) => sum + z.occupancyPercentage, 0) / Math.max(1, zonesWithOccupancy.length))}%
-              </p>
-              <p className="text-[10px] text-muted-foreground">Avg. Utilization</p>
-            </div>
-            <div className="p-2 rounded-lg bg-secondary/50">
+          <div className="mt-4 text-center">
+            <div className="p-2 rounded-lg bg-secondary/50 inline-block min-w-[100px]">
               <p className="text-lg font-semibold text-yellow-500">
                 {zonesWithOccupancy.filter(z => !!getZoneInsight(z.id, insights)).length}
               </p>
