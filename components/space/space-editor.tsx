@@ -84,7 +84,6 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
       grid_width: 2,
       grid_height: 2,
       color: ZONE_TYPES.find(t => t.value === 'workspace')?.color || '#3B82F6',
-      capacity: 10,
     }
 
     const { data, error } = await supabase
@@ -111,7 +110,6 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
         grid_width: updatedZone.grid_width,
         grid_height: updatedZone.grid_height,
         color: updatedZone.color,
-        capacity: updatedZone.capacity,
       })
       .eq('id', updatedZone.id)
 
@@ -167,7 +165,6 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
             grid_width: zone.grid_width,
             grid_height: zone.grid_height,
             color: zone.color,
-            capacity: zone.capacity,
           })
           .eq('id', zone.id)
       }

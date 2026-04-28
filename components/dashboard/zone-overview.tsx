@@ -1,8 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Users, MapPin } from "lucide-react"
+import { MapPin } from "lucide-react"
 import type { Zone } from "@/lib/types"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -65,12 +64,6 @@ export function ZoneOverview({ zones }: ZoneOverviewProps) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {zone.capacity && (
-                  <Badge variant="secondary" className="text-xs">
-                    <Users className="h-3 w-3 mr-1" />
-                    {zone.capacity}
-                  </Badge>
-                )}
               </div>
             </div>
           ))}

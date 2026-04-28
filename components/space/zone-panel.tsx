@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
 import { Trash2, MapPin, Camera } from "lucide-react"
 import type { Zone } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
@@ -93,24 +92,6 @@ export function ZonePanel({ zone, onUpdate, onDelete, onAddCamera, saving, gridR
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="capacity">Capacity</Label>
-          <div className="flex items-center gap-3">
-            <Slider
-              id="capacity"
-              value={[zone.capacity || 10]}
-              onValueChange={([value]) => handleChange('capacity', value)}
-              min={1}
-              max={100}
-              step={1}
-              className="flex-1"
-            />
-            <span className="text-sm text-muted-foreground w-8 text-right">
-              {zone.capacity || 10}
-            </span>
-          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
