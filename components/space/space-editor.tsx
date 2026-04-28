@@ -136,7 +136,6 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
     }
   }, [zones, selectedZone, supabase])
 
-  const saveAllZones = useCallback(async () => {
   const handleAddCamera = useCallback((zoneId: string) => {
     const zone = zones.find(z => z.id === zoneId)
     if (!zone || !currentSpace) return
