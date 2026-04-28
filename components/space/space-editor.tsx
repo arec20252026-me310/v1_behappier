@@ -244,9 +244,8 @@ export function SpaceEditor({ space, initialZones, cameras }: SpaceEditorProps) 
       </div>
 
       <div className="lg:col-span-1">
-        <ZonePanel 
+        <ZonePanel
           zone={selectedZone}
-          cameras={cameras.filter(c => c.zone_id === selectedZone?.id)}
           onUpdate={updateZone}
           onDelete={deleteZone}
           onAddCamera={handleAddCamera}
