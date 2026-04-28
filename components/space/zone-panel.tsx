@@ -16,11 +16,12 @@ interface ZonePanelProps {
   cameras: CameraType[]
   onUpdate: (zone: Zone) => void
   onDelete: (zoneId: string) => void
+  onAddCamera?: (zoneId: string) => void
   saving: boolean
   gridResolution?: number
 }
 
-export function ZonePanel({ zone, cameras, onUpdate, onDelete, saving, gridResolution = 8 }: ZonePanelProps) {
+export function ZonePanel({ zone, cameras, onUpdate, onDelete, onAddCamera, saving, gridResolution = 8 }: ZonePanelProps) {
   const sizeOptions = Array.from({ length: gridResolution }, (_, i) => i + 1)
   if (!zone) {
     return (
@@ -151,7 +152,13 @@ export function ZonePanel({ zone, cameras, onUpdate, onDelete, saving, gridResol
         <div className="pt-4 border-t border-border">
           <div className="flex items-center justify-between mb-3">
             <Label className="text-sm">Cameras</Label>
-            <Button variant="ghost" size="sm" className="text-xs h-7">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs h-7"
+              onClick={() => zone && onAddCamera?.(zone.id)}
+              disabled={!onAddCamera}
+            >
               <Camera className="h-3 w-3 mr-1" />
               Add Camera
             </Button>

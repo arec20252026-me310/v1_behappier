@@ -138,6 +138,18 @@ export interface ActionItem {
   completed: boolean
 }
 
+// Client-side camera placement for the visual map builder
+export type CameraDirection = 'up' | 'down' | 'left' | 'right'
+
+export interface CameraPlacement {
+  id: string
+  zoneId: string    // the zone this camera is assigned to
+  x: number         // pixel x position within the grid container
+  y: number         // pixel y position within the grid container
+  direction: CameraDirection
+  label: string
+}
+
 // Zone types for the editor
 export const ZONE_TYPES = [
   { value: 'lobby', label: 'Lobby', color: '#3B82F6' },
