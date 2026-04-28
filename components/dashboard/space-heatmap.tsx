@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -71,8 +71,12 @@ function getZoneInsight(zoneId: string, insights: Insight[]): Insight | null {
 }
 
 export function SpaceHeatmap({ zones, insights = [], space, studies = [] }: SpaceHeatmapProps) {
-  const hasActiveStudy = studies.some(s => s.status === 'active')
+  const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
+  
+  useEffect(() => {
+    setHasActiveStudy(studies.some(s => s.status === 'active'))
+  }, [studies])
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   
   const gridResolution = space?.grid_resolution || 8
