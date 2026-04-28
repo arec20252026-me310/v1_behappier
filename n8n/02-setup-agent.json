@@ -232,17 +232,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/studies' }}",
+        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",
@@ -277,7 +277,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "={{ $env.WF_STUDY_ORCHESTRATOR_ID || 'SET_WF_STUDY_ORCHESTRATOR_ID' }}",
+          "value": "={{ $vars.WF_STUDY_ORCHESTRATOR_ID || 'SET_WF_STUDY_ORCHESTRATOR_ID' }}",
           "cachedResultName": "03 - Study Orchestrator"
         },
         "workflowInputs": {

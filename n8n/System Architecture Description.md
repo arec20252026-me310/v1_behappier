@@ -525,14 +525,14 @@ OUTPUT FORMATTING
 STATE AND STORAGE
 Use Supabase tables or storage buckets for at least:
 
-- studies
-- study_tasks
-- needfinding_outputs
+- BE_studies
+- BE_study_tasks
+- BE_needfinding_outputs
 - image_events
-- behavior_detections
-- insight_outputs
-- workflow_logs
-- workflow_errors
+- BE_behavior_detections
+- BE_insight_outputs
+- BE_workflow_logs
+- BE_workflow_errors
 
 ROUTING LOGIC
 The Chat Agent should route based on:

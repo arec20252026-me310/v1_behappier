@@ -320,7 +320,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "={{ $env.WF_SETUP_AGENT_ID || 'SET_WF_SETUP_AGENT_ID' }}",
+          "value": "={{ $vars.WF_SETUP_AGENT_ID || 'SET_WF_SETUP_AGENT_ID' }}",
           "cachedResultName": "02 - Setup Agent"
         },
         "workflowInputs": {
@@ -393,7 +393,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/studies' }}",
+        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -416,11 +416,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",
@@ -490,7 +490,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/insight_outputs' }}",
+        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_insight_outputs' }}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -517,11 +517,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",
@@ -591,17 +591,17 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/rpc/get_study_dashboard_context' }}",
+        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/rpc/BE_get_study_dashboard_context' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",

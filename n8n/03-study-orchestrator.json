@@ -80,7 +80,7 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/studies' }}",
+        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -95,11 +95,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",
@@ -134,7 +134,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "={{ $env.WF_NEEDFINDING_AGENT_ID || 'SET_WF_NEEDFINDING_AGENT_ID' }}",
+          "value": "={{ $vars.WF_NEEDFINDING_AGENT_ID || 'SET_WF_NEEDFINDING_AGENT_ID' }}",
           "cachedResultName": "04 - Needfinding Agent"
         },
         "workflowInputs": {
@@ -183,17 +183,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/needfinding_outputs' }}",
+        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_needfinding_outputs' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",
@@ -226,7 +226,7 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/studies' }}",
+        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -241,11 +241,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",
@@ -280,7 +280,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "={{ $env.WF_BEHAVIOR_MONITORING_AGENT_ID || 'SET_WF_BEHAVIOR_MONITORING_AGENT_ID' }}",
+          "value": "={{ $vars.WF_BEHAVIOR_MONITORING_AGENT_ID || 'SET_WF_BEHAVIOR_MONITORING_AGENT_ID' }}",
           "cachedResultName": "05 - Behavior Monitoring Agent"
         },
         "workflowInputs": {
@@ -320,7 +320,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "={{ $env.WF_COMMON_SERVICES_ID || 'SET_WF_COMMON_SERVICES_ID' }}",
+          "value": "={{ $vars.WF_COMMON_SERVICES_ID || 'SET_WF_COMMON_SERVICES_ID' }}",
           "cachedResultName": "07 - Common Services"
         },
         "workflowInputs": {
@@ -404,7 +404,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "={{ $env.WF_ACTIONABLE_INSIGHTS_AGENT_ID || 'SET_WF_ACTIONABLE_INSIGHTS_AGENT_ID' }}",
+          "value": "={{ $vars.WF_ACTIONABLE_INSIGHTS_AGENT_ID || 'SET_WF_ACTIONABLE_INSIGHTS_AGENT_ID' }}",
           "cachedResultName": "06 - Actionable Insights Agent"
         },
         "workflowInputs": {
@@ -440,7 +440,7 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/studies' }}",
+        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -455,11 +455,11 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",

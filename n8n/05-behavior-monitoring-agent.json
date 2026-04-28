@@ -32,7 +32,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst input = $json;\nreturn [{\n  json: {\n    study_id: input.study_id,\n    building_id: input.building_id ?? null,\n    zone_ids: input.zone_ids ?? [],\n    behavior_targets: input.behavior_targets ?? [],\n    date_range: input.date_range ?? null,\n    snapshot_folder_url: $env.HA_SNAPSHOT_FOLDER_URL || 'http://<YOUR_HA_URL>:8123/local/snapshots/',\n    image_selection_rules: {\n      max_images_per_run: input.image_selection_rules?.max_images_per_run ?? 25,\n      filename_match: input.image_selection_rules?.filename_match ?? null,\n    },\n    setup_instructions: input.setup_instructions ?? '',\n    debug_mode: input.debug_mode ?? false,\n  }\n}];\n"
+        "jsCode": "\nconst input = $json;\nreturn [{\n  json: {\n    study_id: input.study_id,\n    building_id: input.building_id ?? null,\n    zone_ids: input.zone_ids ?? [],\n    behavior_targets: input.behavior_targets ?? [],\n    date_range: input.date_range ?? null,\n    snapshot_folder_url: $vars.HA_SNAPSHOT_FOLDER_URL || 'http://<YOUR_HA_URL>:8123/local/snapshots/',\n    image_selection_rules: {\n      max_images_per_run: input.image_selection_rules?.max_images_per_run ?? 25,\n      filename_match: input.image_selection_rules?.filename_match ?? null,\n    },\n    setup_instructions: input.setup_instructions ?? '',\n    debug_mode: input.debug_mode ?? false,\n  }\n}];\n"
       },
       "id": "code-0098",
       "name": "Prepare Monitoring Request",
@@ -90,7 +90,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.OPENAI_API_KEY || \"SET_OPENAI_API_KEY\"}}"
+              "value": "=Bearer {{$vars.OPENAI_API_KEY || \"SET_OPENAI_API_KEY\"}}"
             },
             {
               "name": "Content-Type",
@@ -100,7 +100,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n    model: $env.VISION_MODEL || 'gpt-4.1-mini',\n    input: [\n      {\n        role: 'system',\n        content: [\n          {\n            type: 'input_text',\n            text: 'You are the only image-analysis agent in a building behavior monitoring system. Analyze the image for requested occupant behaviors only. Return JSON only with keys: detected_behaviors, confidence_scores, notes, model_version. Never provide layout recommendations or final conclusions.'\n          }\n        ]\n      },\n      {\n        role: 'user',\n        content: [\n          {\n            type: 'input_text',\n            text: 'Study ID: ' + $json.study_id + '\\nZone: ' + ($json.zone_id || 'unknown') + '\\nBehavior targets: ' + JSON.stringify($json.behavior_targets) + '\\nInstructions: ' + ($json.setup_instructions || '')\n          },\n          {\n            type: 'input_image',\n            image_url: $json.image_url\n          }\n        ]\n      }\n    ]\n  }) }}",
+        "jsonBody": "={{ JSON.stringify({\n    model: $vars.VISION_MODEL || 'gpt-4.1-mini',\n    input: [\n      {\n        role: 'system',\n        content: [\n          {\n            type: 'input_text',\n            text: 'You are the only image-analysis agent in a building behavior monitoring system. Analyze the image for requested occupant behaviors only. Return JSON only with keys: detected_behaviors, confidence_scores, notes, model_version. Never provide layout recommendations or final conclusions.'\n          }\n        ]\n      },\n      {\n        role: 'user',\n        content: [\n          {\n            type: 'input_text',\n            text: 'Study ID: ' + $json.study_id + '\\nZone: ' + ($json.zone_id || 'unknown') + '\\nBehavior targets: ' + JSON.stringify($json.behavior_targets) + '\\nInstructions: ' + ($json.setup_instructions || '')\n          },\n          {\n            type: 'input_image',\n            image_url: $json.image_url\n          }\n        ]\n      }\n    ]\n  }) }}",
         "options": {
           "response": {
             "response": {
@@ -124,7 +124,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst response = $json.output?.[0]?.content?.[0]?.text ?? $json.output_text ?? $json.output ?? $json;\nlet parsed = response;\nconst studyInput = $items('Extract Latest Snapshot Links', 0, $itemIndex)[0].json;\nlet error = null;\ntry {\n  if (typeof parsed === 'string') parsed = JSON.parse(parsed);\n} catch (e) {\n  error = 'vision_json_parse_failed';\n  parsed = {};\n}\nreturn [{\n  json: {\n    study_id: studyInput.study_id,\n    image_id: studyInput.image_id,\n    timestamp: studyInput.timestamp,\n    zone_id: studyInput.zone_id,\n    detected_behaviors: parsed.detected_behaviors ?? [],\n    confidence_scores: parsed.confidence_scores ?? {},\n    notes: parsed.notes ?? (error ? 'Skipped due to parse failure' : ''),\n    model_version: parsed.model_version ?? ($env.VISION_MODEL || 'gpt-4.1-mini'),\n    parse_error: error,\n  }\n}];\n"
+        "jsCode": "\nconst response = $json.output?.[0]?.content?.[0]?.text ?? $json.output_text ?? $json.output ?? $json;\nlet parsed = response;\nconst studyInput = $items('Extract Latest Snapshot Links', 0, $itemIndex)[0].json;\nlet error = null;\ntry {\n  if (typeof parsed === 'string') parsed = JSON.parse(parsed);\n} catch (e) {\n  error = 'vision_json_parse_failed';\n  parsed = {};\n}\nreturn [{\n  json: {\n    study_id: studyInput.study_id,\n    image_id: studyInput.image_id,\n    timestamp: studyInput.timestamp,\n    zone_id: studyInput.zone_id,\n    detected_behaviors: parsed.detected_behaviors ?? [],\n    confidence_scores: parsed.confidence_scores ?? {},\n    notes: parsed.notes ?? (error ? 'Skipped due to parse failure' : ''),\n    model_version: parsed.model_version ?? ($vars.VISION_MODEL || 'gpt-4.1-mini'),\n    parse_error: error,\n  }\n}];\n"
       },
       "id": "code-0102",
       "name": "Parse Detection JSON",
@@ -138,17 +138,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/behavior_detections' }}",
+        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_behavior_detections' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",

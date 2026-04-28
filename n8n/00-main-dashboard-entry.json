@@ -53,7 +53,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "={{ $env.WF_CHAT_ENTRY_ID || 'SET_WF_CHAT_ENTRY_ID' }}",
+          "value": "={{ $vars.WF_CHAT_ENTRY_ID || 'SET_WF_CHAT_ENTRY_ID' }}",
           "cachedResultName": "01 - Camera Behavior - Chat Entry"
         },
         "workflowInputs": {

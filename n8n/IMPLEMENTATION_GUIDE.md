@@ -279,14 +279,14 @@ After importing, wire these `Execute Workflow` nodes:
 
 ## Recommended Supabase tables
 
-- `studies`
-- `study_tasks`
-- `needfinding_outputs`
-- `behavior_detections`
-- `live_preview_metrics`
-- `insight_outputs`
-- `workflow_logs`
-- `workflow_errors`
+- `BE_studies`
+- `BE_study_tasks`
+- `BE_needfinding_outputs`
+- `BE_behavior_detections`
+- `BE_live_preview_metrics`
+- `BE_insight_outputs`
+- `BE_workflow_logs`
+- `BE_workflow_errors`
 
 `image_events` is no longer required for the monitoring workflow if you use the Home Assistant snapshot folder source.
 
