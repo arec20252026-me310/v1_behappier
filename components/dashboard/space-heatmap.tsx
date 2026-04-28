@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { MapPin, Users, AlertTriangle, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import type { Zone, Insight, Space } from "@/lib/types"
+import type { Zone, Insight, Space, Study } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 interface ZoneWithOccupancy extends Zone {
@@ -25,6 +25,7 @@ interface SpaceHeatmapProps {
   zones: Zone[]
   insights?: Insight[]
   space?: Space | null
+  studies?: Study[]
 }
 
 // Convert zones to include occupancy data (mock data for now)
@@ -69,7 +70,8 @@ function getZoneInsight(zoneId: string, insights: Insight[]): Insight | null {
   ) || null
 }
 
-export function SpaceHeatmap({ zones, insights = [], space }: SpaceHeatmapProps) {
+export function SpaceHeatmap({ zones, insights = [], space, studies = [] }: SpaceHeatmapProps) {
+  const hasActiveStudy = studies.some(s => s.status === 'active')
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   
@@ -119,7 +121,11 @@ export function SpaceHeatmap({ zones, insights = [], space }: SpaceHeatmapProps)
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-medium">Occupancy Heatmap</CardTitle>
-            <Badge variant="outline" className="text-xs">Live</Badge>
+            {hasActiveStudy && (
+              <Badge variant="outline" className="text-xs text-green-600 border-green-500/50 bg-green-500/10">
+                Active Study
+              </Badge>
+            )}
           </div>
           <Link href="/dashboard/space">
             <Button variant="ghost" size="sm" className="text-xs">
