@@ -97,7 +97,7 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
   const floorPlanUrl = space?.floor_plan_url
   
   // Calculate cell size based on grid resolution - fit within 400px
-  const CONTAINER_SIZE = 400
+  const CONTAINER_SIZE = 500
   const CELL_SIZE = Math.floor(CONTAINER_SIZE / gridResolution)
 
   if (zones.length === 0) {
