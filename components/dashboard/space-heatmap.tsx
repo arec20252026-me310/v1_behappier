@@ -136,7 +136,7 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
   return (
     <>
       <Card className="bg-card border-border">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+        <CardHeader className="pt-2 pb-2 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-medium">Occupancy Heatmap</CardTitle>
             {hasActiveStudy && (
@@ -153,7 +153,7 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
         </CardHeader>
         <CardContent>
           {/* Legend */}
-          <div className="flex items-center gap-4 mb-4 text-xs">
+          <div className="flex items-center gap-4 mb-2 text-xs">
             <span className="text-muted-foreground">Status:</span>
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} />
