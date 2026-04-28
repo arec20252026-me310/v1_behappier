@@ -50,19 +50,19 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
         <Card key={card.title} className="bg-card border-border">
-          <CardContent className="p-3">
+          <CardContent className="px-3 py-2">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">{card.title}</p>
-                <p className="text-2xl font-semibold text-foreground mt-0.5">{card.value}</p>
+                <p className="text-sm text-muted-foreground">{card.title}</p>
+                <p className="text-3xl font-semibold text-foreground mt-0.5">{card.value}</p>
                 <div className="flex items-center gap-1 mt-0.5">
                   {card.trend === "up" && <TrendingUp className="h-3 w-3 text-success" />}
                   {card.trend === "down" && <TrendingDown className="h-3 w-3 text-destructive" />}
-                  <span className="text-xs text-muted-foreground">{card.change}</span>
+                  <span className="text-sm text-muted-foreground">{card.change}</span>
                 </div>
               </div>
               <div className={`p-2 rounded-lg bg-secondary ${card.color}`}>
-                <card.icon className="h-4 w-4" />
+                <card.icon className="h-6 w-6" />
               </div>
             </div>
           </CardContent>
