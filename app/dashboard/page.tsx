@@ -52,26 +52,32 @@ export default async function DashboardPage() {
         subtitle={spaces?.name || "Get started by setting up your space"}
       />
       
-      <div className="flex-1 p-6 space-y-6 overflow-auto">
-        <MetricCards 
-          zonesCount={zones?.length || 0}
-          studiesCount={studies?.length || 0}
-          insightsCount={insights?.length || 0}
-          metricsCount={metrics?.length || 0}
-        />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SpaceHeatmap zones={zones || []} insights={insights || []} space={spaces} studies={studies || []} />
-          <OccupancyChart />
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ZoneOverview zones={zones || []} />
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActiveStudies studies={studies || []} />
-          <RecentInsights insights={insights || []} />
+      <div className="flex-1 p-6 overflow-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left 2/3 */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ZoneOverview zones={zones || []} />
+              <ActiveStudies studies={studies || []} />
+            </div>
+
+            <MetricCards
+              zonesCount={zones?.length || 0}
+              studiesCount={studies?.length || 0}
+              insightsCount={insights?.length || 0}
+              metricsCount={metrics?.length || 0}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <OccupancyChart />
+              <RecentInsights insights={insights || []} />
+            </div>
+          </div>
+
+          {/* Right 1/3 — tall heatmap */}
+          <div className="lg:col-span-1">
+            <SpaceHeatmap zones={zones || []} insights={insights || []} space={spaces} studies={studies || []} />
+          </div>
         </div>
       </div>
     </div>
