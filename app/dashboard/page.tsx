@@ -56,11 +56,6 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left 2/3 */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ZoneOverview zones={zones || []} />
-              <ActiveStudies studies={studies || []} />
-            </div>
-
             <MetricCards
               zonesCount={zones?.length || 0}
               studiesCount={studies?.length || 0}
@@ -68,8 +63,11 @@ export default async function DashboardPage() {
               metricsCount={metrics?.length || 0}
             />
 
+            <OccupancyChart />
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <OccupancyChart />
+              <ZoneOverview zones={zones || []} />
+              <ActiveStudies studies={studies || []} />
               <RecentInsights insights={insights || []} />
             </div>
           </div>
