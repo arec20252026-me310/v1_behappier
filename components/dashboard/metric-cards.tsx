@@ -34,7 +34,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
       change: metricsCount === 0 ? "Add metrics" : `${metricsCount} active`,
       trend: "neutral",
       icon: BarChart3,
-      color: "text-chart-4",
+      color: "text-chart-3",
     },
     {
       title: "New Insights",
@@ -42,7 +42,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
       change: insightsCount === 0 ? "No insights yet" : `${insightsCount} to review`,
       trend: insightsCount > 0 ? "up" : "neutral",
       icon: Lightbulb,
-      color: "text-chart-3",
+      color: "text-chart-4",
     },
   ]
 
