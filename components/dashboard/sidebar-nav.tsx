@@ -34,14 +34,14 @@ const navItems = [
     icon: FlaskConical,
   },
   {
-    title: "Insights",
-    href: "/dashboard/insights",
-    icon: Lightbulb,
-  },
-  {
     title: "Metrics",
     href: "/dashboard/metrics",
     icon: BarChart3,
+  },
+  {
+    title: "Insights",
+    href: "/dashboard/insights",
+    icon: Lightbulb,
   },
   {
     title: "AI Agents",
