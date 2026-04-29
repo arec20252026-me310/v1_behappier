@@ -21,8 +21,8 @@ interface OccupancyChartProps {
 export function OccupancyChart({ data = [] }: OccupancyChartProps) {
   if (data.length === 0) {
     return (
-      <Card className="bg-card border-border pt-3">
-        <CardHeader className="pb-2">
+      <Card className="bg-card border-border pt-2 pb-4">
+        <CardHeader className="pb-1.5">
           <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
         </CardHeader>
         <CardContent>
@@ -46,8 +46,8 @@ export function OccupancyChart({ data = [] }: OccupancyChartProps) {
   }
 
   return (
-    <Card className="bg-card border-border pt-3">
-      <CardHeader className="pb-2">
+    <Card className="bg-card border-border pt-2 pb-4">
+      <CardHeader className="pb-1.5">
         <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
       </CardHeader>
       <CardContent>

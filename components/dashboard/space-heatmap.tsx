@@ -102,7 +102,7 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
 
   if (zones.length === 0) {
     return (
-      <Card className="bg-card border-border pt-3">
+      <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Space Heatmap</CardTitle>
         </CardHeader>
@@ -135,8 +135,8 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
 
   return (
     <>
-      <Card className="bg-card border-border pt-3">
-        <CardHeader className="pt-2 pb-2 flex flex-row items-center justify-between">
+      <Card className="bg-card border-border pt-2 pb-4">
+        <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-medium">Occupancy Heatmap</CardTitle>
             {hasActiveStudy && (

@@ -27,8 +27,8 @@ const severityColors = {
 export function RecentInsights({ insights }: RecentInsightsProps) {
   if (insights.length === 0) {
     return (
-      <Card className="bg-card border-border pt-3">
-        <CardHeader className="pb-2">
+      <Card className="bg-card border-border pt-2 pb-4">
+        <CardHeader className="pb-1.5">
           <CardTitle className="text-base font-medium">Recent Insights</CardTitle>
         </CardHeader>
         <CardContent>
@@ -49,8 +49,8 @@ export function RecentInsights({ insights }: RecentInsightsProps) {
   }
 
   return (
-    <Card className="bg-card border-border pt-3">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
+    <Card className="bg-card border-border pt-2 pb-4">
+      <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-medium">Recent Insights</CardTitle>
         <Link href="/dashboard/insights">
           <Button variant="ghost" size="sm" className="text-xs">

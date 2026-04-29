@@ -49,7 +49,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
-        <Card key={card.title} className="bg-card border-border py-3">
+        <Card key={card.title} className="bg-card border-border py-2">
           <CardContent className="px-3 py-2">
             <div className="flex items-center justify-between">
               <div>

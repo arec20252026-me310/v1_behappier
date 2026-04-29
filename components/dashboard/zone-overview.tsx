@@ -13,8 +13,8 @@ interface ZoneOverviewProps {
 export function ZoneOverview({ zones }: ZoneOverviewProps) {
   if (zones.length === 0) {
     return (
-      <Card className="bg-card border-border pt-3">
-        <CardHeader className="pb-2">
+      <Card className="bg-card border-border pt-2 pb-4">
+        <CardHeader className="pb-1.5">
           <CardTitle className="text-base font-medium">Zone Overview</CardTitle>
         </CardHeader>
         <CardContent>
@@ -35,8 +35,8 @@ export function ZoneOverview({ zones }: ZoneOverviewProps) {
   }
 
   return (
-    <Card className="bg-card border-border pt-3">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
+    <Card className="bg-card border-border pt-2 pb-4">
+      <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-medium">Zone Overview</CardTitle>
         <Link href="/dashboard/space">
           <Button variant="ghost" size="sm" className="text-xs">
