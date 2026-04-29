@@ -21,7 +21,7 @@ const statusConfig = {
 export function ActiveStudies({ studies }: ActiveStudiesProps) {
   if (studies.length === 0) {
     return (
-      <Card className="bg-card border-border">
+      <Card className="bg-card border-border pt-3">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Active Studies</CardTitle>
         </CardHeader>
@@ -43,7 +43,7 @@ export function ActiveStudies({ studies }: ActiveStudiesProps) {
   }
 
   return (
-    <Card className="bg-card border-border">
+    <Card className="bg-card border-border pt-3">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-medium">Active Studies</CardTitle>
         <Link href="/dashboard/studies">
