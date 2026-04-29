@@ -53,22 +53,22 @@ export default async function DashboardPage() {
       />
       
       <div className="flex-1 p-6 space-y-6 overflow-auto">
-        <MetricCards 
+        <MetricCards
           zonesCount={zones?.length || 0}
           studiesCount={studies?.length || 0}
           insightsCount={insights?.length || 0}
           metricsCount={metrics?.length || 0}
         />
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SpaceHeatmap zones={zones || []} insights={insights || []} space={spaces} studies={studies || []} />
           <OccupancyChart />
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ZoneOverview zones={zones || []} />
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ActiveStudies studies={studies || []} />
           <RecentInsights insights={insights || []} />

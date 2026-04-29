@@ -29,19 +29,19 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
       color: "text-chart-2",
     },
     {
-      title: "New Insights",
-      value: insightsCount,
-      change: insightsCount === 0 ? "No insights yet" : `${insightsCount} to review`,
-      trend: insightsCount > 0 ? "up" : "neutral",
-      icon: Lightbulb,
-      color: "text-chart-3",
-    },
-    {
       title: "Tracked Metrics",
       value: metricsCount,
       change: metricsCount === 0 ? "Add metrics" : `${metricsCount} active`,
       trend: "neutral",
       icon: BarChart3,
+      color: "text-chart-3",
+    },
+    {
+      title: "New Insights",
+      value: insightsCount,
+      change: insightsCount === 0 ? "No insights yet" : `${insightsCount} to review`,
+      trend: insightsCount > 0 ? "up" : "neutral",
+      icon: Lightbulb,
       color: "text-chart-4",
     },
   ]
@@ -49,20 +49,20 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
-        <Card key={card.title} className="bg-card border-border">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
+        <Card key={card.title} className="bg-card border-border py-2">
+          <CardContent className="px-3 py-2">
+            <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">{card.title}</p>
-                <p className="text-3xl font-semibold text-foreground mt-1">{card.value}</p>
-                <div className="flex items-center gap-1 mt-2">
+                <p className="text-3xl font-semibold text-foreground mt-0.5">{card.value}</p>
+                <div className="flex items-center gap-1 mt-0.5">
                   {card.trend === "up" && <TrendingUp className="h-3 w-3 text-success" />}
                   {card.trend === "down" && <TrendingDown className="h-3 w-3 text-destructive" />}
-                  <span className="text-xs text-muted-foreground">{card.change}</span>
+                  <span className="text-sm text-muted-foreground">{card.change}</span>
                 </div>
               </div>
               <div className={`p-2 rounded-lg bg-secondary ${card.color}`}>
-                <card.icon className="h-5 w-5" />
+                <card.icon className="h-6 w-6" />
               </div>
             </div>
           </CardContent>

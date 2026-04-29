@@ -97,12 +97,12 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
   const floorPlanUrl = space?.floor_plan_url
   
   // Calculate cell size based on grid resolution - fit within 400px
-  const CONTAINER_SIZE = 400
+  const CONTAINER_SIZE = 500
   const CELL_SIZE = Math.floor(CONTAINER_SIZE / gridResolution)
 
   if (zones.length === 0) {
     return (
-      <Card className="bg-card border-border">
+      <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium">Space Heatmap</CardTitle>
         </CardHeader>
@@ -135,8 +135,8 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
 
   return (
     <>
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+      <Card className="bg-card border-border pt-2 pb-4">
+        <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-medium">Occupancy Heatmap</CardTitle>
             {hasActiveStudy && (
@@ -153,7 +153,7 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
         </CardHeader>
         <CardContent>
           {/* Legend */}
-          <div className="flex items-center gap-4 mb-4 text-xs">
+          <div className="flex items-center gap-4 mb-2 text-xs">
             <span className="text-muted-foreground">Status:</span>
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} />
