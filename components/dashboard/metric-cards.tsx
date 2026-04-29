@@ -29,20 +29,20 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
       color: "text-chart-2",
     },
     {
-      title: "New Insights",
-      value: insightsCount,
-      change: insightsCount === 0 ? "No insights yet" : `${insightsCount} to review`,
-      trend: insightsCount > 0 ? "up" : "neutral",
-      icon: Lightbulb,
-      color: "text-chart-3",
-    },
-    {
       title: "Tracked Metrics",
       value: metricsCount,
       change: metricsCount === 0 ? "Add metrics" : `${metricsCount} active`,
       trend: "neutral",
       icon: BarChart3,
       color: "text-chart-4",
+    },
+    {
+      title: "New Insights",
+      value: insightsCount,
+      change: insightsCount === 0 ? "No insights yet" : `${insightsCount} to review`,
+      trend: insightsCount > 0 ? "up" : "neutral",
+      icon: Lightbulb,
+      color: "text-chart-3",
     },
   ]
 
