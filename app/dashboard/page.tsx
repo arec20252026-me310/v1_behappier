@@ -70,8 +70,8 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <RecentInsights insights={insights || []} />
           <ActiveStudies studies={studies || []} />
+          <RecentInsights insights={insights || []} />
         </div>
       </div>
     </div>
