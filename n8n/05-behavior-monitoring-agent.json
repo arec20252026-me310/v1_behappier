@@ -4,49 +4,47 @@
     {
       "parameters": {
         "content": "# Behavior Monitoring Agent\n- This is the only workflow that may access image references.\n- It pulls the latest images from an internally configured Home Assistant snapshot folder URL, analyzes them, stores structured detections, and never emits raw image data downstream.\n\n# Test Case\n{ \"study_id\": \"study_001\", \"building_id\": \"bldg_001\", \"zone_ids\": [\"east_lobby\"], \"behavior_targets\": [{\"behavior_name\":\"entry clustering\"}] }",
-        "width": 800,
         "height": 240,
-        "color": 1
+        "width": 800
       },
-      "id": "sticky-0096",
+      "id": "2c3c944a-d3ff-40ef-9578-9f10bdf8b618",
       "name": "Monitoring Notes",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        0,
-        -40
+        144,
+        688
       ]
     },
     {
       "parameters": {
         "inputSource": "passthrough"
       },
-      "id": "trigger-0097",
+      "id": "fac7093e-2b0d-4557-87dc-85ace8b2b78f",
       "name": "When Executed by Orchestrator",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        0,
-        280
+        144,
+        1008
       ]
     },
     {
       "parameters": {
-        "jsCode": "\nconst input = $json;\nreturn [{\n  json: {\n    study_id: input.study_id,\n    building_id: input.building_id ?? null,\n    zone_ids: input.zone_ids ?? [],\n    behavior_targets: input.behavior_targets ?? [],\n    date_range: input.date_range ?? null,\n    snapshot_folder_url: $vars.HA_SNAPSHOT_FOLDER_URL || 'http://<YOUR_HA_URL>:8123/local/snapshots/',\n    image_selection_rules: {\n      max_images_per_run: input.image_selection_rules?.max_images_per_run ?? 25,\n      filename_match: input.image_selection_rules?.filename_match ?? null,\n    },\n    setup_instructions: input.setup_instructions ?? '',\n    debug_mode: input.debug_mode ?? false,\n  }\n}];\n"
+        "jsCode": "\nconst input = $json;\nreturn [{\n  json: {\n    study_id: input.study_id,\n    building_id: input.building_id ?? null,\n    zone_ids: input.zone_ids ?? [],\n    behavior_targets: input.behavior_targets ?? [],\n    date_range: input.date_range ?? null,\n    snapshot_folder_url: $vars.HA_SNAPSHOT_FOLDER_URL || 'http://192.168.204.6:8123/local/snapshots/snapshot_1.jpg',\n    image_selection_rules: {\n      max_images_per_run: input.image_selection_rules?.max_images_per_run ?? 25,\n      filename_match: input.image_selection_rules?.filename_match ?? null,\n    },\n    setup_instructions: input.setup_instructions ?? '',\n    debug_mode: input.debug_mode ?? false,\n  }\n}];\n"
       },
-      "id": "code-0098",
+      "id": "572e0aba-29b0-4759-b902-cce412ea2841",
       "name": "Prepare Monitoring Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        260,
-        280
+        416,
+        1008
       ]
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "={{ $json.snapshot_folder_url }}",
+        "url": "=http://192.168.204.6:8123/local/snapshots/snapshot_1.jpg",
         "options": {
           "response": {
             "response": {
@@ -55,13 +53,13 @@
           }
         }
       },
-      "id": "http-0099",
+      "id": "5ee51a8f-ed46-494b-aecf-fd337c9e3910",
       "name": "Fetch Snapshot Folder Listing",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        520,
-        280
+        672,
+        1008
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -72,13 +70,13 @@
       "parameters": {
         "jsCode": "\nconst monitor = $('Prepare Monitoring Request').item.json;\nconst raw = typeof $json === 'string'\n  ? $json\n  : ($json.body ?? $json.data ?? $json.response ?? $json);\n\nlet html = '';\nif (typeof raw === 'string') {\n  html = raw;\n} else if (Array.isArray(raw)) {\n  html = raw.join('\\n');\n} else if (raw && typeof raw === 'object') {\n  html = JSON.stringify(raw);\n}\n\nlet files = [];\ntry {\n  const maybeJson = typeof raw === 'string' ? JSON.parse(raw) : raw;\n  if (Array.isArray(maybeJson)) files = maybeJson;\n} catch {}\n\nconst hrefMatches = [...html.matchAll(/(?:href|src)=[\"']([^\"'?#]+\\.(?:jpg|jpeg|png|webp))[\"']/gi)].map((m) => m[1]);\nfiles = files.length ? files : hrefMatches;\n\nconst unique = [...new Set(files)]\n  .map((entry) => {\n    const url = typeof entry === 'string'\n      ? entry\n      : (entry.url ?? entry.href ?? entry.path ?? null);\n    return url;\n  })\n  .filter(Boolean)\n  .map((entry) => {\n    try {\n      return new URL(entry, monitor.snapshot_folder_url).toString();\n    } catch {\n      return null;\n    }\n  })\n  .filter(Boolean)\n  .filter((entry) => /\\.(jpg|jpeg|png|webp)$/i.test(entry));\n\nconst filtered = unique\n  .filter((entry) => {\n    const pattern = monitor.image_selection_rules.filename_match;\n    if (!pattern) return true;\n    return entry.includes(pattern);\n  })\n  .sort((a, b) => b.localeCompare(a))\n  .slice(0, monitor.image_selection_rules.max_images_per_run ?? 25);\n\nreturn filtered.map((imageUrl) => ({\n  json: {\n    study_id: monitor.study_id,\n    building_id: monitor.building_id,\n    zone_ids: monitor.zone_ids,\n    behavior_targets: monitor.behavior_targets,\n    image_id: imageUrl.split('/').pop(),\n    timestamp: new Date().toISOString(),\n    zone_id: monitor.zone_ids[0] ?? null,\n    image_url: imageUrl,\n    setup_instructions: monitor.setup_instructions,\n  }\n}));\n"
       },
-      "id": "code-0100",
+      "id": "c73c5eb9-f468-4411-8f5f-b37b011ba419",
       "name": "Extract Latest Snapshot Links",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        760,
-        280
+        912,
+        1008
       ]
     },
     {
@@ -109,13 +107,13 @@
           }
         }
       },
-      "id": "http-0101",
+      "id": "a61bdae1-23c8-4881-a8e6-bd4780a41596",
       "name": "Analyze Image With Vision Model",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1000,
-        280
+        1152,
+        1008
       ],
       "retryOnFail": true,
       "maxTries": 2,
@@ -124,15 +122,15 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst response = $json.output?.[0]?.content?.[0]?.text ?? $json.output_text ?? $json.output ?? $json;\nlet parsed = response;\nconst studyInput = $items('Extract Latest Snapshot Links', 0, $itemIndex)[0].json;\nlet error = null;\ntry {\n  if (typeof parsed === 'string') parsed = JSON.parse(parsed);\n} catch (e) {\n  error = 'vision_json_parse_failed';\n  parsed = {};\n}\nreturn [{\n  json: {\n    study_id: studyInput.study_id,\n    image_id: studyInput.image_id,\n    timestamp: studyInput.timestamp,\n    zone_id: studyInput.zone_id,\n    detected_behaviors: parsed.detected_behaviors ?? [],\n    confidence_scores: parsed.confidence_scores ?? {},\n    notes: parsed.notes ?? (error ? 'Skipped due to parse failure' : ''),\n    model_version: parsed.model_version ?? ($vars.VISION_MODEL || 'gpt-4.1-mini'),\n    parse_error: error,\n  }\n}];\n"
+        "jsCode": "\nconst response = $json.output?.[0]?.content?.[0]?.text ?? $json.output_text ?? $json.output ?? $json;\nlet parsed = response;\nconst studyInput = $items('Extract Latest Snapshot Links', 0, $itemIndex)[0].json;\nlet error = null;\ntry {\n  if (typeof parsed === 'string') parsed = JSON.parse(parsed);\n} catch (e) {\n  error = 'vision_json_parse_failed';\n  parsed = {};\n}\nreturn [{\n  json: {\n    study_id: studyInput.study_id,\n    image_id: studyInput.image_id,\n    timestamp: studyInput.timestamp,\n    zone_id: studyInput.zone_id,\n    detected_behaviors: parsed.detected_behaviors ?? [],\n    confidence_scores: parsed.confidence_scores ?? {},\n    notes: parsed.notes ?? (error ? 'Skipped due to parse failure' : ''),\n    model_version: parsed.model_version ?? ($env.VISION_MODEL || 'gpt-4.1-mini'),\n    parse_error: error,\n  }\n}];\n"
       },
-      "id": "code-0102",
+      "id": "c67bb7d8-6ccf-40cf-acf6-259b8a21db5a",
       "name": "Parse Detection JSON",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1240,
-        280
+        1392,
+        1008
       ]
     },
     {
@@ -165,13 +163,13 @@
         "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id,\n    image_id: $json.image_id,\n    timestamp: $json.timestamp,\n    zone_id: $json.zone_id,\n    detected_behaviors: $json.detected_behaviors,\n    confidence_scores: $json.confidence_scores,\n    notes: $json.notes,\n    model_version: $json.model_version,\n    created_at: new Date().toISOString()\n  }) }}",
         "options": {}
       },
-      "id": "http-0103",
+      "id": "bd3e9514-4b94-43d9-adc1-f4b3d0fad584",
       "name": "Store Behavior Detections",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1480,
-        280
+        1632,
+        1008
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -182,16 +180,17 @@
       "parameters": {
         "jsCode": "\nconst items = $input.all().map(i => i.json);\nreturn [{\n  json: {\n    detection_log: items,\n    behavior_summary: {\n      images_processed: items.length,\n      behaviors_detected: Array.from(new Set(items.flatMap(i => i.detected_behaviors.map(b => b.name ?? b))))\n    },\n    monitoring_status: {\n      status: 'batch_complete',\n      skipped_images: items.filter(i => i.parse_error).length\n    },\n    study_dataset_reference: {\n      table: 'behavior_detections',\n      study_id: items[0]?.study_id ?? $('Prepare Monitoring Request').item.json.study_id\n    }\n  }\n}];\n"
       },
-      "id": "code-0104",
+      "id": "db947586-3372-409a-a240-d47d1ca162ff",
       "name": "Build Monitoring Status",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1720,
-        280
+        1872,
+        1008
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "When Executed by Orchestrator": {
       "main": [
@@ -271,18 +270,16 @@
       ]
     }
   },
-  "pinData": {},
   "active": false,
   "settings": {
-    "timezone": "America/Phoenix",
-    "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "all",
-    "saveManualExecutions": true,
-    "saveExecutionProgress": true,
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
   },
-  "versionId": "version-0105",
+  "versionId": "3c77cec6-2eaa-4cd8-a6d2-5bc0311a2b6a",
   "meta": {
-    "templateCredsSetupCompleted": false
-  }
+    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+  },
+  "id": "zibVtV1WjTuHz4cj",
+  "tags": []
 }
