@@ -4,30 +4,30 @@
     {
       "parameters": {
         "content": "# Common Services\n- Shared logging, error capture, and live preview aggregation.\n- Can be called directly by the orchestrator or run on a schedule.\n\n# Supported operations\n- `aggregate_preview_metrics`\n- `log_event`\n- `log_error`\n\n# Storage Tables\n- studies\n- study_tasks\n- needfinding_outputs\n- image_events\n- behavior_detections\n- insight_outputs\n- workflow_logs\n- workflow_errors",
-        "width": 760,
         "height": 280,
+        "width": 760,
         "color": 5
       },
-      "id": "sticky-0122",
+      "id": "97b0c4c6-dd72-4161-9ef3-72c237e357fa",
       "name": "Service Notes",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        0,
-        -40
+        4656,
+        1968
       ]
     },
     {
       "parameters": {
         "inputSource": "passthrough"
       },
-      "id": "trigger-0123",
+      "id": "9cf8d153-0531-4610-8ee9-2fd69f02fd54",
       "name": "When Executed by Another Workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        0,
-        320
+        4656,
+        2336
       ]
     },
     {
@@ -41,26 +41,26 @@
           ]
         }
       },
-      "id": "schedule-0124",
+      "id": "6280d614-cc4d-4842-9959-cfa395718a3f",
       "name": "Preview Aggregation Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        0,
-        560
+        4656,
+        2576
       ]
     },
     {
       "parameters": {
         "jsCode": "\nif ($json.command || $json.operation) {\n  return [{ json: { ...$json, operation: $json.operation ?? $json.command } }];\n}\nreturn [{\n  json: {\n    operation: 'aggregate_preview_metrics',\n    scheduled_run: true,\n    triggered_at: new Date().toISOString()\n  }\n}];\n"
       },
-      "id": "code-0125",
+      "id": "9544f686-7f4d-4198-a1ab-2c34b27f2660",
       "name": "Normalize Service Operation",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        260,
-        420
+        4928,
+        2432
       ]
     },
     {
@@ -87,19 +87,18 @@
         },
         "options": {}
       },
-      "id": "if-0127",
+      "id": "d6159852-0d76-405a-a47c-856033f3973d",
       "name": "Aggregate Preview Metrics?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        520,
-        420
+        5184,
+        2432
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
         "sendQuery": true,
         "queryParameters": {
@@ -147,13 +146,13 @@
           }
         }
       },
-      "id": "http-0128",
+      "id": "d3fe23a6-647b-4ae4-870a-e0aac115170d",
       "name": "Fetch Running Studies",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        760,
-        260
+        5424,
+        2272
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -164,13 +163,13 @@
       "parameters": {
         "jsCode": "\nconst studies = Array.isArray($json) ? $json : ($json.body ?? $json.data ?? $json);\nconst rows = Array.isArray(studies) ? studies : [];\nreturn rows.map((study) => ({\n  json: {\n    study_id: study.study_id,\n    preview_status: 'preview',\n    provisional_label: 'data collection in progress',\n    metrics: {\n      latest_detection_count: 0,\n      rolling_behavior_counts: {},\n      latest_updated_at: new Date().toISOString()\n    }\n  }\n}));\n"
       },
-      "id": "code-0129",
+      "id": "fe1b55c4-7798-4bda-bdff-4ad1b6c2d4aa",
       "name": "Build Preview Metrics",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1000,
-        260
+        5664,
+        2272
       ]
     },
     {
@@ -203,13 +202,13 @@
         "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id,\n    status: $json.preview_status,\n    label: $json.provisional_label,\n    metrics: $json.metrics,\n    updated_at: new Date().toISOString()\n  }) }}",
         "options": {}
       },
-      "id": "http-0130",
+      "id": "f01a3be8-5c06-4e56-8a55-4128ce0adf12",
       "name": "Store Preview Metrics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1240,
-        260
+        5904,
+        2272
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -240,13 +239,13 @@
         },
         "options": {}
       },
-      "id": "if-0132",
+      "id": "935180be-fece-41ac-bf68-3618d4300050",
       "name": "Log Event?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        760,
-        520
+        5424,
+        2528
       ],
       "onError": "continueRegularOutput"
     },
@@ -280,13 +279,13 @@
         "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id ?? null,\n    workflow_name: $json.workflow_name ?? 'common_services',\n    node_name: $json.node_name ?? 'unknown',\n    timestamp: new Date().toISOString(),\n    input_reference: $json.input_reference ?? null,\n    output_reference: $json.output_reference ?? null,\n    message: $json.message ?? 'log_event'\n  }) }}",
         "options": {}
       },
-      "id": "http-0133",
+      "id": "cc75d194-3606-49bb-b5a7-6d025ccf80af",
       "name": "Store Workflow Log",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1000,
-        520
+        5664,
+        2528
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -323,13 +322,13 @@
         "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id ?? null,\n    workflow_name: $json.workflow_name ?? 'unknown',\n    node_name: $json.node_name ?? 'unknown',\n    timestamp: new Date().toISOString(),\n    input_reference: $json.input_reference ?? null,\n    error_message: $json.error_message ?? 'unknown_error',\n    retry_count: $json.retry_count ?? 0\n  }) }}",
         "options": {}
       },
-      "id": "http-0134",
+      "id": "d6d1219a-2944-4853-a191-d53b0b89d2ba",
       "name": "Store Workflow Error",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1240,
-        520
+        5904,
+        2528
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -340,16 +339,17 @@
       "parameters": {
         "jsCode": "\nreturn [{\n  json: {\n    operation: $('Normalize Service Operation').item.json.operation,\n    status: 'ok',\n    completed_at: new Date().toISOString()\n  }\n}];\n"
       },
-      "id": "code-0135",
+      "id": "4b0c1325-1ec7-40dd-ba81-24246981898f",
       "name": "Build Service Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1480,
-        420
+        6144,
+        2432
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "When Executed by Another Workflow": {
       "main": [
@@ -476,18 +476,16 @@
       ]
     }
   },
-  "pinData": {},
   "active": false,
   "settings": {
-    "timezone": "America/Phoenix",
-    "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "all",
-    "saveManualExecutions": true,
-    "saveExecutionProgress": true,
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
   },
-  "versionId": "version-0136",
+  "versionId": "f8c2b7a5-0a89-4070-aa12-ce8003ce10b2",
   "meta": {
-    "templateCredsSetupCompleted": false
-  }
+    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+  },
+  "id": "x4kuAOIoKmKyCQ4c",
+  "tags": []
 }

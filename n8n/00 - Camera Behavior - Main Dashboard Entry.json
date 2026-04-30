@@ -4,17 +4,17 @@
     {
       "parameters": {
         "content": "# Thin Main Workflow\n- This is the workflow your website should call.\n- It keeps the canvas small by delegating to the imported Chat Entry workflow.\n- The Chat Entry workflow then delegates to Setup, and Setup delegates to the Orchestrator.\n\n# Important n8n Wiring\n- n8n does not call JSON files directly after import.\n- Open `Call Chat Entry Sub-workflow` and select the imported `01 - Camera Behavior - Chat Entry` workflow.\n- If you prefer environment variables, set `WF_CHAT_ENTRY_ID` to the imported workflow ID.\n\n# Test Payload\n{ \"user_id\": \"user_001\", \"session_id\": \"session_001\", \"message_text\": \"Start a 2 week congestion study in the east lobby with hotspot charts\", \"building_id\": \"bldg_001\" }",
-        "width": 820,
         "height": 340,
+        "width": 820,
         "color": 6
       },
-      "id": "sticky-0036",
+      "id": "7860b689-2e44-4f30-aa70-ba4ed6110673",
       "name": "Main Entry Notes",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         0,
-        -60
+        0
       ]
     },
     {
@@ -24,13 +24,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "webhook-0037",
+      "id": "41b338c7-0c26-4aba-853e-12bcbedad1fc",
       "name": "Website Dashboard Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
         0,
-        300
+        368
       ],
       "webhookId": "hook-0038",
       "onError": "continueRegularOutput"
@@ -39,52 +39,43 @@
       "parameters": {
         "jsCode": "\nconst body = $json.body ?? $json;\nreturn [{\n  json: {\n    user_id: body.user_id ?? null,\n    session_id: body.session_id ?? null,\n    message_text: body.message_text ?? body.message ?? '',\n    building_id: body.building_id ?? null,\n    study_id: body.study_id ?? null,\n    debug_mode: body.debug_mode ?? false,\n    source: 'website_dashboard',\n    received_at: new Date().toISOString(),\n  }\n}];\n"
       },
-      "id": "code-0039",
+      "id": "4acd6b98-e196-4acb-9826-104e3718f97a",
       "name": "Normalize Dashboard Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        260,
-        300
+        272,
+        368
       ]
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
-          "mode": "id",
-          "value": "={{ $vars.WF_CHAT_ENTRY_ID || 'SET_WF_CHAT_ENTRY_ID' }}",
-          "cachedResultName": "01 - Camera Behavior - Chat Entry"
+          "value": "fzgzExOllnFRlBBK",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/fzgzExOllnFRlBBK",
+          "cachedResultName": "BeHappier — 01 - Camera Behavior - Chat Entry"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {
-            "user_id": "={{ $json.user_id }}",
-            "session_id": "={{ $json.session_id }}",
-            "message_text": "={{ $json.message_text }}",
-            "building_id": "={{ $json.building_id }}",
-            "study_id": "={{ $json.study_id }}",
-            "debug_mode": "={{ $json.debug_mode }}",
-            "source": "={{ $json.source }}",
-            "received_at": "={{ $json.received_at }}"
-          },
+          "value": {},
           "matchingColumns": [],
           "schema": [],
           "attemptToConvertTypes": false,
-          "convertFieldsToString": false,
-          "ignoreTypeMismatchErrors": false
+          "convertFieldsToString": true
         },
         "options": {
           "waitForSubWorkflow": true
         }
       },
-      "id": "exec-0040",
+      "id": "5bc0d7c6-6541-41be-9998-a62bebc3cf06",
       "name": "Call Chat Entry Sub-workflow",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        520,
-        300
+        528,
+        368
       ],
       "onError": "continueRegularOutput"
     },
@@ -92,16 +83,17 @@
       "parameters": {
         "jsCode": "\nreturn [{\n  json: {\n    assistant_response_text: $json.assistant_response_text ?? 'I could not complete that request safely.',\n    action_type: $json.action_type ?? 'clarify_request',\n    study_id: $json.study_id ?? null,\n    study_readiness_status: $json.study_readiness_status ?? null,\n    setup_request: $json.setup_request ?? null,\n    dashboard_payload: $json,\n  }\n}];\n"
       },
-      "id": "code-0041",
+      "id": "f8366877-a021-41c6-84c6-ddcecaa35fa6",
       "name": "Return Dashboard Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        780,
-        300
+        784,
+        368
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Website Dashboard Webhook": {
       "main": [
@@ -137,18 +129,16 @@
       ]
     }
   },
-  "pinData": {},
   "active": false,
   "settings": {
-    "timezone": "America/Phoenix",
-    "saveDataErrorExecution": "all",
-    "saveDataSuccessExecution": "all",
-    "saveManualExecutions": true,
-    "saveExecutionProgress": true,
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
   },
-  "versionId": "version-0042",
+  "versionId": "bc42d6bf-633d-4863-81c7-c0a2fa071a17",
   "meta": {
-    "templateCredsSetupCompleted": false
-  }
+    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+  },
+  "id": "9wAmwnukuCi93Z8Q",
+  "tags": []
 }
