@@ -4,42 +4,48 @@ import { SpaceEditor } from "@/components/space/space-editor"
 
 export default async function SpacePage() {
   const supabase = await createClient()
-  
-  // Fetch the first space or create a default one
+
   let { data: space } = await supabase
-    .from('spaces')
-    .select('*')
+    .from("spaces")
+    .select("*")
     .limit(1)
     .single()
 
-  // Fetch zones for the space
   let zones = []
   if (space) {
     const { data } = await supabase
-      .from('zones')
-      .select('*')
-      .eq('space_id', space.id)
-      .order('created_at', { ascending: true })
+      .from("zones")
+      .select("*")
+      .eq("space_id", space.id)
+      .order("created_at", { ascending: true })
     zones = data || []
   }
 
-  // Fetch cameras
+  // Real camera assignments (zone_id → camera record)
   const { data: cameras } = await supabase
-    .from('cameras')
-    .select('*')
+    .from("cameras")
+    .select("*")
+
+  // Available HA cameras to assign
+  const { data: haCameras } = await supabase
+    .from("ha_camera_mappings")
+    .select("*")
+    .eq("is_active", true)
+    .order("ha_friendly_name")
 
   return (
     <div className="flex flex-col h-full">
-      <DashboardHeader 
-        title="Space Builder" 
-        subtitle="Configure your building layout and zones"
+      <DashboardHeader
+        title="Space Builder"
+        subtitle="Configure your building layout, zones, and camera assignments"
       />
-      
+
       <div className="flex-1 p-6 overflow-auto">
-        <SpaceEditor 
-          space={space} 
-          initialZones={zones} 
-          cameras={cameras || []}
+        <SpaceEditor
+          space={space}
+          initialZones={zones}
+          initialCameras={cameras || []}
+          haCameras={haCameras || []}
         />
       </div>
     </div>

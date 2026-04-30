@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils"
 import {
   LayoutDashboard,
   Map,
-  MessageSquare,
   BarChart3,
   FlaskConical,
   Lightbulb,
@@ -42,11 +41,6 @@ const navItems = [
     title: "Insights",
     href: "/dashboard/insights",
     icon: Lightbulb,
-  },
-  {
-    title: "AI Agents",
-    href: "/dashboard/agents",
-    icon: MessageSquare,
   },
 ]
 

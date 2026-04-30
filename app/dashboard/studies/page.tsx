@@ -4,48 +4,45 @@ import { StudiesManager } from "@/components/studies/studies-manager"
 
 export default async function StudiesPage() {
   const supabase = await createClient()
-  
-  // Fetch the space
+
   const { data: space } = await supabase
-    .from('spaces')
-    .select('*')
+    .from("spaces")
+    .select("*")
     .limit(1)
     .single()
 
-  // Fetch studies
-  let studies = []
-  if (space) {
-    const { data } = await supabase
-      .from('studies')
-      .select('*')
-      .eq('space_id', space.id)
-      .order('created_at', { ascending: false })
-    studies = data || []
-  }
+  const { data: beStudies } = await supabase
+    .from("BE_studies")
+    .select("*")
+    .order("created_at", { ascending: false })
 
-  // Fetch zones and metrics for study configuration
   const { data: zones } = await supabase
-    .from('zones')
-    .select('*')
-  
+    .from("zones")
+    .select("*")
+
   const { data: metrics } = await supabase
-    .from('metrics')
-    .select('*')
-    .eq('is_active', true)
+    .from("metrics")
+    .select("*")
+    .eq("is_active", true)
+
+  const { data: cameras } = await supabase
+    .from("cameras")
+    .select("*")
 
   return (
     <div className="flex flex-col h-full">
-      <DashboardHeader 
-        title="Micro-Studies" 
-        subtitle="Run focused analysis sessions to test hypotheses"
+      <DashboardHeader
+        title="Micro-Studies"
+        subtitle="Launch AI-powered behavior studies and track their progress"
       />
-      
+
       <div className="flex-1 p-6 overflow-auto">
-        <StudiesManager 
+        <StudiesManager
           space={space}
-          initialStudies={studies}
+          initialStudies={beStudies || []}
           zones={zones || []}
           metrics={metrics || []}
+          cameras={cameras || []}
         />
       </div>
     </div>

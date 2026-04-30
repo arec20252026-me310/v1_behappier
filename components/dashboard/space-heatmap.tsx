@@ -14,7 +14,7 @@ import {
 import { MapPin, AlertTriangle, ArrowRight } from "lucide-react"
 import { CameraMapIcon } from "@/components/space/camera-map-icon"
 import Link from "next/link"
-import type { Zone, Insight, Space, Study, CameraPlacement } from "@/lib/types"
+import type { Zone, Insight, Space, Study, CameraPlacement, BELivePreviewMetrics } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 interface ZoneWithOccupancy extends Zone {
@@ -28,6 +28,7 @@ interface SpaceHeatmapProps {
   space?: Space | null
   studies?: Study[]
   cameras?: CameraPlacement[]
+  livePreviewMetrics?: BELivePreviewMetrics | null
 }
 
 // Convert zones to include occupancy data (mock data for now)
@@ -72,7 +73,36 @@ function getZoneInsight(zoneId: string, insights: Insight[]): Insight | null {
   ) || null
 }
 
-export function SpaceHeatmap({ zones, insights = [], space, studies = [], cameras: cameraProp = [] }: SpaceHeatmapProps) {
+// Try to extract a zone occupancy percentage (0–100) from live preview metrics.
+// Matches by zone name or zone id (case-insensitive) across common key patterns.
+function getLiveOccupancy(zoneName: string, zoneId: string, metrics: Record<string, unknown>): number | null {
+  const candidates = [
+    (metrics.zone_metrics as Record<string, unknown>)?.[zoneName],
+    (metrics.zone_metrics as Record<string, unknown>)?.[zoneId],
+    (metrics.zone_occupancy as Record<string, unknown>)?.[zoneName],
+    (metrics.zone_occupancy as Record<string, unknown>)?.[zoneId],
+    (metrics.zones as Record<string, unknown>)?.[zoneName],
+    (metrics.zones as Record<string, unknown>)?.[zoneId],
+  ]
+  for (const candidate of candidates) {
+    if (candidate == null) continue
+    if (typeof candidate === "number") return candidate
+    if (typeof candidate === "object") {
+      const obj = candidate as Record<string, unknown>
+      const pct = obj.percentage ?? obj.occupancy_pct ?? obj.pct ?? obj.count
+      if (typeof pct === "number") return pct
+    }
+  }
+  return null
+}
+
+function getLiveHeatmapColor(occupancy: number): string {
+  if (occupancy >= 80) return "rgba(239, 68, 68, 0.45)"   // Red — high
+  if (occupancy >= 50) return "rgba(234, 179, 8, 0.45)"   // Yellow — medium
+  return "rgba(34, 197, 94, 0.35)"                         // Green — low
+}
+
+export function SpaceHeatmap({ zones, insights = [], space, studies = [], cameras: cameraProp = [], livePreviewMetrics = null }: SpaceHeatmapProps) {
   const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
   const [cameras, setCameras] = useState<CameraPlacement[]>(cameraProp)
@@ -139,7 +169,12 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-medium">Occupancy Heatmap</CardTitle>
-            {hasActiveStudy && (
+            {livePreviewMetrics && (
+              <Badge variant="outline" className="text-xs text-blue-400 border-blue-500/50 bg-blue-500/10">
+                Live Preview
+              </Badge>
+            )}
+            {!livePreviewMetrics && hasActiveStudy && (
               <Badge variant="outline" className="text-xs text-green-600 border-green-500/50 bg-green-500/10">
                 Active Study
               </Badge>
@@ -153,16 +188,36 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
         </CardHeader>
         <CardContent>
           {/* Legend */}
-          <div className="flex items-center gap-4 mb-2 text-xs">
-            <span className="text-muted-foreground">Status:</span>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} />
-              <span>Normal</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} />
-              <span>Abnormal</span>
-            </div>
+          <div className="flex items-center gap-4 mb-2 text-xs flex-wrap">
+            {livePreviewMetrics ? (
+              <>
+                <span className="text-muted-foreground">Occupancy:</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} />
+                  <span>Low</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} />
+                  <span>Medium</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded border border-red-400" style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} />
+                  <span>High</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="text-muted-foreground">Status:</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} />
+                  <span>Normal</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} />
+                  <span>Abnormal</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Heatmap Grid with Floor Plan */}
@@ -202,7 +257,18 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
             {zonesWithOccupancy.map((zone) => {
               const zoneInsight = getZoneInsight(zone.id, insights)
               const hasInsight = !!zoneInsight
-              
+
+              // Live preview coloring takes precedence over insight-based coloring
+              const liveOccupancy = livePreviewMetrics
+                ? getLiveOccupancy(zone.name, zone.id, livePreviewMetrics.metrics)
+                : null
+              const bgColor = liveOccupancy !== null
+                ? getLiveHeatmapColor(liveOccupancy)
+                : getHeatmapColor(hasInsight)
+              const borderColor = liveOccupancy !== null
+                ? (liveOccupancy >= 80 ? "rgba(239,68,68,0.8)" : liveOccupancy >= 50 ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
+                : (hasInsight ? "rgba(234, 179, 8, 0.8)" : "rgba(34, 197, 94, 0.4)")
+
               return (
                 <div
                   key={zone.id}
@@ -210,16 +276,16 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
                   className={cn(
                     "absolute rounded-md border transition-all",
                     "hover:scale-[1.02] hover:shadow-lg hover:z-10",
-                    hasInsight && "zone-flashing"
+                    hasInsight && !liveOccupancy && "zone-flashing"
                   )}
                   style={{
                     left: zone.grid_x * CELL_SIZE,
                     top: zone.grid_y * CELL_SIZE,
                     width: zone.grid_width * CELL_SIZE - 2,
                     height: zone.grid_height * CELL_SIZE - 2,
-                    backgroundColor: getHeatmapColor(hasInsight),
-                    borderColor: hasInsight ? "rgba(234, 179, 8, 0.8)" : "rgba(34, 197, 94, 0.4)",
-                    borderWidth: hasInsight ? 2 : 1,
+                    backgroundColor: bgColor,
+                    borderColor,
+                    borderWidth: hasInsight || liveOccupancy !== null ? 2 : 1,
                     cursor: hasInsight ? "pointer" : "default",
                   }}
                 >
