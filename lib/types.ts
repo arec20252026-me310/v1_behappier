@@ -1,5 +1,88 @@
 // Database types for OccupancyIQ
 
+// ── Backend (n8n) types ──────────────────────────────────────────────────────
+
+export type BEStudyStage =
+  | 'draft'
+  | 'planned'
+  | 'needfinding_running'
+  | 'needfinding_complete'
+  | 'monitoring_running'
+  | 'monitoring_paused'
+  | 'milestone_review'
+  | 'monitoring_complete'
+  | 'insights_running'
+  | 'complete'
+  | 'failed'
+
+export interface BEStudy {
+  id: string
+  study_id: string
+  building_id: string | null
+  user_id: string | null
+  session_id: string | null
+  study_goal: string
+  status: string
+  current_stage: BEStudyStage
+  live_preview_status: string | null
+  study_plan: Record<string, unknown>
+  task_graph: Record<string, unknown>
+  graph_plan: Record<string, unknown>
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+  // Partner-added columns — nullable until migration lands:
+  start_date_time?: string | null
+  duration_minutes?: number | null
+}
+
+export interface BEInsightOutput {
+  id: string
+  study_id: string
+  output_mode: 'milestone_summary' | 'final_insights'
+  status: string
+  dashboard_summary: string | null
+  charts: Array<{
+    chart_id: string
+    chart_type: string
+    title: string
+    data: Record<string, unknown>
+  }>
+  tables: Array<{
+    table_id: string
+    title: string
+    columns: string[]
+    rows: unknown[][]
+  }>
+  insights: string[]
+  recommendations: string[]
+  created_at: string
+}
+
+export interface BELivePreviewMetrics {
+  id: string
+  study_id: string
+  status: string
+  label: string | null
+  metrics: Record<string, unknown>
+  updated_at: string
+}
+
+export interface HACameraMapping {
+  id: string
+  camera_id: string | null
+  ha_entity_id: string
+  ha_friendly_name: string | null
+  ha_device_class: string | null
+  snapshot_interval_seconds: number | null
+  is_active: boolean
+  last_snapshot_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ── Frontend types ───────────────────────────────────────────────────────────
+
 export interface Space {
   id: string
   name: string

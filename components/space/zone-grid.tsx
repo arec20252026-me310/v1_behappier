@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useCallback } from "react"
+import { useRef, useState, useCallback, useEffect } from "react"
 import type { Zone, CameraPlacement, CameraDirection } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { CameraMapIcon } from "./camera-map-icon"
@@ -34,6 +34,10 @@ export function ZoneGrid({
   const [resizing, setResizing] = useState<string | null>(null)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [resizeStart, setResizeStart] = useState({ width: 0, height: 0 })
+
+  // Defer camera rendering until after hydration (cameras come from localStorage)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
   // Camera drag state
   const [draggingCamera, setDraggingCamera] = useState<string | null>(null)
@@ -288,7 +292,7 @@ export function ZoneGrid({
           </div>
         ))}
 
-        {/* Camera zone-link lines — drawn for cameras outside their assigned zone */}
+        {/* Camera zone-link lines — only after mount (cameras come from localStorage) */}
         <svg
           className="absolute inset-0 pointer-events-none"
           style={{ width: gridWidth, height: gridHeight, zIndex: 15 }}
@@ -305,7 +309,7 @@ export function ZoneGrid({
               <path d="M0,0 L6,3 L0,6 Z" fill="rgba(99,179,237,0.7)" />
             </marker>
           </defs>
-          {cameras.map((cam) => {
+          {mounted && cameras.map((cam) => {
             const insideZone = getCameraZone(cam)
             const assignedZone = zones.find(z => z.id === cam.zoneId)
             // Draw link line only if camera is outside its assigned zone
@@ -344,8 +348,8 @@ export function ZoneGrid({
           })}
         </svg>
 
-        {/* Camera icons — draggable, right-click to rotate */}
-        {cameras.map((cam) => {
+        {/* Camera icons — only after mount (cameras come from localStorage) */}
+        {mounted && cameras.map((cam) => {
           const isCamSelected = selectedCamera === cam.id
           const ICON_SIZE = 28
           return (
@@ -375,8 +379,8 @@ export function ZoneGrid({
           )
         })}
 
-        {/* Hint text when a camera is selected */}
-        {selectedCamera && (
+        {/* Hint text when a camera is selected — only after mount */}
+        {mounted && selectedCamera && (
           <div
             className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[9px] text-muted-foreground bg-background/80 px-2 py-1 rounded pointer-events-none"
             style={{ zIndex: 40 }}

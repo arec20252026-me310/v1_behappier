@@ -7,61 +7,100 @@ import { OccupancyChart } from "@/components/dashboard/occupancy-chart"
 import { ZoneOverview } from "@/components/dashboard/zone-overview"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
 
+// BE stages considered "running" for the metric card count
+const ACTIVE_STAGES = [
+  "planned",
+  "needfinding_running",
+  "needfinding_complete",
+  "monitoring_running",
+  "monitoring_paused",
+  "milestone_review",
+  "monitoring_complete",
+  "insights_running",
+]
+
 export default async function DashboardPage() {
   const supabase = await createClient()
-  
-  // Fetch space data
-  const { data: spaces } = await supabase
-    .from('spaces')
-    .select('*')
+
+  // Space & zones (frontend tables — used for layout/heatmap display)
+  const { data: space } = await supabase
+    .from("spaces")
+    .select("*")
     .limit(1)
     .single()
 
-  // Fetch zones for the space
   const { data: zones } = await supabase
-    .from('zones')
-    .select('*')
-    .order('created_at', { ascending: false })
+    .from("zones")
+    .select("*")
+    .order("created_at", { ascending: false })
 
-  // Fetch active studies
-  const { data: studies } = await supabase
-    .from('studies')
-    .select('*')
-    .in('status', ['active', 'draft'])
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  // Fetch recent insights
-  const { data: insights } = await supabase
-    .from('insights')
-    .select('*')
-    .eq('is_acknowledged', false)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  // Fetch metrics
+  // Metrics (frontend table)
   const { data: metrics } = await supabase
-    .from('metrics')
-    .select('*')
-    .eq('is_active', true)
+    .from("metrics")
+    .select("*")
+    .eq("is_active", true)
+
+  // BE_studies — active pipeline studies for the dashboard widget and count
+  const { data: beStudies } = await supabase
+    .from("BE_studies")
+    .select("*")
+    .in("current_stage", ACTIVE_STAGES)
+    .order("created_at", { ascending: false })
+    .limit(5)
+
+  // BE_insight_outputs — for Recent Insights widget and count
+  const { data: beInsights } = await supabase
+    .from("BE_insight_outputs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(5)
+
+  // BE_live_preview_metrics — most recent preview for any active study
+  const activeStudyIds = (beStudies || [])
+    .filter(s => s.current_stage === "monitoring_running")
+    .map(s => s.study_id)
+
+  let livePreviewMetrics = null
+  if (activeStudyIds.length > 0) {
+    const { data: preview } = await supabase
+      .from("BE_live_preview_metrics")
+      .select("*")
+      .in("study_id", activeStudyIds)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .single()
+    livePreviewMetrics = preview ?? null
+  }
+
+  // Insight count: total distinct insight strings across all outputs
+  const insightsCount = (beInsights || []).reduce(
+    (sum, o) => sum + (o.insights?.length ?? 0),
+    0
+  )
 
   return (
     <div className="flex flex-col h-full">
-      <DashboardHeader 
-        title="Dashboard" 
-        subtitle={spaces?.name || "Get started by setting up your space"}
+      <DashboardHeader
+        title="Dashboard"
+        subtitle={space?.name || "Get started by setting up your space"}
       />
-      
+
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         <MetricCards
           zonesCount={zones?.length || 0}
-          studiesCount={studies?.length || 0}
-          insightsCount={insights?.length || 0}
+          studiesCount={beStudies?.length || 0}
+          insightsCount={insightsCount}
           metricsCount={metrics?.length || 0}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SpaceHeatmap zones={zones || []} insights={insights || []} space={spaces} studies={studies || []} />
+          <SpaceHeatmap
+            zones={zones || []}
+            insights={[]}
+            space={space}
+            studies={[]}
+            livePreviewMetrics={livePreviewMetrics}
+          />
           <OccupancyChart />
         </div>
 
@@ -70,8 +109,8 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActiveStudies studies={studies || []} />
-          <RecentInsights insights={insights || []} />
+          <ActiveStudies studies={beStudies || []} />
+          <RecentInsights outputs={beInsights || []} />
         </div>
       </div>
     </div>
