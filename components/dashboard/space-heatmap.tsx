@@ -14,7 +14,7 @@ import {
 import { MapPin, AlertTriangle, ArrowRight } from "lucide-react"
 import { CameraMapIcon } from "@/components/space/camera-map-icon"
 import Link from "next/link"
-import type { Zone, Insight, Space, Study, CameraPlacement, BELivePreviewMetrics } from "@/lib/types"
+import type { Zone, Insight, Space, Study, CameraPlacement, BELivePreviewMetrics, BEInsightOutput, BEStudy } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 interface ZoneWithOccupancy extends Zone {
@@ -29,41 +29,27 @@ interface SpaceHeatmapProps {
   studies?: Study[]
   cameras?: CameraPlacement[]
   livePreviewMetrics?: BELivePreviewMetrics | null
+  completedStudy?: BEStudy | null
+  completedStudyInsights?: BEInsightOutput | null
 }
 
-// Convert zones to include occupancy data (mock data for now)
+interface BEInsightSelection {
+  zoneName: string
+  insights: string[]
+  recommendations: string[]
+  summary: string | null
+}
+
 function getZonesWithOccupancy(zones: Zone[]): ZoneWithOccupancy[] {
-  // Mock occupancy data - Zone 2 has high occupancy to match the insight
-  const mockOccupancy: Record<string, { current: number; percentage: number }> = {
-    "Zone 1": { current: 8, percentage: 45 },
-    "Zone 2": { current: 28, percentage: 92 }, // High occupancy - matches insight
-    "Zone 3": { current: 5, percentage: 35 },
-    "Zone 4": { current: 12, percentage: 60 },
-    "Zone 5": { current: 3, percentage: 20 },
-  }
-
-  return zones.map((zone) => {
-    const occupancy = mockOccupancy[zone.name] || { current: 0, percentage: 0 }
-    return {
-      ...zone,
-      currentOccupancy: occupancy.current,
-      occupancyPercentage: occupancy.percentage,
-    }
-  })
+  return zones.map((zone) => ({ ...zone, currentOccupancy: 0, occupancyPercentage: 0 }))
 }
 
-// Two-state color: green = Normal, yellow = Abnormal (has active insight)
 function getHeatmapColor(hasInsight: boolean): string {
   return hasInsight
-    ? "rgba(234, 179, 8, 0.45)"   // Yellow - Abnormal
-    : "rgba(34, 197, 94, 0.35)"   // Green - Normal
+    ? "rgba(234, 179, 8, 0.45)"
+    : "rgba(34, 197, 94, 0.35)"
 }
 
-function getTextColor(hasInsight: boolean): string {
-  return hasInsight ? "text-foreground" : "text-foreground"
-}
-
-// Check if a zone has an unacknowledged critical/warning insight
 function getZoneInsight(zoneId: string, insights: Insight[]): Insight | null {
   return insights.find(
     (insight) =>
@@ -73,8 +59,6 @@ function getZoneInsight(zoneId: string, insights: Insight[]): Insight | null {
   ) || null
 }
 
-// Try to extract a zone occupancy percentage (0–100) from live preview metrics.
-// Matches by zone name or zone id (case-insensitive) across common key patterns.
 function getLiveOccupancy(zoneName: string, zoneId: string, metrics: Record<string, unknown>): number | null {
   const candidates = [
     (metrics.zone_metrics as Record<string, unknown>)?.[zoneName],
@@ -97,38 +81,46 @@ function getLiveOccupancy(zoneName: string, zoneId: string, metrics: Record<stri
 }
 
 function getLiveHeatmapColor(occupancy: number): string {
-  if (occupancy >= 80) return "rgba(239, 68, 68, 0.45)"   // Red — high
-  if (occupancy >= 50) return "rgba(234, 179, 8, 0.45)"   // Yellow — medium
-  return "rgba(34, 197, 94, 0.35)"                         // Green — low
+  if (occupancy >= 80) return "rgba(239, 68, 68, 0.45)"
+  if (occupancy >= 50) return "rgba(234, 179, 8, 0.45)"
+  return "rgba(34, 197, 94, 0.35)"
 }
 
-export function SpaceHeatmap({ zones, insights = [], space, studies = [], cameras: cameraProp = [], livePreviewMetrics = null }: SpaceHeatmapProps) {
+export function SpaceHeatmap({
+  zones,
+  insights = [],
+  space,
+  studies = [],
+  cameras: cameraProp = [],
+  livePreviewMetrics = null,
+  completedStudy = null,
+  completedStudyInsights = null,
+}: SpaceHeatmapProps) {
   const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
+  const [selectedBEInsight, setSelectedBEInsight] = useState<BEInsightSelection | null>(null)
   const [cameras, setCameras] = useState<CameraPlacement[]>(cameraProp)
 
   useEffect(() => {
-    setHasActiveStudy(studies.some(s => s.status === 'active'))
+    setHasActiveStudy(studies.some(s => s.status === "active"))
   }, [studies])
 
   useEffect(() => {
-    // Load camera placements from localStorage (set by SpaceEditor)
     try {
-      const key = `camera-placements-${space?.id ?? 'default'}`
+      const key = `camera-placements-${space?.id ?? "default"}`
       const stored = localStorage.getItem(key)
-      if (stored) {
-        setCameras(JSON.parse(stored))
-      }
+      if (stored) setCameras(JSON.parse(stored))
     } catch {}
   }, [space?.id])
+
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
-  
   const gridResolution = space?.grid_resolution || 8
   const floorPlanUrl = space?.floor_plan_url
-  
-  // Calculate cell size based on grid resolution - fit within 400px
   const CONTAINER_SIZE = 500
   const CELL_SIZE = Math.floor(CONTAINER_SIZE / gridResolution)
+
+  // Zone highlighted by a completed study (from metadata.monitored_zone_id)
+  const monitoredZoneId = completedStudy?.metadata?.monitored_zone_id as string | undefined
 
   if (zones.length === 0) {
     return (
@@ -154,14 +146,26 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
   }
 
   const handleZoneClick = (zone: ZoneWithOccupancy) => {
-    const insight = getZoneInsight(zone.id, insights)
-    if (insight) {
-      setSelectedInsight(insight)
+    // Completed study insight takes priority
+    if (monitoredZoneId === zone.id && completedStudyInsights) {
+      setSelectedBEInsight({
+        zoneName: zone.name,
+        insights: completedStudyInsights.insights,
+        recommendations: completedStudyInsights.recommendations,
+        summary: completedStudyInsights.dashboard_summary,
+      })
+      return
     }
+    // Legacy frontend Insight
+    const insight = getZoneInsight(zone.id, insights)
+    if (insight) setSelectedInsight(insight)
   }
 
-  const gridWidth = gridResolution * CELL_SIZE
+  const gridWidth  = gridResolution * CELL_SIZE
   const gridHeight = gridResolution * CELL_SIZE
+
+  // Is the completed-study mode active (no live monitoring)?
+  const hasCompletedInsights = !!monitoredZoneId && !!completedStudyInsights && !livePreviewMetrics
 
   return (
     <>
@@ -174,100 +178,85 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
                 Live Preview
               </Badge>
             )}
-            {!livePreviewMetrics && hasActiveStudy && (
+            {hasCompletedInsights && (
+              <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-500/50 bg-yellow-500/10">
+                Insights Ready
+              </Badge>
+            )}
+            {!livePreviewMetrics && !hasCompletedInsights && hasActiveStudy && (
               <Badge variant="outline" className="text-xs text-green-600 border-green-500/50 bg-green-500/10">
                 Active Study
               </Badge>
             )}
           </div>
           <Link href="/dashboard/space">
-            <Button variant="ghost" size="sm" className="text-xs">
-              Edit Space
-            </Button>
+            <Button variant="ghost" size="sm" className="text-xs">Edit Space</Button>
           </Link>
         </CardHeader>
+
         <CardContent>
           {/* Legend */}
           <div className="flex items-center gap-4 mb-2 text-xs flex-wrap">
             {livePreviewMetrics ? (
               <>
                 <span className="text-muted-foreground">Occupancy:</span>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} />
-                  <span>Low</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} />
-                  <span>Medium</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded border border-red-400" style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} />
-                  <span>High</span>
-                </div>
+                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
+                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
+                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-red-400" style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
               </>
             ) : (
               <>
                 <span className="text-muted-foreground">Status:</span>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} />
-                  <span>Normal</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} />
-                  <span>Abnormal</span>
-                </div>
+                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Normal</span></div>
+                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Abnormal — click for insight</span></div>
               </>
             )}
           </div>
 
-          {/* Heatmap Grid with Floor Plan */}
+          {/* Grid */}
           <div
             className="relative rounded-lg overflow-hidden mx-auto border border-border"
-            style={{
-              width: gridWidth,
-              height: gridHeight,
-            }}
+            style={{ width: gridWidth, height: gridHeight }}
           >
-            {/* Floor plan background */}
             {floorPlanUrl ? (
               <img
                 src={floorPlanUrl}
                 alt="Floor plan"
                 className="absolute inset-0 w-full h-full object-contain opacity-50"
-                style={{ pointerEvents: 'none' }}
+                style={{ pointerEvents: "none" }}
                 crossOrigin="anonymous"
               />
             ) : (
               <div className="absolute inset-0 bg-secondary/20" />
             )}
 
-            {/* Grid overlay */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
                 backgroundImage: `
-                  linear-gradient(to right, rgba(100, 100, 100, ${floorPlanUrl ? '0.15' : '0.25'}) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(100, 100, 100, ${floorPlanUrl ? '0.15' : '0.25'}) 1px, transparent 1px)
+                  linear-gradient(to right, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px)
                 `,
                 backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`,
               }}
             />
 
-            {/* Zones with heatmap colors */}
             {zonesWithOccupancy.map((zone) => {
-              const zoneInsight = getZoneInsight(zone.id, insights)
-              const hasInsight = !!zoneInsight
+              const legacyInsight = getZoneInsight(zone.id, insights)
+              const isBEInsightZone = hasCompletedInsights && zone.id === monitoredZoneId
+              const hasAnyInsight = !!legacyInsight || isBEInsightZone
 
-              // Live preview coloring takes precedence over insight-based coloring
               const liveOccupancy = livePreviewMetrics
                 ? getLiveOccupancy(zone.name, zone.id, livePreviewMetrics.metrics)
                 : null
+
               const bgColor = liveOccupancy !== null
                 ? getLiveHeatmapColor(liveOccupancy)
-                : getHeatmapColor(hasInsight)
+                : getHeatmapColor(hasAnyInsight)
+
               const borderColor = liveOccupancy !== null
                 ? (liveOccupancy >= 80 ? "rgba(239,68,68,0.8)" : liveOccupancy >= 50 ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
-                : (hasInsight ? "rgba(234, 179, 8, 0.8)" : "rgba(34, 197, 94, 0.4)")
+                : (hasAnyInsight ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
 
               return (
                 <div
@@ -276,7 +265,7 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
                   className={cn(
                     "absolute rounded-md border transition-all",
                     "hover:scale-[1.02] hover:shadow-lg hover:z-10",
-                    hasInsight && !liveOccupancy && "zone-flashing"
+                    hasAnyInsight && !liveOccupancy && "zone-flashing"
                   )}
                   style={{
                     left: zone.grid_x * CELL_SIZE,
@@ -285,20 +274,20 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
                     height: zone.grid_height * CELL_SIZE - 2,
                     backgroundColor: bgColor,
                     borderColor,
-                    borderWidth: hasInsight || liveOccupancy !== null ? 2 : 1,
-                    cursor: hasInsight ? "pointer" : "default",
+                    borderWidth: hasAnyInsight || liveOccupancy !== null ? 2 : 1,
+                    cursor: hasAnyInsight ? "pointer" : "default",
+                    boxShadow: isBEInsightZone && !liveOccupancy
+                      ? "0 0 18px rgba(234,179,8,0.5), 0 0 36px rgba(234,179,8,0.2)"
+                      : undefined,
                   }}
                 >
-                  <div className={cn("p-1 h-full flex flex-col justify-between", getTextColor(hasInsight))}>
+                  <div className="p-1 h-full flex flex-col justify-between text-foreground">
                     <div className="flex items-center gap-1">
-                      <span 
-                        className="text-[10px] font-medium truncate leading-tight"
-                        style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
-                      >
+                      <span className="text-[10px] font-medium truncate leading-tight" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                         {zone.name}
                       </span>
-                      {hasInsight && (
-                        <AlertTriangle className="h-2.5 w-2.5 text-white animate-pulse shrink-0" />
+                      {hasAnyInsight && !liveOccupancy && (
+                        <AlertTriangle className="h-2.5 w-2.5 text-yellow-400 animate-pulse shrink-0" />
                       )}
                     </div>
                   </div>
@@ -306,38 +295,28 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
               )
             })}
 
-            {/* Camera icons — read-only overlay, positions scaled from builder cell size */}
             {cameras.map((cam) => {
-              // Builder uses: cellSize = Math.max(30, Math.min(60, 480 / gridResolution))
               const builderCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
               const scale = CELL_SIZE / builderCellSize
               return (
                 <div
                   key={cam.id}
                   className="absolute pointer-events-none"
-                  style={{
-                    left: cam.x * scale,
-                    top: cam.y * scale,
-                    zIndex: 20,
-                    transform: "translate(-50%, -50%)",
-                  }}
+                  style={{ left: cam.x * scale, top: cam.y * scale, zIndex: 20, transform: "translate(-50%, -50%)" }}
                 >
-                  <CameraMapIcon
-                    direction={cam.direction}
-                    size={18}
-                    label={cam.label}
-                    showLabel={false}
-                  />
+                  <CameraMapIcon direction={cam.direction} size={18} label={cam.label} showLabel={false} />
                 </div>
               )
             })}
           </div>
 
-          {/* Summary Stats */}
+          {/* Stats row */}
           <div className="mt-4 text-center">
             <div className="p-2 rounded-lg bg-secondary/50 inline-block min-w-[100px]">
               <p className="text-lg font-semibold text-yellow-500">
-                {zonesWithOccupancy.filter(z => !!getZoneInsight(z.id, insights)).length}
+                {zonesWithOccupancy.filter(z =>
+                  !!getZoneInsight(z.id, insights) || (hasCompletedInsights && z.id === monitoredZoneId)
+                ).length}
               </p>
               <p className="text-[10px] text-muted-foreground">Abnormal Zones</p>
             </div>
@@ -345,36 +324,23 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
         </CardContent>
       </Card>
 
-      {/* Insight Modal */}
+      {/* Legacy Insight dialog */}
       <Dialog open={!!selectedInsight} onOpenChange={(open) => !open && setSelectedInsight(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-2">
-              <div className={cn(
-                "p-1.5 rounded-full",
-                selectedInsight?.severity === "critical" ? "bg-destructive/20" : "bg-warning/20"
-              )}>
-                <AlertTriangle className={cn(
-                  "h-4 w-4",
-                  selectedInsight?.severity === "critical" ? "text-destructive" : "text-warning"
-                )} />
+              <div className={cn("p-1.5 rounded-full", selectedInsight?.severity === "critical" ? "bg-destructive/20" : "bg-warning/20")}>
+                <AlertTriangle className={cn("h-4 w-4", selectedInsight?.severity === "critical" ? "text-destructive" : "text-warning")} />
               </div>
-              <Badge 
-                variant={selectedInsight?.severity === "critical" ? "destructive" : "outline"}
-                className="text-xs"
-              >
+              <Badge variant={selectedInsight?.severity === "critical" ? "destructive" : "outline"} className="text-xs">
                 {selectedInsight?.severity?.toUpperCase()}
               </Badge>
             </div>
-            <DialogTitle className="text-lg font-semibold mt-2">
-              {selectedInsight?.title}
-            </DialogTitle>
+            <DialogTitle className="text-lg font-semibold mt-2">{selectedInsight?.title}</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground mt-2 leading-relaxed">
               {selectedInsight?.description}
             </DialogDescription>
           </DialogHeader>
-
-          {/* Action Items Preview */}
           {selectedInsight?.action_items && selectedInsight.action_items.length > 0 && (
             <div className="mt-4 space-y-2">
               <p className="text-xs font-medium text-muted-foreground">Recommended Actions:</p>
@@ -386,20 +352,71 @@ export function SpaceHeatmap({ zones, insights = [], space, studies = [], camera
                   </li>
                 ))}
                 {selectedInsight.action_items.length > 2 && (
-                  <li className="text-xs text-muted-foreground pl-3.5">
-                    +{selectedInsight.action_items.length - 2} more actions
-                  </li>
+                  <li className="text-xs text-muted-foreground pl-3.5">+{selectedInsight.action_items.length - 2} more</li>
                 )}
               </ul>
             </div>
           )}
-
-          {/* Read More Link */}
           <div className="mt-6 flex justify-end">
             <Link href="/dashboard/insights">
-              <Button variant="default" size="sm" className="gap-2">
-                Read More
-                <ArrowRight className="h-4 w-4" />
+              <Button variant="default" size="sm" className="gap-2">Read More<ArrowRight className="h-4 w-4" /></Button>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* BE Insight dialog (from completed study) */}
+      <Dialog open={!!selectedBEInsight} onOpenChange={(open) => !open && setSelectedBEInsight(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-full bg-yellow-500/20">
+                <AlertTriangle className="h-4 w-4 text-yellow-400" />
+              </div>
+              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Study Complete</Badge>
+            </div>
+            <DialogTitle className="text-lg font-semibold mt-2">
+              {selectedBEInsight?.zoneName} — Insights
+            </DialogTitle>
+            {selectedBEInsight?.summary && (
+              <DialogDescription className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                {selectedBEInsight.summary}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {selectedBEInsight?.insights && selectedBEInsight.insights.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Key Findings:</p>
+              <ul className="space-y-1.5">
+                {selectedBEInsight.insights.map((insight, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 mt-1.5 shrink-0" />
+                    <span>{insight}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {selectedBEInsight?.recommendations && selectedBEInsight.recommendations.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Recommendations:</p>
+              <ul className="space-y-1.5">
+                {selectedBEInsight.recommendations.slice(0, 2).map((rec, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-1.5 shrink-0" />
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="mt-6 flex justify-end">
+            <Link href="/dashboard/insights">
+              <Button variant="default" size="sm" className="gap-2" onClick={() => setSelectedBEInsight(null)}>
+                View Full Report<ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
