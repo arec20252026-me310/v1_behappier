@@ -7,7 +7,6 @@ import { OccupancyChart } from "@/components/dashboard/occupancy-chart"
 import { ZoneOverview } from "@/components/dashboard/zone-overview"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
 
-// BE stages considered "running" for the metric card count
 const ACTIVE_STAGES = [
   "planned",
   "needfinding_running",
@@ -22,25 +21,16 @@ const ACTIVE_STAGES = [
 export default async function DashboardPage() {
   const supabase = await createClient()
 
-  // Space & zones (frontend tables — used for layout/heatmap display)
-  const { data: space } = await supabase
-    .from("spaces")
-    .select("*")
-    .limit(1)
-    .single()
+  const { data: space } = await supabase.from("spaces").select("*").limit(1).single()
 
   const { data: zones } = await supabase
     .from("zones")
     .select("*")
     .order("created_at", { ascending: false })
 
-  // Metrics (frontend table)
-  const { data: metrics } = await supabase
-    .from("metrics")
-    .select("*")
-    .eq("is_active", true)
+  const { data: metrics } = await supabase.from("metrics").select("*").eq("is_active", true)
 
-  // BE_studies — active pipeline studies for the dashboard widget and count
+  // Active pipeline studies (for widgets + count)
   const { data: beStudies } = await supabase
     .from("BE_studies")
     .select("*")
@@ -48,14 +38,38 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(5)
 
-  // BE_insight_outputs — for Recent Insights widget and count
+  // Completed studies — for heatmap zone highlights
+  const { data: completedStudies } = await supabase
+    .from("BE_studies")
+    .select("*")
+    .eq("status", "complete")
+    .order("created_at", { ascending: false })
+    .limit(1)
+
+  const completedStudy = completedStudies?.[0] ?? null
+
+  // BE insight outputs — for Recent Insights widget and completed study heatmap
   const { data: beInsights } = await supabase
     .from("BE_insight_outputs")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(5)
 
-  // BE_live_preview_metrics — most recent preview for any active study
+  // Most recent insight for the completed study (for heatmap dialog)
+  let completedStudyInsights = null
+  if (completedStudy) {
+    const { data: studyInsight } = await supabase
+      .from("BE_insight_outputs")
+      .select("*")
+      .eq("study_id", completedStudy.study_id)
+      .eq("output_mode", "final_insights")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single()
+    completedStudyInsights = studyInsight ?? null
+  }
+
+  // Live preview metrics for monitoring_running studies
   const activeStudyIds = (beStudies || [])
     .filter(s => s.current_stage === "monitoring_running")
     .map(s => s.study_id)
@@ -72,7 +86,6 @@ export default async function DashboardPage() {
     livePreviewMetrics = preview ?? null
   }
 
-  // Insight count: total distinct insight strings across all outputs
   const insightsCount = (beInsights || []).reduce(
     (sum, o) => sum + (o.insights?.length ?? 0),
     0
@@ -100,6 +113,8 @@ export default async function DashboardPage() {
             space={space}
             studies={[]}
             livePreviewMetrics={livePreviewMetrics}
+            completedStudy={completedStudy}
+            completedStudyInsights={completedStudyInsights}
           />
           <OccupancyChart />
         </div>
