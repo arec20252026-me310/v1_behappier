@@ -14,9 +14,9 @@ export const KITCHEN_ID = "4a1fd84a-8805-49c2-b6bc-6552519ad18b"
 export const STUDY_ID   = "study_test_001"
 
 // Synthetic UUIDs for seed-created rows (deletable without touching real rows)
-export const SEED_BE_STUDY_ID   = "00000000-seed-0000-0000-be_study00001"
-export const SEED_LIVE_ID       = "00000000-seed-0000-0000-livemetric001"
-export const SEED_INSIGHT_ID    = "00000000-seed-0000-0000-insightout001"
+export const SEED_BE_STUDY_ID   = "00000000-0000-0000-0000-000000000001"
+export const SEED_LIVE_ID       = "00000000-0000-0000-0000-000000000002"
+export const SEED_INSIGHT_ID    = "00000000-0000-0000-0000-000000000003"
 
 // ── Zones ────────────────────────────────────────────────────────────────────
 export const ZONES = [

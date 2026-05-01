@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "npx tsx scripts/seed.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.160",
