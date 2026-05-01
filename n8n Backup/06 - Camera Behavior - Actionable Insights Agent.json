@@ -41,7 +41,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst studyId = $json.study_id ?? 'study_test_001';\nconst outputMode = $json.output_mode ?? 'final_insights';\nconst supabaseUrl = $vars.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $vars.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\nconst headers = { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json' };\nconst studyRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(studyId) + '&limit=1', headers });\nconst study = Array.isArray(studyRes) ? studyRes[0] : null;\nif (!study) throw new Error('Study not found: ' + studyId);\nconst detectionsRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_behavior_detections?study_id=eq.' + encodeURIComponent(studyId) + '&order=timestamp.asc&limit=1000', headers });\nconst detections = Array.isArray(detectionsRes) ? detectionsRes : [];\nreturn [{ json: { study_id: studyId, output_mode: outputMode, study_plan: study.study_plan ?? {}, graph_plan: study.graph_plan ?? {}, instructions: study.metadata?.instructions ?? '', detection_log: detections.map(d => ({ study_id: d.study_id, image_id: d.image_id, timestamp: d.timestamp, zone_id: d.zone_id, detected_behaviors: d.detected_behaviors ?? [], confidence_scores: d.confidence_scores ?? {}, notes: d.notes ?? '', model_version: d.model_version ?? '', parse_error: null })) } }];\n"
+        "jsCode": "\nconst studyId = $json.study_id ?? 'study_test_001';\nconst outputMode = $json.output_mode ?? 'final_insights';\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\nconst headers = { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json' };\nconst studyRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(studyId) + '&limit=1', headers });\nconst study = Array.isArray(studyRes) ? studyRes[0] : null;\nif (!study) throw new Error('Study not found: ' + studyId);\nconst detectionsRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_behavior_detections?study_id=eq.' + encodeURIComponent(studyId) + '&order=timestamp.asc&limit=1000', headers });\nconst detections = Array.isArray(detectionsRes) ? detectionsRes : [];\nreturn [{ json: { study_id: studyId, output_mode: outputMode, study_plan: study.study_plan ?? {}, graph_plan: study.graph_plan ?? {}, instructions: study.metadata?.instructions ?? '', detection_log: detections.map(d => ({ study_id: d.study_id, image_id: d.image_id, timestamp: d.timestamp, zone_id: d.zone_id, detected_behaviors: d.detected_behaviors ?? [], confidence_scores: d.confidence_scores ?? {}, notes: d.notes ?? '', model_version: d.model_version ?? '', parse_error: null })) } }];\n"
       },
       "id": "47ec55bb-f9ea-4c19-9dc2-dddfeca94d6e",
       "name": "Fetch Study Data from Supabase",
@@ -61,7 +61,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{$vars.OPENAI_API_KEY}}"
+              "value": "=Bearer {{$env.OPENAI_API_KEY}}"
             },
             {
               "name": "Content-Type",
@@ -229,17 +229,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ ($vars.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_insight_outputs' }}",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_insight_outputs' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "apikey",
-              "value": "={{ $vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{$vars.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
             },
             {
               "name": "Content-Type",

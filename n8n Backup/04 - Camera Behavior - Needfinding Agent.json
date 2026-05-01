@@ -1,0 +1,422 @@
+{
+  "name": "04 - Camera Behavior - Needfinding Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Needfinding Agent\n- Uses a tool-capable AI agent for literature/web search.\n- Returns only structured behavior targets and evidence.\n- Never analyzes images.\n\n# Test Case\n{ \"user_goal\": \"Find congestion issues in an office lobby\", \"building_context\": \"office lobby with entry turnstiles\", \"study_questions\": [\"Where does crowding occur?\", \"When are peak surges?\"], \"desired_outcome\": \"behavior targets for vision monitoring\" }",
+        "height": 240,
+        "width": 760,
+        "color": 2
+      },
+      "id": "31c9733c-547c-4ccd-b2c5-0f609e50343e",
+      "name": "Needfinding Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "4fbb401b-0e76-442f-9d6a-efe59dae0f1b",
+      "name": "When Executed by Orchestrator",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{\n  json: {\n    needfinding_prompt: JSON.stringify($json, null, 2),\n    source_payload: $json\n  }\n}];\n"
+      },
+      "id": "d12f6929-1c57-4d16-98ae-a7e0c465b663",
+      "name": "Prepare Needfinding Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.needfinding_prompt }}",
+        "options": {
+          "systemMessage": "You are the literature-grounded behavior relevance specialist.\nGiven the study goal and building context, identify which occupant behaviors matter and how they relate to building conditions and study objectives.\nYou do not analyze images.\nYou do not communicate directly with the Behavior Monitoring Agent or the Actionable Insights Agent.\nYour outputs are returned to the Study Orchestrator only.\nAlways search before answering.\nReturn JSON only with:\n- needfinding_summary\n- behavior_targets\n- evidence_notes\n- building_relevance_notes\n\nEach behavior target must include:\n- behavior_name\n- why_it_matters\n- likely_building_interpretation\n- confidence\n- evidence_summary\n- detection_hint_for_vision_agent",
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "0bf716bb-ac62-497f-b970-32b1638af3a4",
+      "name": "Needfinding Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        528,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "05679660-44c4-4b4b-8af0-7aee2c5ead24",
+      "name": "Needfinding Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        560
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kZpqcM3SJ8maViAy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Search authoritative web and literature sources about occupant behavior, congestion, utilization, collaboration, thermal comfort proxies, and building performance. Use this before finalizing behavior targets.",
+        "method": "POST",
+        "url": "={{ $env.RESEARCH_SEARCH_URL || 'https://api.tavily.com/search' }}",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {}
+          ]
+        },
+        "sendBody": true,
+        "parametersBody": {
+          "values": [
+            {
+              "name": "query"
+            },
+            {
+              "name": "search_depth",
+              "valueProvider": "fieldValue",
+              "value": "advanced"
+            },
+            {
+              "name": "max_results",
+              "valueProvider": "fieldValue",
+              "value": "5"
+            },
+            {
+              "name": "include_raw_content",
+              "valueProvider": "fieldValue",
+              "value": "true"
+            },
+            {
+              "name": "include_domains",
+              "valueProvider": "fieldValue",
+              "value": "=[\"ashrae.org\",\"cbe.berkeley.edu\",\"nih.gov\",\"nature.com\",\"sciencedirect.com\",\"mdpi.com\"]"
+            }
+          ]
+        },
+        "optimizeResponse": true,
+        "dataField": "results"
+      },
+      "id": "7785656f-ea55-4b3c-b1ad-80e0fd4dc12b",
+      "name": "Literature Search Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try {\n    parsed = JSON.parse(parsed);\n  } catch (error) {\n    errors.push('json_parse_failed');\n  }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"needfinding_summary\",\"behavior_targets\",\"evidence_notes\",\"building_relevance_notes\"]) {\n  if (!(field in parsed)) errors.push(`missing_${field}`);\n}\nreturn [{\n  json: {\n    raw_ai_output: output,\n    parsed_output: parsed,\n    validation_passed: errors.length === 0,\n    validation_errors: errors,\n  }\n}];\n"
+      },
+      "id": "0e030a09-a421-4797-88ed-142eca527ac2",
+      "name": "Validate Needfinding JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0088",
+              "leftValue": "={{ $json.validation_passed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "644ba624-918f-4ced-94d5-8e0d958d1642",
+      "name": "Needs Needfinding Repair?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify({ raw_ai_output: $json.raw_ai_output, validation_errors: $json.validation_errors }, null, 2) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a JSON repair formatter.\nYou will receive invalid or partially valid output from another step.\nDo not add commentary.\nReturn JSON only.\nRepair the payload so it matches this contract: needfinding output contract.\nIf a required field is unknown, set it to null, an empty array, or \"needs_clarification\" as appropriate.\nPreserve any valid information already present."
+            }
+          ]
+        }
+      },
+      "id": "710263a8-4266-4f64-b1f8-16e65dfa1d13",
+      "name": "Repair Needfinding JSON",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1264,
+        320
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "93eeebe0-6018-4d55-82de-71dc0dae0fef",
+      "name": "Needfinding Repair Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        544
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kZpqcM3SJ8maViAy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"needfinding_summary\": \"string\",\n  \"behavior_targets\": [\n    {\n      \"behavior_name\": \"string\",\n      \"why_it_matters\": \"string\",\n      \"likely_building_interpretation\": \"string\",\n      \"confidence\": 0.0,\n      \"evidence_summary\": \"string\",\n      \"detection_hint_for_vision_agent\": \"string\"\n    }\n  ],\n  \"evidence_notes\": [\"string\"],\n  \"building_relevance_notes\": [\"string\"]\n}"
+      },
+      "id": "e4ff393c-a130-4d53-b694-b0ef0d5aae9e",
+      "name": "Needfinding Repair Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1504,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try {\n    parsed = JSON.parse(parsed);\n  } catch (error) {\n    errors.push('json_parse_failed');\n  }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"needfinding_summary\",\"behavior_targets\",\"evidence_notes\",\"building_relevance_notes\"]) {\n  if (!(field in parsed)) errors.push(`missing_${field}`);\n}\nreturn [{\n  json: {\n    raw_ai_output: output,\n    parsed_output: parsed,\n    validation_passed: errors.length === 0,\n    validation_errors: errors,\n  }\n}];\n"
+      },
+      "id": "0acf523d-5581-40d6-8979-2500bff1b1ef",
+      "name": "Validate Repaired Needfinding JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst source = $json.parsed_output ? $json : $items('Validate Needfinding JSON', 0, 0)[0].json;\nreturn [{ json: source.parsed_output ?? {} }];\n"
+      },
+      "id": "af6febbf-4c26-43ed-a588-c108f62e1b14",
+      "name": "Finalize Needfinding Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1984,
+        320
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Prepare Needfinding Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Needfinding Prompt": {
+      "main": [
+        [
+          {
+            "node": "Needfinding Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needfinding Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Needfinding Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Literature Search Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Needfinding Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needfinding Agent": {
+      "main": [
+        [
+          {
+            "node": "Validate Needfinding JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Needfinding JSON": {
+      "main": [
+        [
+          {
+            "node": "Needs Needfinding Repair?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Needfinding Repair?": {
+      "main": [
+        [
+          {
+            "node": "Repair Needfinding JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Needfinding Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needfinding Repair Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Repair Needfinding JSON",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needfinding Repair Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Repair Needfinding JSON",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair Needfinding JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate Repaired Needfinding JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Repaired Needfinding JSON": {
+      "main": [
+        [
+          {
+            "node": "Finalize Needfinding Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "601db330-8e04-45b3-becf-20c0ea450a7a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+  },
+  "id": "Z6yT9iwiMHOnp7aj",
+  "tags": []
+}

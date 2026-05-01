@@ -1,0 +1,663 @@
+{
+  "name": "03 - Camera Behavior - Study Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Study Orchestrator\n- Receives only structured study packages and lifecycle commands.\n- Routes: initialize_study, monitoring_tick, finalize_study, milestone_review.\n- Specialist agents never talk directly to each other.\n\n# Live Preview Rules\n- Preview metrics come from detections + aggregation workflow.\n- Final insights only run at milestone or completion.\n\n# Troubleshooting\n- If needfinding fails, mark the study failed and log workflow_errors.\n- If monitoring batch partially fails, keep successful detections and log per-image errors.\n- If insights fail, keep the study in `insights_running` or `failed` until retry.",
+        "height": 320,
+        "width": 820,
+        "color": 3
+      },
+      "id": "c1ceb759-1122-4ded-ab6a-32fd084ee017",
+      "name": "Orchestrator Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "3dcfd572-624b-4aea-98f7-e5ff4a5e6ebc",
+      "name": "When Executed by Setup or Services",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        2640,
+        1376
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst command = $json.command ?? 'initialize_study';\nreturn [{\n  json: {\n    command,\n    study_id: $json.study_id ?? $json.study_plan?.study_id ?? null,\n    study_plan: $json.study_plan ?? null,\n    task_graph: $json.task_graph ?? null,\n    graph_plan: $json.graph_plan ?? null,\n    needfinding_request: $json.needfinding_request ?? null,\n    behavior_monitoring_request_template: $json.behavior_monitoring_request_template ?? null,\n    actionable_insights_request: $json.actionable_insights_request ?? null,\n    completion_criteria: $json.study_plan?.completion_criteria ?? $json.completion_criteria ?? null,\n    debug_mode: $json.debug_mode ?? false,\n  }\n}];\n"
+      },
+      "id": "a07fd841-7f97-44e9-a212-30ef75899597",
+      "name": "Normalize Orchestration Command",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        1376
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0064",
+              "leftValue": "={{ $json.command }}",
+              "rightValue": "initialize_study",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "10561fba-821c-44a0-aacb-ef4c07981138",
+      "name": "Initialize Study?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3168,
+        1376
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "study_id",
+              "value": "={{ \"eq.\" + $json.study_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'needfinding_running', current_stage: 'needfinding_running', updated_at: new Date().toISOString() }) }}",
+        "options": {}
+      },
+      "id": "81df9b9b-f8a9-4904-94ca-db0170add42d",
+      "name": "Mark Needfinding Running",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3408,
+        1216
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Z6yT9iwiMHOnp7aj",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Z6yT9iwiMHOnp7aj",
+          "cachedResultName": "BeHappier — 04 - Camera Behavior - Needfinding Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "87f25ea9-5025-458f-91a9-f6b3745522eb",
+      "name": "Call Needfinding Agent",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3648,
+        1216
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst need = $json;\nconst original = $('Normalize Orchestration Command').item.json;\nconst monitoring = {\n  ...(original.behavior_monitoring_request_template ?? {}),\n  study_id: original.study_id,\n  behavior_targets: need.behavior_targets ?? [],\n  building_id: original.study_plan?.building_context?.building_id ?? null,\n  zone_ids: [original.study_plan?.building_context?.target_area].filter(Boolean),\n  setup_instructions: original.behavior_monitoring_request_template?.setup_instructions ?? 'Use only requested behavior targets.',\n};\nreturn [{\n  json: {\n    ...original,\n    needfinding_output: need,\n    downstream_monitoring_request: monitoring,\n  }\n}];\n"
+      },
+      "id": "2b54cab9-8a78-44d3-b323-329072848e84",
+      "name": "Merge Needfinding Into Monitoring Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3888,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_needfinding_outputs' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id,\n    needfinding_summary: $json.needfinding_output.needfinding_summary,\n    behavior_targets: $json.needfinding_output.behavior_targets,\n    evidence_notes: $json.needfinding_output.evidence_notes,\n    building_relevance_notes: $json.needfinding_output.building_relevance_notes,\n    created_at: new Date().toISOString()\n  }) }}",
+        "options": {}
+      },
+      "id": "655186b9-ab4d-4d89-8b1a-c2470a135d1c",
+      "name": "Store Needfinding Output",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4128,
+        1216
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "study_id",
+              "value": "={{ \"eq.\" + $json.study_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'monitoring_running', current_stage: 'monitoring_running', updated_at: new Date().toISOString() }) }}",
+        "options": {}
+      },
+      "id": "40626b59-a7bb-49ac-8c5a-849a3daa29d9",
+      "name": "Mark Monitoring Running",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4368,
+        1216
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "zibVtV1WjTuHz4cj",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/zibVtV1WjTuHz4cj",
+          "cachedResultName": "BeHappier — 05 - Camera Behavior - Behavior Monitoring Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "d61d6f93-4dc8-4e02-8875-3737960ccda6",
+      "name": "Call Behavior Monitoring Agent",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4608,
+        1216
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "x4kuAOIoKmKyCQ4c",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/x4kuAOIoKmKyCQ4c",
+          "cachedResultName": "BeHappier — 07 - Camera Behavior - Common Services"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "b2087b2e-3592-498f-b874-a986f6e3846a",
+      "name": "Call Preview Aggregation Service",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4848,
+        1216
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{\n  json: {\n    study_id: $('Normalize Orchestration Command').item.json.study_id,\n    study_status: 'monitoring_running',\n    current_stage: 'monitoring_running',\n    downstream_requests: {\n      needfinding_complete: true,\n      monitoring_started: true,\n      preview_aggregation_requested: true\n    },\n    final_result_reference: null,\n    orchestration_log: [\n      'Study initialized',\n      'Needfinding completed',\n      'Monitoring started',\n      'Preview aggregation scheduled'\n    ]\n  }\n}];\n"
+      },
+      "id": "59a210c0-621f-4cac-a3d8-fc35285c7f8e",
+      "name": "Build Init Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5088,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0074",
+              "leftValue": "={{ [\"finalize_study\",\"milestone_review\",\"monitoring_tick\"].includes($json.command) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2be9c4d1-84d3-468b-b3d0-c9bc2d6c13ee",
+      "name": "Finalize Or Milestone?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3408,
+        1568
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "mM7tHQe1zPMtKBsq",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/mM7tHQe1zPMtKBsq",
+          "cachedResultName": "BeHappier — 06 - Camera Behavior - Actionable Insights Agent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "843bc178-7f51-4261-82ec-7edb6431238f",
+      "name": "Call Actionable Insights Agent",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3648,
+        1568
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "study_id",
+              "value": "={{ \"eq.\" + ($json.study_id ?? $(\"Normalize Orchestration Command\").item.json.study_id) }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n    status: $json.output_mode === 'final_insights' ? 'complete' : 'monitoring_running',\n    current_stage: $json.output_mode === 'final_insights' ? 'complete' : 'milestone_review',\n    updated_at: new Date().toISOString()\n  }) }}",
+        "options": {}
+      },
+      "id": "3c70f981-019a-4a8f-bbec-624f38101cd8",
+      "name": "Mark Study Complete Or Updated",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3888,
+        1568
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{\n  json: {\n    study_id: $json.study_id ?? $('Normalize Orchestration Command').item.json.study_id,\n    study_status: $json.output_mode === 'final_insights' ? 'complete' : 'monitoring_running',\n    current_stage: $json.output_mode === 'final_insights' ? 'complete' : 'milestone_review',\n    downstream_requests: {\n      insights_generated: true\n    },\n    final_result_reference: {\n      study_id: $json.study_id ?? $('Normalize Orchestration Command').item.json.study_id,\n      output_mode: $json.output_mode ?? 'milestone_summary'\n    },\n    orchestration_log: [\n      'Insight generation executed',\n      $json.output_mode === 'final_insights' ? 'Study marked complete' : 'Milestone output stored'\n    ]\n  }\n}];\n"
+      },
+      "id": "bf8058c6-684b-4c5b-906b-c908b3d0e7fc",
+      "name": "Build Finalize Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4128,
+        1568
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{\n  json: {\n    study_id: $('Normalize Orchestration Command').item.json.study_id,\n    study_status: 'failed',\n    current_stage: 'failed',\n    downstream_requests: {},\n    final_result_reference: null,\n    orchestration_log: ['Command not recognized or upstream payload incomplete']\n  }\n}];\n"
+      },
+      "id": "06df95ab-ee68-4b14-ba5d-04ed7aa1517d",
+      "name": "Orchestrator Fallback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3648,
+        1808
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Setup or Services": {
+      "main": [
+        [
+          {
+            "node": "Normalize Orchestration Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Orchestration Command": {
+      "main": [
+        [
+          {
+            "node": "Initialize Study?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Study?": {
+      "main": [
+        [
+          {
+            "node": "Mark Needfinding Running",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Or Milestone?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Needfinding Running": {
+      "main": [
+        [
+          {
+            "node": "Call Needfinding Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Needfinding Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge Needfinding Into Monitoring Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Needfinding Into Monitoring Request": {
+      "main": [
+        [
+          {
+            "node": "Store Needfinding Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Needfinding Output": {
+      "main": [
+        [
+          {
+            "node": "Mark Monitoring Running",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Monitoring Running": {
+      "main": [
+        [
+          {
+            "node": "Call Behavior Monitoring Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Behavior Monitoring Agent": {
+      "main": [
+        [
+          {
+            "node": "Call Preview Aggregation Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Preview Aggregation Service": {
+      "main": [
+        [
+          {
+            "node": "Build Init Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Or Milestone?": {
+      "main": [
+        [
+          {
+            "node": "Call Actionable Insights Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Orchestrator Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Actionable Insights Agent": {
+      "main": [
+        [
+          {
+            "node": "Mark Study Complete Or Updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Study Complete Or Updated": {
+      "main": [
+        [
+          {
+            "node": "Build Finalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "b4ee434b-ea95-46b7-82a6-78567e4172b3",
+  "meta": {
+    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+  },
+  "id": "OfnT9Z08lHApgqyR",
+  "tags": []
+}

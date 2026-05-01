@@ -1,0 +1,518 @@
+{
+  "name": "02 - Camera Behavior - Setup Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "content": {
+          "config": {
+            "name": "Setup Notes",
+            "parameters": {
+              "content": "# Setup Agent\n- Input: user goal summary, building context, optional role/constraints/prior summary\n- Output: `study_plan`, `task_graph`, `graph_plan`, `needfinding_request`, `behavior_monitoring_request_template`, `actionable_insights_request`\n- This workflow plans only, then hands the package to the Study Orchestrator.\n\n# Test Case\n{ \"study_goal\": \"Find congestion in the east lobby\", \"space_type\": \"office lobby\", \"target_area\": \"east lobby\", \"study_duration\": \"2 weeks\", \"desired_output_type\": \"hotspot charts and recommendations\", \"building_id\": \"bldg_001\" }\n\n# Study-State Model\n- draft -> planned -> needfinding_running -> needfinding_complete -> monitoring_running -> milestone_review -> monitoring_complete -> insights_running -> complete\n- failed is terminal unless manually retried.",
+              "height": 320,
+              "width": 780,
+              "color": 4
+            },
+            "position": [
+              3424,
+              928
+            ]
+          }
+        }
+      },
+      "id": "523a6004-7c06-4406-bb56-4b1fd3ac85a3",
+      "name": "Sticky Note 02173bab",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        112,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "d94d57d5-2ed0-4a7e-aa0f-83505684e046",
+      "name": "When Executed by Chat",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        3424,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst input = $json.setup_request ? { ...$json.setup_request, source_payload: $json } : $json;\nconst studyId = $json.study_id ?? ('study_' + Date.now());\n// TEST OVERRIDE: Kitchen zone hardcoded for testing - replace with real zone resolution later\nconst TEST_KITCHEN_ZONE_ID = '4a1fd84a-8805-49c2-b6bc-6552519ad18b';\nreturn [{\n  json: {\n    study_id: studyId,\n    user_goal: input.study_goal ?? $json.user_goal_summary ?? '',\n    building_context: {\n      building_id: input.building_id ?? $json.building_id ?? null,\n      space_type: input.space_type ?? null,\n      target_area: input.target_area ?? TEST_KITCHEN_ZONE_ID,\n    },\n    desired_output_type: input.desired_output_type ?? null,\n    study_duration: input.study_duration ?? '2 weeks',\n    user_role: $json.user_role ?? null,\n    constraints: $json.constraints ?? null,\n    prior_conversation_summary: $json.prior_conversation_summary ?? null,\n    debug_mode: $json.debug_mode ?? false,\n    source_payload: $json,\n  }\n}];\n"
+      },
+      "id": "df306f88-a40f-429e-a615-44dc64ca574c",
+      "name": "Normalize Setup Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3696,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify($json, null, 2) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are the study planner.\nYour job is to convert the user goal into a structured study plan and explicit downstream task definitions.\nYou are responsible for planning, not long-term execution control.\nDo not analyze images.\nDo not monitor study progress.\nDo not communicate directly with specialist agents during execution.\nReturn JSON only.\n\nPlanning rules:\n- Define concrete study objectives and study questions.\n- Propose planning-stage behavior categories only; final behavior targets are produced by needfinding.\n- Produce downstream request templates, not final execution payloads.\n- Include milestone-friendly dashboard outputs.\n- Keep the behavior monitoring request template image-safe and tool-safe for later orchestration."
+            }
+          ]
+        }
+      },
+      "id": "cf18085a-617b-42e5-b3c1-51a61aafc78c",
+      "name": "Study Planner",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        4192,
+        1280
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "9b245edf-60e4-40b1-9fed-edb49deb3f99",
+      "name": "Setup Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        4192,
+        1488
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kZpqcM3SJ8maViAy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"study_plan\": {\n    \"study_id\": \"string\",\n    \"study_goal\": \"string\",\n    \"study_objectives\": [\"string\"],\n    \"study_questions\": [\"string\"],\n    \"building_context\": {\n      \"building_id\": \"string|null\",\n      \"space_type\": \"string|null\",\n      \"target_area\": \"string|null\"\n    },\n    \"study_duration\": \"string\",\n    \"success_criteria\": [\"string\"],\n    \"output_mode\": \"dashboard_json\",\n    \"completion_criteria\": {\n      \"study_end_rule\": \"string\",\n      \"minimum_dataset_rule\": \"string\"\n    }\n  },\n  \"task_graph\": {\n    \"nodes\": [\n      {\n        \"task_id\": \"string\",\n        \"task_name\": \"string\",\n        \"depends_on\": [\"string\"],\n        \"workflow\": \"needfinding|monitoring|insights|aggregation\"\n      }\n    ]\n  },\n  \"graph_plan\": {\n    \"dashboard_sections\": [\"string\"],\n    \"charts\": [\"string\"],\n    \"tables\": [\"string\"]\n  },\n  \"needfinding_request\": {\n    \"user_goal\": \"string\",\n    \"building_context\": \"string\",\n    \"study_questions\": [\"string\"],\n    \"desired_outcome\": \"string\",\n    \"setup_instructions\": \"string\"\n  },\n  \"behavior_monitoring_request_template\": {\n    \"study_id\": \"string\",\n    \"building_id\": \"string|null\",\n    \"zone_ids\": [\"string\"],\n    \"date_range\": {\n      \"start\": \"string\",\n      \"end\": \"string\"\n    },\n    \"image_selection_rules\": {\n      \"human_detected_only\": true,\n      \"dedupe_window_minutes\": 5\n    },\n    \"setup_instructions\": \"string\"\n  },\n  \"actionable_insights_request\": {\n    \"output_mode\": \"milestone_summary|final_insights\",\n    \"instructions\": \"string\"\n  }\n}"
+      },
+      "id": "bd379594-8afa-4562-bbdd-8904ae572172",
+      "name": "Setup Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        4432,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try { parsed = JSON.parse(parsed); } catch (error) { errors.push('json_parse_failed'); }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"study_plan\",\"task_graph\",\"graph_plan\",\"needfinding_request\",\"behavior_monitoring_request_template\",\"actionable_insights_request\"]) {\n  if (!(field in parsed)) errors.push('missing_' + field);\n}\nreturn [{ json: { raw_ai_output: output, parsed_output: parsed, validation_passed: errors.length === 0, validation_errors: errors } }];\n"
+      },
+      "id": "edbe7cca-84d8-42bb-9379-b48c90ca58b0",
+      "name": "Validate Setup JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4672,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0050",
+              "leftValue": "={{ $json.validation_passed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d5079888-8d48-4aae-a583-03f10951ffc5",
+      "name": "Needs Setup Repair?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4912,
+        1280
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ JSON.stringify({ raw_ai_output: $json.raw_ai_output, validation_errors: $json.validation_errors }, null, 2) }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a JSON repair formatter.\nYou will receive invalid or partially valid output from another step.\nDo not add commentary.\nReturn JSON only.\nRepair the payload so it matches this contract: study planner contract.\nIf a required field is unknown, set it to null, an empty array, or \"needs_clarification\" as appropriate.\nPreserve any valid information already present."
+            }
+          ]
+        }
+      },
+      "id": "f32f0c2d-1785-4b7c-a9cb-54065c59047c",
+      "name": "Repair Setup JSON",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        5168,
+        1280
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "49e0d1fd-f608-47b4-891b-52ec42cac192",
+      "name": "Setup Repair Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        5168,
+        1488
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kZpqcM3SJ8maViAy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"study_plan\": {\n    \"study_id\": \"string\",\n    \"study_goal\": \"string\",\n    \"study_objectives\": [\"string\"],\n    \"study_questions\": [\"string\"],\n    \"building_context\": {\n      \"building_id\": \"string|null\",\n      \"space_type\": \"string|null\",\n      \"target_area\": \"string|null\"\n    },\n    \"study_duration\": \"string\",\n    \"success_criteria\": [\"string\"],\n    \"output_mode\": \"dashboard_json\",\n    \"completion_criteria\": {\n      \"study_end_rule\": \"string\",\n      \"minimum_dataset_rule\": \"string\"\n    }\n  },\n  \"task_graph\": {\n    \"nodes\": [\n      {\n        \"task_id\": \"string\",\n        \"task_name\": \"string\",\n        \"depends_on\": [\"string\"],\n        \"workflow\": \"needfinding|monitoring|insights|aggregation\"\n      }\n    ]\n  },\n  \"graph_plan\": {\n    \"dashboard_sections\": [\"string\"],\n    \"charts\": [\"string\"],\n    \"tables\": [\"string\"]\n  },\n  \"needfinding_request\": {\n    \"user_goal\": \"string\",\n    \"building_context\": \"string\",\n    \"study_questions\": [\"string\"],\n    \"desired_outcome\": \"string\",\n    \"setup_instructions\": \"string\"\n  },\n  \"behavior_monitoring_request_template\": {\n    \"study_id\": \"string\",\n    \"building_id\": \"string|null\",\n    \"zone_ids\": [\"string\"],\n    \"date_range\": {\n      \"start\": \"string\",\n      \"end\": \"string\"\n    },\n    \"image_selection_rules\": {\n      \"human_detected_only\": true,\n      \"dedupe_window_minutes\": 5\n    },\n    \"setup_instructions\": \"string\"\n  },\n  \"actionable_insights_request\": {\n    \"output_mode\": \"milestone_summary|final_insights\",\n    \"instructions\": \"string\"\n  }\n}"
+      },
+      "id": "8f70db12-80f1-4192-9ef7-9e0f7b53e7c8",
+      "name": "Setup Repair Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        5408,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try { parsed = JSON.parse(parsed); } catch (error) { errors.push('json_parse_failed'); }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"study_plan\",\"task_graph\",\"graph_plan\",\"needfinding_request\",\"behavior_monitoring_request_template\",\"actionable_insights_request\"]) {\n  if (!(field in parsed)) errors.push('missing_' + field);\n}\nreturn [{ json: { raw_ai_output: output, parsed_output: parsed, validation_passed: errors.length === 0, validation_errors: errors } }];\n"
+      },
+      "id": "7572e83c-284b-4279-8d94-598deba27a71",
+      "name": "Validate Repaired Setup JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5648,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst source = $json.parsed_output ? $json : $items('Validate Setup JSON', 0, 0)[0].json;\nconst parsed = source.parsed_output ?? {};\nparsed.study_plan.study_id = $('Normalize Setup Input').item.json.study_id;\nparsed.behavior_monitoring_request_template.study_id = $('Normalize Setup Input').item.json.study_id;\nreturn [{\n  json: {\n    ...parsed,\n    debug_mode: $('Normalize Setup Input').item.json.debug_mode,\n    study_id: $('Normalize Setup Input').item.json.study_id,\n    setup_validation_errors: source.validation_errors ?? [],\n    raw_ai_output: source.raw_ai_output ?? null,\n  }\n}];\n"
+      },
+      "id": "e2d172b6-6570-47ef-ac4e-dba986d1a649",
+      "name": "Finalize Setup Package",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5888,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id,\n    building_id: $json.study_plan.building_context.building_id,\n    study_goal: $json.study_plan.study_goal,\n    status: 'planned',\n    current_stage: 'planned',\n    study_plan: $json.study_plan,\n    task_graph: $json.task_graph,\n    graph_plan: $json.graph_plan,\n    created_at: new Date().toISOString(),\n    updated_at: new Date().toISOString()\n  }) }}",
+        "options": {}
+      },
+      "id": "187edc05-a1d1-45ac-93b3-10fa316ab3a9",
+      "name": "Upsert Study Row",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6128,
+        1280
+      ],
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "OfnT9Z08lHApgqyR",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/OfnT9Z08lHApgqyR",
+          "cachedResultName": "BeHappier — 03 - Camera Behavior - Study Orchestrator"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "fc7e54b5-7f0d-4a25-a59b-03410022ac0b",
+      "name": "Start Study Orchestrator",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        6368,
+        1280
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{\n  json: {\n    study_id: $('Finalize Setup Package').item.json.study_id,\n    action_type: 'start_study',\n    assistant_response_text: 'Your study has been planned and queued. I will start with needfinding, then launch monitoring and preview updates.',\n    study_plan: $('Finalize Setup Package').item.json.study_plan,\n    task_graph: $('Finalize Setup Package').item.json.task_graph,\n    graph_plan: $('Finalize Setup Package').item.json.graph_plan,\n    orchestrator_status: $json.study_status ?? 'planned',\n    current_stage: $json.current_stage ?? 'needfinding_running'\n  }\n}];\n"
+      },
+      "id": "b2c65021-2a2e-4962-9c36-60b369b834b2",
+      "name": "Build Setup Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6608,
+        1280
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Chat": {
+      "main": [
+        [
+          {
+            "node": "Normalize Setup Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Setup Input": {
+      "main": [
+        [
+          {
+            "node": "Study Planner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Study Planner": {
+      "main": [
+        [
+          {
+            "node": "Validate Setup JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Study Planner",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Study Planner",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Setup JSON": {
+      "main": [
+        [
+          {
+            "node": "Needs Setup Repair?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Setup Repair?": {
+      "main": [
+        [
+          {
+            "node": "Repair Setup JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Setup Package",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repair Setup JSON": {
+      "main": [
+        [
+          {
+            "node": "Validate Repaired Setup JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup Repair Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Repair Setup JSON",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup Repair Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Repair Setup JSON",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Repaired Setup JSON": {
+      "main": [
+        [
+          {
+            "node": "Finalize Setup Package",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Setup Package": {
+      "main": [
+        [
+          {
+            "node": "Upsert Study Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Study Row": {
+      "main": [
+        [
+          {
+            "node": "Start Study Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Study Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Build Setup Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "d1bb0014-e808-4fe1-8d5f-1dfce93f9507",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+  },
+  "id": "4csvHTJTH80lgkAR",
+  "tags": []
+}

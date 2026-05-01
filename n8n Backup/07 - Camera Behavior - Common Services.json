@@ -1,0 +1,491 @@
+{
+  "name": "07 - Camera Behavior - Common Services",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Common Services\n- Shared logging, error capture, and live preview aggregation.\n- Can be called directly by the orchestrator or run on a schedule.\n\n# Supported operations\n- `aggregate_preview_metrics`\n- `log_event`\n- `log_error`\n\n# Storage Tables\n- studies\n- study_tasks\n- needfinding_outputs\n- image_events\n- behavior_detections\n- insight_outputs\n- workflow_logs\n- workflow_errors",
+        "height": 280,
+        "width": 760,
+        "color": 5
+      },
+      "id": "97b0c4c6-dd72-4161-9ef3-72c237e357fa",
+      "name": "Service Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4656,
+        1968
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "9cf8d153-0531-4610-8ee9-2fd69f02fd54",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        4656,
+        2336
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "6280d614-cc4d-4842-9959-cfa395718a3f",
+      "name": "Preview Aggregation Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        4656,
+        2576
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nif ($json.command || $json.operation) {\n  return [{ json: { ...$json, operation: $json.operation ?? $json.command } }];\n}\nreturn [{\n  json: {\n    operation: 'aggregate_preview_metrics',\n    scheduled_run: true,\n    triggered_at: new Date().toISOString()\n  }\n}];\n"
+      },
+      "id": "9544f686-7f4d-4198-a1ab-2c34b27f2660",
+      "name": "Normalize Service Operation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4928,
+        2432
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0126",
+              "leftValue": "={{ $json.operation }}",
+              "rightValue": "aggregate_preview_metrics",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d6159852-0d76-405a-a47c-856033f3973d",
+      "name": "Aggregate Preview Metrics?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5184,
+        2432
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "eq.monitoring_running"
+            },
+            {
+              "name": "select",
+              "value": "study_id,study_goal,current_stage"
+            },
+            {
+              "name": "limit",
+              "value": "25"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "d3fe23a6-647b-4ae4-870a-e0aac115170d",
+      "name": "Fetch Running Studies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5424,
+        2272
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst studies = Array.isArray($json) ? $json : ($json.body ?? $json.data ?? $json);\nconst rows = Array.isArray(studies) ? studies : [];\nreturn rows.map((study) => ({\n  json: {\n    study_id: study.study_id,\n    preview_status: 'preview',\n    provisional_label: 'data collection in progress',\n    metrics: {\n      latest_detection_count: 0,\n      rolling_behavior_counts: {},\n      latest_updated_at: new Date().toISOString()\n    }\n  }\n}));\n"
+      },
+      "id": "fe1b55c4-7798-4bda-bdff-4ad1b6c2d4aa",
+      "name": "Build Preview Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5664,
+        2272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_live_preview_metrics' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id,\n    status: $json.preview_status,\n    label: $json.provisional_label,\n    metrics: $json.metrics,\n    updated_at: new Date().toISOString()\n  }) }}",
+        "options": {}
+      },
+      "id": "f01a3be8-5c06-4e56-8a55-4128ce0adf12",
+      "name": "Store Preview Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5904,
+        2272
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-0131",
+              "leftValue": "={{ $json.operation }}",
+              "rightValue": "log_event",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "935180be-fece-41ac-bf68-3618d4300050",
+      "name": "Log Event?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5424,
+        2528
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_workflow_logs' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id ?? null,\n    workflow_name: $json.workflow_name ?? 'common_services',\n    node_name: $json.node_name ?? 'unknown',\n    timestamp: new Date().toISOString(),\n    input_reference: $json.input_reference ?? null,\n    output_reference: $json.output_reference ?? null,\n    message: $json.message ?? 'log_event'\n  }) }}",
+        "options": {}
+      },
+      "id": "cc75d194-3606-49bb-b5a7-6d025ccf80af",
+      "name": "Store Workflow Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5664,
+        2528
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_workflow_errors' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\" }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY || \"SET_SUPABASE_SERVICE_ROLE_KEY\"}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id ?? null,\n    workflow_name: $json.workflow_name ?? 'unknown',\n    node_name: $json.node_name ?? 'unknown',\n    timestamp: new Date().toISOString(),\n    input_reference: $json.input_reference ?? null,\n    error_message: $json.error_message ?? 'unknown_error',\n    retry_count: $json.retry_count ?? 0\n  }) }}",
+        "options": {}
+      },
+      "id": "d6d1219a-2944-4853-a191-d53b0b89d2ba",
+      "name": "Store Workflow Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5904,
+        2528
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{\n  json: {\n    operation: $('Normalize Service Operation').item.json.operation,\n    status: 'ok',\n    completed_at: new Date().toISOString()\n  }\n}];\n"
+      },
+      "id": "4b0c1325-1ec7-40dd-ba81-24246981898f",
+      "name": "Build Service Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6144,
+        2432
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Normalize Service Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preview Aggregation Schedule": {
+      "main": [
+        [
+          {
+            "node": "Normalize Service Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Service Operation": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Preview Metrics?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Preview Metrics?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Running Studies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Event?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Running Studies": {
+      "main": [
+        [
+          {
+            "node": "Build Preview Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Preview Metrics": {
+      "main": [
+        [
+          {
+            "node": "Store Preview Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Preview Metrics": {
+      "main": [
+        [
+          {
+            "node": "Build Service Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Event?": {
+      "main": [
+        [
+          {
+            "node": "Store Workflow Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Store Workflow Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Workflow Log": {
+      "main": [
+        [
+          {
+            "node": "Build Service Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Workflow Error": {
+      "main": [
+        [
+          {
+            "node": "Build Service Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "f8c2b7a5-0a89-4070-aa12-ce8003ce10b2",
+  "meta": {
+    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+  },
+  "id": "x4kuAOIoKmKyCQ4c",
+  "tags": []
+}

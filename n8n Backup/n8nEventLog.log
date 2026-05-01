@@ -1,0 +1,2 @@
+{"__type":"$$EventMessageAudit","id":"87968ca9-1680-4666-aa4c-6f4d31318c14","ts":"2026-05-01T02:34:13.188+00:00","eventName":"n8n.audit.user.login.success","message":"n8n.audit.user.login.success","payload":{"userId":"c6fe5f47-346b-46a6-9af8-71b0a3ce97fe","_email":"arec20252026@gmail.com","_firstName":"AREC","_lastName":"20252026","globalRole":"global:owner","authenticationMethod":"email"}}
+{"__type":"$$EventMessageConfirm","confirm":"87968ca9-1680-4666-aa4c-6f4d31318c14","ts":"2026-05-01T02:34:13.189+00:00","source":{"id":"0","name":"eventBus"}}

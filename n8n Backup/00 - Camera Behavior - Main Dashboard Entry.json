@@ -1,0 +1,144 @@
+{
+  "name": "00 - Camera Behavior - Main Dashboard Entry",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Thin Main Workflow\n- This is the workflow your website should call.\n- It keeps the canvas small by delegating to the imported Chat Entry workflow.\n- The Chat Entry workflow then delegates to Setup, and Setup delegates to the Orchestrator.\n\n# Important n8n Wiring\n- n8n does not call JSON files directly after import.\n- Open `Call Chat Entry Sub-workflow` and select the imported `01 - Camera Behavior - Chat Entry` workflow.\n- If you prefer environment variables, set `WF_CHAT_ENTRY_ID` to the imported workflow ID.\n\n# Test Payload\n{ \"user_id\": \"user_001\", \"session_id\": \"session_001\", \"message_text\": \"Start a 2 week congestion study in the east lobby with hotspot charts\", \"building_id\": \"bldg_001\" }",
+        "height": 340,
+        "width": 820,
+        "color": 6
+      },
+      "id": "7860b689-2e44-4f30-aa70-ba4ed6110673",
+      "name": "Main Entry Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "occupant-behavior-main",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "41b338c7-0c26-4aba-853e-12bcbedad1fc",
+      "name": "Website Dashboard Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        368
+      ],
+      "webhookId": "hook-0038",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst body = $json.body ?? $json;\nreturn [{\n  json: {\n    user_id: body.user_id ?? null,\n    session_id: body.session_id ?? null,\n    message_text: body.message_text ?? body.message ?? '',\n    building_id: body.building_id ?? null,\n    study_id: body.study_id ?? null,\n    debug_mode: body.debug_mode ?? false,\n    source: 'website_dashboard',\n    received_at: new Date().toISOString(),\n  }\n}];\n"
+      },
+      "id": "4acd6b98-e196-4acb-9826-104e3718f97a",
+      "name": "Normalize Dashboard Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "fzgzExOllnFRlBBK",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/fzgzExOllnFRlBBK",
+          "cachedResultName": "BeHappier — 01 - Camera Behavior - Chat Entry"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "5bc0d7c6-6541-41be-9998-a62bebc3cf06",
+      "name": "Call Chat Entry Sub-workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        368
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{\n  json: {\n    assistant_response_text: $json.assistant_response_text ?? 'I could not complete that request safely.',\n    action_type: $json.action_type ?? 'clarify_request',\n    study_id: $json.study_id ?? null,\n    study_readiness_status: $json.study_readiness_status ?? null,\n    setup_request: $json.setup_request ?? null,\n    dashboard_payload: $json,\n  }\n}];\n"
+      },
+      "id": "f8366877-a021-41c6-84c6-ddcecaa35fa6",
+      "name": "Return Dashboard Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        368
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Website Dashboard Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Dashboard Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Dashboard Payload": {
+      "main": [
+        [
+          {
+            "node": "Call Chat Entry Sub-workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Chat Entry Sub-workflow": {
+      "main": [
+        [
+          {
+            "node": "Return Dashboard Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "bc42d6bf-633d-4863-81c7-c0a2fa071a17",
+  "meta": {
+    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+  },
+  "id": "9wAmwnukuCi93Z8Q",
+  "tags": []
+}

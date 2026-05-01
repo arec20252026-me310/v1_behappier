@@ -1,0 +1,619 @@
+{
+  "name": "05 - Camera Behavior - Behavior Monitoring Agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1f0480a9-e137-461f-9d76-7c6fe58fdd87",
+      "name": "Manual Test Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{\n  json: {\n    study_id: 'study_test_05',\n    building_id: 'bldg_001',\n    zone_ids: ['north_entrance_lobby'],\n    behavior_targets: [\n      { behavior_name: 'entry_surge' },\n      { behavior_name: 'door_hesitation' },\n      { behavior_name: 'queue_formation' },\n      { behavior_name: 'directional_flow_imbalance' }\n    ],\n    setup_instructions: 'Monitor the main turnstile zone for occupant flow behaviors. Flag any clustering near the entry point or hesitation at the door.',\n    last_modified_seen: null,\n    debug_mode: true,\n  }\n}];\n"
+      },
+      "id": "71a4f069-dded-43bb-8d5d-7665a860c462",
+      "name": "Inject Test Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "study_id",
+              "value": "={{ \"eq.\" + $json.study_id }}"
+            },
+            {
+              "name": "select",
+              "value": "study_id,building_id,study_goal,status,started_at,duration_seconds,study_plan,metadata"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "9d3aa531-0518-4399-a7d8-f9cbf08474b2",
+      "name": "Load Study Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "f8849de0-3c1b-4a44-bad6-349852b54b10",
+      "name": "When Executed by Orchestrator",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Safely read the triggering input — works whether fired from\n// orchestrator, manual test trigger, or loop re-entry\nlet orchestratorInput = {};\ntry { orchestratorInput = $('When Executed by Orchestrator').item.json; } catch {}\nif (!orchestratorInput.study_id) {\n  try { orchestratorInput = $('Inject Test Payload').item.json; } catch {}\n}\n\nconst studyRows = Array.isArray($input.first().json) ? $input.first().json : [$input.first().json];\nconst study = studyRows[0] ?? {};\n\nconst startedAt = study.started_at ? new Date(study.started_at) : new Date();\nconst durationSeconds = study.duration_seconds ?? orchestratorInput.duration_seconds ?? 600;\nconst studyEndTime = new Date(startedAt.getTime() + durationSeconds * 1000);\n\nreturn [{\n  json: {\n    study_id: study.study_id ?? orchestratorInput.study_id,\n    building_id: study.building_id ?? orchestratorInput.building_id ?? null,\n    zone_ids: orchestratorInput.zone_ids ?? [],\n    behavior_targets: orchestratorInput.behavior_targets ?? [],\n    setup_instructions: orchestratorInput.setup_instructions ?? study.study_goal ?? '',\n    snapshot_url: $env.HA_SNAPSHOT_FOLDER_URL || 'http://192.168.204.6:8123/local/snapshots/snapshot_1.jpg',\n    study_end_time: studyEndTime.toISOString(),\n    last_modified_seen: orchestratorInput.last_modified_seen ?? null,\n    debug_mode: orchestratorInput.debug_mode ?? false,\n  }\n}];\n"
+      },
+      "id": "4919366d-cdc3-4d6c-8003-c41af4bbe45b",
+      "name": "Prepare Monitoring Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "HEAD",
+        "url": "={{ $json.snapshot_url }}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "6742edee-745e-4178-9bc8-e70ef491c52f",
+      "name": "HEAD Check Snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst ctx = $('Prepare Monitoring Context').item.json;\nconst headers = $json.headers ?? $json;\n\nconst lastModified = headers['last-modified'] ?? headers['Last-Modified'] ?? null;\nconst contentLength = headers['content-length'] ?? headers['Content-Length'] ?? null;\nconst changeSignal = lastModified ?? contentLength ?? null;\nconst lastSeen = ctx.last_modified_seen ?? null;\nconst imageChanged = changeSignal !== null && changeSignal !== lastSeen;\n\nconst now = new Date();\nconst studyEndTime = new Date(ctx.study_end_time);\nconst studyExpired = now >= studyEndTime;\n\nreturn [{\n  json: {\n    ...ctx,\n    last_modified_current: changeSignal,\n    image_changed: imageChanged,\n    study_expired: studyExpired,\n    checked_at: now.toISOString(),\n  }\n}];\n"
+      },
+      "id": "2dc16f0d-a390-4401-b780-328c7d5ed74f",
+      "name": "Check If Image Changed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "exp-001",
+              "leftValue": "={{ $json.study_expired }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a98db6a0-6204-439c-a024-cfe73ac5833b",
+      "name": "Study Expired?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst ctx = $json;\nreturn [{\n  json: {\n    monitoring_status: { status: 'study_complete', study_id: ctx.study_id, completed_at: new Date().toISOString(), study_end_time: ctx.study_end_time },\n    study_dataset_reference: { table: 'BE_behavior_detections', study_id: ctx.study_id },\n    next_action: 'call_insights_agent',\n  }\n}];\n"
+      },
+      "id": "00eb8d1d-a7ad-46b7-996d-1d0ee6ce64b7",
+      "name": "Build Monitoring Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1968,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "chg-001",
+              "leftValue": "={{ $json.image_changed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9cad4032-1b29-484a-aab3-f1cf3741a8e7",
+      "name": "Image Changed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1968,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.snapshot_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "e13f20c0-c555-4998-9e42-9cff4d5b2c2c",
+      "name": "Fetch Snapshot Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst ctx = $('Check If Image Changed').item.json;\nconst binaryKey = Object.keys($binary ?? {})[0] ?? 'data';\nconst binaryData = $binary?.[binaryKey];\nlet base64Image = null;\nlet mimeType = 'image/jpeg';\nif (binaryData) {\n  base64Image = binaryData.data ?? null;\n  mimeType = binaryData.mimeType ?? 'image/jpeg';\n}\nreturn [{\n  json: {\n    ...ctx,\n    image_base64: base64Image,\n    image_mime_type: mimeType,\n    image_data_url: base64Image ? `data:${mimeType};base64,${base64Image}` : null,\n    image_id: 'snapshot_' + new Date().toISOString().replace(/[:.]/g, '-'),\n    timestamp: new Date().toISOString(),\n    zone_id: ctx.zone_ids?.[0] ?? null,\n  }\n}];\n"
+      },
+      "id": "4722485d-1e45-4560-aa16-690a92fea506",
+      "name": "Encode Image to Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2528,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + ($env.OPENAI_API_KEY || \"SET_OPENAI_API_KEY\") }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: $env.VISION_MODEL || 'gpt-4.1-mini',\n  input: [\n    { role: 'system', content: [{ type: 'input_text', text: 'You are the only image-analysis agent in a building behavior monitoring system. Analyze the image for the requested occupant behaviors only. Return valid JSON only with these exact keys: detected_behaviors (array of objects with name and present fields), confidence_scores (object mapping behavior name to 0-1 score), occupant_count (integer or null), notes (string). Never include recommendations or conclusions.' }] },\n    { role: 'user', content: [\n      { type: 'input_text', text: 'Study ID: ' + $json.study_id + '\\nZone: ' + ($json.zone_id || 'unknown') + '\\nBehavior targets: ' + JSON.stringify($json.behavior_targets) + '\\nInstructions: ' + ($json.setup_instructions || '') },\n      { type: 'input_image', image_url: $json.image_data_url, detail: 'auto' }\n    ]}\n  ],\n  max_output_tokens: 1000\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "73ee2b20-3268-4efb-995b-b53e9b7a093d",
+      "name": "Analyze Image With Vision Model",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2800,
+        480
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst ctx = $('Encode Image to Base64').item.json;\nconst rawText = $json.output?.[0]?.content?.[0]?.text ?? $json.output_text ?? '';\nlet parsed = {};\nlet parseError = null;\ntry {\n  const clean = rawText.replace(/```json|^```|```$/gm, '').trim();\n  parsed = JSON.parse(clean);\n} catch (e) {\n  parseError = 'vision_json_parse_failed';\n}\nreturn [{\n  json: {\n    study_id: ctx.study_id,\n    image_id: ctx.image_id,\n    timestamp: ctx.timestamp,\n    zone_id: ctx.zone_id,\n    detected_behaviors: parsed.detected_behaviors ?? [],\n    confidence_scores: parsed.confidence_scores ?? {},\n    occupant_count: parsed.occupant_count ?? null,\n    notes: parsed.notes ?? (parseError ? 'Parse failed: ' + rawText.slice(0, 200) : ''),\n    model_version: $env.VISION_MODEL || 'gpt-4.1-mini',\n    parse_error: parseError,\n    snapshot_url: ctx.snapshot_url,\n    study_end_time: ctx.study_end_time,\n    behavior_targets: ctx.behavior_targets,\n    setup_instructions: ctx.setup_instructions,\n    zone_ids: ctx.zone_ids,\n    building_id: ctx.building_id,\n    last_modified_current: ctx.last_modified_current,\n    debug_mode: ctx.debug_mode,\n  }\n}];\n"
+      },
+      "id": "46a388ca-3eaf-4941-8233-35b9c5e9bd21",
+      "name": "Parse Detection JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3088,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_behavior_detections' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  study_id: $json.study_id,\n  image_id: $json.image_id,\n  timestamp: $json.timestamp,\n  zone_id: $json.zone_id,\n  detected_behaviors: $json.detected_behaviors,\n  confidence_scores: $json.confidence_scores,\n  notes: $json.notes,\n  model_version: $json.model_version,\n  created_at: new Date().toISOString()\n}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "2364f48e-eb23-4096-80b6-69a52f1fa138",
+      "name": "Store Behavior Detection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        480
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nlet ctx = {};\ntry { ctx = $('Parse Detection JSON').item.json; } catch {}\nif (!ctx.study_id) { try { ctx = $('Check If Image Changed').item.json; } catch {} }\nreturn [{\n  json: {\n    study_id: ctx.study_id,\n    building_id: ctx.building_id ?? null,\n    zone_ids: ctx.zone_ids ?? [],\n    behavior_targets: ctx.behavior_targets ?? [],\n    setup_instructions: ctx.setup_instructions ?? '',\n    snapshot_url: ctx.snapshot_url,\n    study_end_time: ctx.study_end_time,\n    last_modified_seen: ctx.last_modified_current ?? ctx.last_modified_seen ?? null,\n    debug_mode: ctx.debug_mode ?? false,\n  }\n}];\n"
+      },
+      "id": "3bac1ed8-f74b-49d0-8b99-6d0d7a70215e",
+      "name": "Prepare Next Loop",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3648,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "id": "926dcb10-3bc2-4892-b031-283016ec6051",
+      "name": "Wait 3 Seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3920,
+        560
+      ],
+      "webhookId": "1c501763-38be-4702-aac0-d0ee7c403ed4"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "zibVtV1WjTuHz4cj",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "id": "a7d1a6a9-e0ab-40f0-bca4-0447a37f79d9",
+      "name": "Loop — Run Next Cycle",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4208,
+        560
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Test Trigger": {
+      "main": [
+        [
+          {
+            "node": "Inject Test Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inject Test Payload": {
+      "main": [
+        [
+          {
+            "node": "Load Study Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Study Config": {
+      "main": [
+        [
+          {
+            "node": "Prepare Monitoring Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Orchestrator": {
+      "main": [
+        [
+          {
+            "node": "Load Study Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Monitoring Context": {
+      "main": [
+        [
+          {
+            "node": "HEAD Check Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HEAD Check Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Check If Image Changed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Image Changed": {
+      "main": [
+        [
+          {
+            "node": "Study Expired?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Study Expired?": {
+      "main": [
+        [
+          {
+            "node": "Build Monitoring Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Image Changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Changed?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Snapshot Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Next Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Snapshot Image": {
+      "main": [
+        [
+          {
+            "node": "Encode Image to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encode Image to Base64": {
+      "main": [
+        [
+          {
+            "node": "Analyze Image With Vision Model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Image With Vision Model": {
+      "main": [
+        [
+          {
+            "node": "Parse Detection JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Detection JSON": {
+      "main": [
+        [
+          {
+            "node": "Store Behavior Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Behavior Detection": {
+      "main": [
+        [
+          {
+            "node": "Prepare Next Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Next Loop": {
+      "main": [
+        [
+          {
+            "node": "Wait 3 Seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Loop — Run Next Cycle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "60379c19-a398-44bb-bbe1-202403584077",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+  },
+  "id": "zibVtV1WjTuHz4cj",
+  "tags": []
+}
