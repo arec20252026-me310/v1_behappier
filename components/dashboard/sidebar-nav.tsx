@@ -12,6 +12,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Clapperboard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
@@ -103,7 +104,17 @@ export function SidebarNav() {
         })}
       </nav>
 
-      <div className="p-2 border-t border-sidebar-border">
+      <div className="p-2 border-t border-sidebar-border space-y-1">
+        <Link
+          href="/dashboard/demo"
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <Clapperboard className="h-5 w-5 shrink-0 text-muted-foreground" />
+          {!collapsed && <span className="text-sm font-medium text-muted-foreground">Demo</span>}
+        </Link>
         <Link
           href="/dashboard/settings"
           className={cn(

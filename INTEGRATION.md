@@ -188,8 +188,16 @@ All `BE_*` tables have RLS enabled with an `anon SELECT` policy so the frontend 
 - **New Insights count** → total insight strings across recent `BE_insight_outputs`
 - **Active Studies widget** → `BE_studies` (active stages, latest 5)
 - **Recent Insights widget** → insight strings from latest `BE_insight_outputs`
-- **Occupancy Heatmap** → `BE_live_preview_metrics` for monitoring_running studies;
-  falls back to static green/yellow when no preview data exists
+- **Occupancy Heatmap** → `BE_live_preview_metrics` for `monitoring_running` studies (live colored zones);
+  falls back to completed-study zone glow (yellow) when `BE_studies.status = complete` and
+  `BE_insight_outputs` exists; falls back to static green when no data
+
+#### Heatmap zone-highlight logic
+The heatmap highlights zones from completed studies via `BE_studies.metadata.monitored_zone_id`.
+When a user clicks a glowing zone, a dialog shows the study's insight strings, recommendations,
+and dashboard summary with a "View Full Report →" link to `/dashboard/insights`.
+The `monitored_zone_id` field is set by the seed script; n8n should set it when it writes
+`BE_studies` rows so real studies also highlight correctly.
 
 ### `/dashboard/studies`
 - **Study list** → `BE_studies` (all, newest first)
@@ -209,6 +217,28 @@ All `BE_*` tables have RLS enabled with an `anon SELECT` policy so the frontend 
 ### `/dashboard/metrics`
 - Unchanged — reads/writes frontend `metrics` table only
 
+### `/dashboard/demo`
+- Demo scenario switcher — loads preset Supabase states for demos and user interviews
+- Four scenarios: **Blank**, **Space Configured**, **Study Running**, **Study Complete**
+- Each button POSTs to `/api/demo/seed` which uses the service role key to wipe + reseed
+- Terminal alternative: `npm run seed -- <scenario>` (requires `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`)
+- Accessible via the **Demo** link at the bottom of the sidebar nav
+
+---
+
+## Demo Scenarios
+
+| Scenario | What's seeded | What you'll see |
+|---|---|---|
+| `blank` | Nothing — all data wiped | Empty space setup prompts |
+| `space-ready` | ME310 Loft zones + Kitchen camera | Floor plan, zones, camera pin |
+| `study-in-progress` | + `BE_studies` at `monitoring_running` + `BE_live_preview_metrics` | Live heatmap colors, active study badge |
+| `study-complete` | + `BE_studies` at `complete` + `BE_insight_outputs` | Yellow pulsing Kitchen zone, click for insights |
+
+Seed data lives in `lib/demo-seeds.ts`. All seed rows use fixed synthetic UUIDs
+(`00000000-seed-...`) so they can be cleanly removed without touching real data.
+The Kitchen zone is linked via `BE_studies.metadata.monitored_zone_id`.
+
 ---
 
 ## Environment Variables
@@ -220,6 +250,7 @@ All `BE_*` tables have RLS enabled with an `anon SELECT` policy so the frontend 
 | `N8N_URL` | `http://localhost:5678` | self-hosted URL when ready |
 | `N8N_API_KEY` | unused (webhook has no auth) | unused |
 | `BLOB_READ_WRITE_TOKEN` | set | set |
+| `SUPABASE_SERVICE_ROLE_KEY` | from Supabase dashboard → Settings → API | required for `/api/demo/seed` and `npm run seed` |
 
 ---
 
