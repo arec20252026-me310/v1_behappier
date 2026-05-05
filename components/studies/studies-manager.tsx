@@ -186,6 +186,9 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
           description: form.description,
           target_zones: form.target_zones,
           target_metrics: form.target_metrics,
+          target_metric_names: form.target_metrics
+            .map(id => metrics.find(m => m.id === id)?.name)
+            .filter(Boolean),
           duration_seconds: form.duration_minutes ? form.duration_minutes * 60 : null,
         }),
       })
