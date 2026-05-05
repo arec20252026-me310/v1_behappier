@@ -8,7 +8,7 @@
         "width": 760,
         "color": 2
       },
-      "id": "31c9733c-547c-4ccd-b2c5-0f609e50343e",
+      "id": "d3022030-18b1-46eb-ace4-a75ee4bf77fd",
       "name": "Needfinding Notes",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -21,7 +21,7 @@
       "parameters": {
         "inputSource": "passthrough"
       },
-      "id": "4fbb401b-0e76-442f-9d6a-efe59dae0f1b",
+      "id": "fd180c55-da5c-4a51-80bb-e202de4d9bfd",
       "name": "When Executed by Orchestrator",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -34,7 +34,7 @@
       "parameters": {
         "jsCode": "\nreturn [{\n  json: {\n    needfinding_prompt: JSON.stringify($json, null, 2),\n    source_payload: $json\n  }\n}];\n"
       },
-      "id": "d12f6929-1c57-4d16-98ae-a7e0c465b663",
+      "id": "4d06d715-19a0-4315-b088-833223b94a6e",
       "name": "Prepare Needfinding Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -52,7 +52,7 @@
           "returnIntermediateSteps": true
         }
       },
-      "id": "0bf716bb-ac62-497f-b970-32b1638af3a4",
+      "id": "fd89da74-286b-4fb2-84e8-9b161996e851",
       "name": "Needfinding Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
@@ -72,20 +72,14 @@
         },
         "options": {}
       },
-      "id": "05679660-44c4-4b4b-8af0-7aee2c5ead24",
+      "id": "52f7f1ef-5084-4aee-9e17-0d9494dd773c",
       "name": "Needfinding Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
         528,
         560
-      ],
-      "credentials": {
-        "openAiApi": {
-          "id": "kZpqcM3SJ8maViAy",
-          "name": "OpenAI account"
-        }
-      }
+      ]
     },
     {
       "parameters": {
@@ -129,7 +123,7 @@
         "optimizeResponse": true,
         "dataField": "results"
       },
-      "id": "7785656f-ea55-4b3c-b1ad-80e0fd4dc12b",
+      "id": "1cb9c46e-5928-4370-8c3f-2e0cb4828f42",
       "name": "Literature Search Tool",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
@@ -142,7 +136,7 @@
       "parameters": {
         "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try {\n    parsed = JSON.parse(parsed);\n  } catch (error) {\n    errors.push('json_parse_failed');\n  }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"needfinding_summary\",\"behavior_targets\",\"evidence_notes\",\"building_relevance_notes\"]) {\n  if (!(field in parsed)) errors.push(`missing_${field}`);\n}\nreturn [{\n  json: {\n    raw_ai_output: output,\n    parsed_output: parsed,\n    validation_passed: errors.length === 0,\n    validation_errors: errors,\n  }\n}];\n"
       },
-      "id": "0e030a09-a421-4797-88ed-142eca527ac2",
+      "id": "9fd55f7f-1130-487f-b7e1-4e742ad5841e",
       "name": "Validate Needfinding JSON",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -176,7 +170,7 @@
         },
         "options": {}
       },
-      "id": "644ba624-918f-4ced-94d5-8e0d958d1642",
+      "id": "da8ab64a-dd76-4f5d-9748-b02a105427a5",
       "name": "Needs Needfinding Repair?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -199,7 +193,7 @@
           ]
         }
       },
-      "id": "710263a8-4266-4f64-b1f8-16e65dfa1d13",
+      "id": "bbac7cfa-d3ab-4e14-ad00-3db059cf9c45",
       "name": "Repair Needfinding JSON",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
@@ -219,27 +213,21 @@
         },
         "options": {}
       },
-      "id": "93eeebe0-6018-4d55-82de-71dc0dae0fef",
+      "id": "1217dea3-5585-4069-8fb1-d44fb3232660",
       "name": "Needfinding Repair Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
         1264,
         544
-      ],
-      "credentials": {
-        "openAiApi": {
-          "id": "kZpqcM3SJ8maViAy",
-          "name": "OpenAI account"
-        }
-      }
+      ]
     },
     {
       "parameters": {
         "schemaType": "manual",
         "inputSchema": "{\n  \"needfinding_summary\": \"string\",\n  \"behavior_targets\": [\n    {\n      \"behavior_name\": \"string\",\n      \"why_it_matters\": \"string\",\n      \"likely_building_interpretation\": \"string\",\n      \"confidence\": 0.0,\n      \"evidence_summary\": \"string\",\n      \"detection_hint_for_vision_agent\": \"string\"\n    }\n  ],\n  \"evidence_notes\": [\"string\"],\n  \"building_relevance_notes\": [\"string\"]\n}"
       },
-      "id": "e4ff393c-a130-4d53-b694-b0ef0d5aae9e",
+      "id": "c1a10dc5-d815-485c-b349-1f1ea5590e0f",
       "name": "Needfinding Repair Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
@@ -252,7 +240,7 @@
       "parameters": {
         "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try {\n    parsed = JSON.parse(parsed);\n  } catch (error) {\n    errors.push('json_parse_failed');\n  }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"needfinding_summary\",\"behavior_targets\",\"evidence_notes\",\"building_relevance_notes\"]) {\n  if (!(field in parsed)) errors.push(`missing_${field}`);\n}\nreturn [{\n  json: {\n    raw_ai_output: output,\n    parsed_output: parsed,\n    validation_passed: errors.length === 0,\n    validation_errors: errors,\n  }\n}];\n"
       },
-      "id": "0acf523d-5581-40d6-8979-2500bff1b1ef",
+      "id": "e60e1c7c-0d48-4b8a-8fd5-ad5e5aa5081d",
       "name": "Validate Repaired Needfinding JSON",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -265,7 +253,7 @@
       "parameters": {
         "jsCode": "\nconst source = $json.parsed_output ? $json : $items('Validate Needfinding JSON', 0, 0)[0].json;\nreturn [{ json: source.parsed_output ?? {} }];\n"
       },
-      "id": "af6febbf-4c26-43ed-a588-c108f62e1b14",
+      "id": "1ee6859e-5013-4465-b672-8fc8511d0f15",
       "name": "Finalize Needfinding Output",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -412,11 +400,10 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "601db330-8e04-45b3-becf-20c0ea450a7a",
+  "versionId": "06008fb9-cd01-4094-b1d5-1548c974b841",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+    "instanceId": "b3e0d56d03ef04850c0691767d8d0573d1a2c8df7da4e1cb264527c1a3ddf8d2"
   },
-  "id": "Z6yT9iwiMHOnp7aj",
+  "id": "ne1y4aD2K0kTIVxC",
   "tags": []
 }

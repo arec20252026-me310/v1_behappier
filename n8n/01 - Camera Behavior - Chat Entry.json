@@ -5,26 +5,26 @@
       "parameters": {
         "inputSource": "passthrough"
       },
-      "id": "4e827f14-b9ce-4a09-b94f-a556db3abf96",
+      "id": "5f1fc2ae-23ed-46b1-bf62-19d85f862733",
       "name": "When Executed by Main Entry",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -704,
-        576
+        -2944,
+        400
       ]
     },
     {
       "parameters": {
         "jsCode": "\nconst body = $json.body ?? $json;\nconst presets = [\n  { template_name: 'Congestion Study', goal: 'Identify where and when crowding occurs in a monitored space', default_behaviors: ['entry clustering', 'standing clusters', 'queuing', 'high-density occupancy'], recommended_duration: '2 weeks', recommended_outputs: ['peak congestion times', 'zone hotspot chart', 'entry bottleneck summary', 'layout recommendations'], example_user_friendly_explanation: 'Use this when you want to find crowding hotspots and understand when bottlenecks happen.' },\n  { template_name: 'Space Utilization Study', goal: 'Understand which zones are underused, overused, or unevenly used over time', default_behaviors: ['occupancy presence', 'seat use', 'linger duration', 'repeat zone use'], recommended_duration: '2 to 4 weeks', recommended_outputs: ['zone utilization chart', 'hourly occupancy trend', 'underused-area summary'], example_user_friendly_explanation: 'Use this to see which areas people actually use and which layouts are being ignored.' },\n  { template_name: 'Interaction / Collaboration Study', goal: 'Identify where collaboration and small-group interaction naturally emerge', default_behaviors: ['small standing groups', 'seated collaboration', 'repeat gathering points'], recommended_duration: '2 weeks', recommended_outputs: ['interaction hotspots', 'time-of-day interaction summary', 'collaboration zone ranking'], example_user_friendly_explanation: 'Use this to see where groups naturally form and whether the space supports collaboration.' },\n  { template_name: 'Thermal Comfort Proxy Study', goal: 'Look for visible behaviors that may signal discomfort related to temperature or airflow conditions', default_behaviors: ['layer adjustment', 'restlessness', 'frequent relocation', 'window/door proximity clustering'], recommended_duration: '1 to 2 weeks', recommended_outputs: ['comfort proxy timeline', 'zone discomfort signals', 'possible HVAC/layout follow-ups'], example_user_friendly_explanation: 'Use this when you suspect discomfort but want visible behavior clues before deeper diagnostics.' },\n  { template_name: 'Entrance / Flow Study', goal: 'Understand how people move through monitored entry and transition zones', default_behaviors: ['entry surges', 'door hesitation', 'queue formation', 'directional flow imbalance'], recommended_duration: '1 to 2 weeks', recommended_outputs: ['entry flow trend', 'surge windows', 'bottleneck summary', 'wayfinding/layout recommendations'], example_user_friendly_explanation: 'Use this to understand movement patterns, surges, and possible entry bottlenecks.' }\n];\nreturn [{ json: { user_id: body.user_id ?? null, session_id: body.session_id ?? null, message_text: body.message_text ?? body.message ?? '', building_id: body.building_id ?? null, study_id: body.study_id ?? null, debug_mode: body.debug_mode ?? false, recommended_presets_catalog: presets, chat_request: body } }];\n"
       },
-      "id": "65e1c983-84c0-4a18-8020-9f2473d5bafa",
+      "id": "4e80e5e1-3011-439a-b5fe-b72601dd63fc",
       "name": "Normalize Chat Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -448,
-        336
+        -2688,
+        160
       ]
     },
     {
@@ -34,13 +34,13 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "4906bd06-c9c9-4ecb-84a8-de28b915cfd9",
+      "id": "ec2d9bb4-fdca-425c-9949-11d2aa2b88b1",
       "name": "Dashboard Chat Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -704,
-        336
+        -2944,
+        160
       ],
       "webhookId": "46ef5068-207d-481a-903c-3289cd4d06b2"
     },
@@ -57,13 +57,13 @@
           ]
         }
       },
-      "id": "9251bc69-3f8b-456c-9764-45fb10919cf0",
+      "id": "cf8fab96-fcc5-4e5d-8fe9-2815f3207f2d",
       "name": "Chat Intent + Intake Planner",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
       "position": [
-        64,
-        336
+        -2176,
+        160
       ]
     },
     {
@@ -76,17 +76,17 @@
         },
         "options": {}
       },
-      "id": "64d839e8-755a-4fb3-8fcd-f086cfebcc27",
+      "id": "cf9dcb61-2029-423f-a060-2e0196e7fd1d",
       "name": "Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        64,
-        528
+        -2176,
+        352
       ],
       "credentials": {
         "openAiApi": {
-          "id": "kZpqcM3SJ8maViAy",
+          "id": "1XomfEQDbvwtbkUl",
           "name": "OpenAI account"
         }
       }
@@ -96,26 +96,26 @@
         "schemaType": "manual",
         "inputSchema": "{\n  \"action_type\": \"answer_question|start_study|check_study_status|get_results|clarify_request\",\n  \"user_goal_summary\": \"string\",\n  \"collected_fields\": {\n    \"study_goal\": \"string|null\",\n    \"space_type\": \"string|null\",\n    \"building_context\": \"string|null\",\n    \"target_area\": \"string|null\",\n    \"study_duration\": \"string|null\",\n    \"desired_output_type\": \"string|null\",\n    \"hours_of_interest\": \"string|null\",\n    \"known_issues\": \"string|null\",\n    \"study_mode\": \"exploratory|hypothesis-driven|null\",\n    \"preferred_visualization_type\": \"string|null\",\n    \"business_priority\": \"string|null\",\n    \"comparison_baseline\": \"string|null\"\n  },\n  \"missing_required_fields\": [\"string\"],\n  \"study_readiness_status\": \"ready|needs_followup|preset_recommended\",\n  \"recommended_presets\": [\n    {\n      \"template_name\": \"string\",\n      \"goal\": \"string\",\n      \"recommended_duration\": \"string\",\n      \"recommended_outputs\": [\"string\"]\n    }\n  ],\n  \"setup_request\": {\n    \"study_goal\": \"string|null\",\n    \"space_type\": \"string|null\",\n    \"target_area\": \"string|null\",\n    \"study_duration\": \"string|null\",\n    \"desired_output_type\": \"string|null\",\n    \"building_id\": \"string|null\",\n    \"study_mode\": \"exploratory|hypothesis-driven|null\"\n  },\n  \"assistant_response_text\": \"string\"\n}"
       },
-      "id": "c21e77c2-bbca-48a4-bb16-c7bc1f90a97c",
+      "id": "9e36387f-8cc0-4320-a6bf-892ee12d42c2",
       "name": "Chat Output Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
       "position": [
-        304,
-        528
+        -1936,
+        352
       ]
     },
     {
       "parameters": {
         "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\n\nif (typeof parsed === 'string') {\n  try { parsed = JSON.parse(parsed); } catch (error) { errors.push('json_parse_failed'); }\n}\n\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\n\n// Option A fix: normalise common LLM field name shortcuts before validation\nif (!parsed.action_type && parsed.action) {\n  parsed.action_type = parsed.action;\n  delete parsed.action;\n}\nif (!parsed.target_area && parsed.target_area_or_zone) {\n  parsed.target_area = parsed.target_area_or_zone;\n  delete parsed.target_area_or_zone;\n}\n\n// Only require action_type — assistant_response_text is always filled in by Select Chat Payload\nfor (const field of [\"action_type\"]) {\n  if (!(field in parsed)) errors.push('missing_' + field);\n}\n\nreturn [{ json: { raw_ai_output: output, parsed_output: parsed, validation_passed: errors.length === 0, validation_errors: errors } }];\n"
       },
-      "id": "afede480-6099-4e33-98ba-6a239556a76e",
+      "id": "77b039b4-77d9-4e24-af29-a0eac99cb3c8",
       "name": "Validate Chat JSON",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        544,
-        336
+        -1696,
+        160
       ]
     },
     {
@@ -143,13 +143,13 @@
         },
         "options": {}
       },
-      "id": "79f14082-705c-4798-9edd-10674ae3fcd8",
+      "id": "948cec0e-4d6a-4aa4-80ba-d8aa1a5e777d",
       "name": "Needs Chat Repair?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        784,
-        336
+        -1456,
+        160
       ]
     },
     {
@@ -165,13 +165,13 @@
           ]
         }
       },
-      "id": "4d85ef0e-fa24-4e5e-9ae8-9482a6c83554",
+      "id": "af700d43-f780-4d9b-9446-58a319761fc2",
       "name": "Repair Chat JSON",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
       "position": [
-        1040,
-        336
+        -1200,
+        160
       ]
     },
     {
@@ -184,17 +184,17 @@
         },
         "options": {}
       },
-      "id": "f972f4ad-0228-4411-b95b-b1aa505a65bd",
+      "id": "a25c3ee8-e204-42cb-aeab-e1eef60eb39f",
       "name": "Chat Repair Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        1040,
-        528
+        -1200,
+        352
       ],
       "credentials": {
         "openAiApi": {
-          "id": "kZpqcM3SJ8maViAy",
+          "id": "1XomfEQDbvwtbkUl",
           "name": "OpenAI account"
         }
       }
@@ -204,39 +204,39 @@
         "schemaType": "manual",
         "inputSchema": "{\n  \"action_type\": \"answer_question|start_study|check_study_status|get_results|clarify_request\",\n  \"user_goal_summary\": \"string\",\n  \"collected_fields\": {\n    \"study_goal\": \"string|null\",\n    \"space_type\": \"string|null\",\n    \"building_context\": \"string|null\",\n    \"target_area\": \"string|null\",\n    \"study_duration\": \"string|null\",\n    \"desired_output_type\": \"string|null\",\n    \"hours_of_interest\": \"string|null\",\n    \"known_issues\": \"string|null\",\n    \"study_mode\": \"exploratory|hypothesis-driven|null\",\n    \"preferred_visualization_type\": \"string|null\",\n    \"business_priority\": \"string|null\",\n    \"comparison_baseline\": \"string|null\"\n  },\n  \"missing_required_fields\": [\"string\"],\n  \"study_readiness_status\": \"ready|needs_followup|preset_recommended\",\n  \"recommended_presets\": [\n    {\n      \"template_name\": \"string\",\n      \"goal\": \"string\",\n      \"recommended_duration\": \"string\",\n      \"recommended_outputs\": [\"string\"]\n    }\n  ],\n  \"setup_request\": {\n    \"study_goal\": \"string|null\",\n    \"space_type\": \"string|null\",\n    \"target_area\": \"string|null\",\n    \"study_duration\": \"string|null\",\n    \"desired_output_type\": \"string|null\",\n    \"building_id\": \"string|null\",\n    \"study_mode\": \"exploratory|hypothesis-driven|null\"\n  },\n  \"assistant_response_text\": \"string\"\n}"
       },
-      "id": "23e5e744-4f94-4a96-b708-7285f178b03d",
+      "id": "d29c7f72-706d-4522-bf15-344520fdb641",
       "name": "Chat Repair Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
       "position": [
-        1280,
-        528
+        -960,
+        352
       ]
     },
     {
       "parameters": {
         "jsCode": "\nconst item = $input.first().json;\nconst output = item.output ?? item.text ?? item.response ?? item.data ?? item;\nlet parsed = output;\nconst errors = [];\nif (typeof parsed === 'string') {\n  try { parsed = JSON.parse(parsed); } catch (error) { errors.push('json_parse_failed'); }\n}\nif (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {\n  errors.push('payload_not_object');\n  parsed = {};\n}\nfor (const field of [\"action_type\",\"assistant_response_text\"]) {\n  if (!(field in parsed)) errors.push('missing_' + field);\n}\nreturn [{ json: { raw_ai_output: output, parsed_output: parsed, validation_passed: errors.length === 0, validation_errors: errors } }];\n"
       },
-      "id": "ad1956d5-36b5-414e-a46e-de67d27d8114",
+      "id": "b4c43058-8a13-4d16-9cb2-bd197e544144",
       "name": "Validate Repaired Chat JSON",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1520,
-        336
+        -720,
+        160
       ]
     },
     {
       "parameters": {
         "jsCode": "\nconst source = $json.parsed_output ? $json : $items('Validate Chat JSON', 0, 0)[0].json;\nconst raw = source.raw_ai_output ?? null;\nconst parsed = { ...(source.parsed_output ?? {}) };\n\nif (!parsed.action_type && parsed.action) parsed.action_type = parsed.action;\nif (!parsed.user_goal_summary && parsed.study_goal) parsed.user_goal_summary = parsed.study_goal;\n\nconst collected = {\n  ...(parsed.collected_fields ?? {}),\n  study_goal: parsed.collected_fields?.study_goal ?? parsed.study_goal ?? parsed.setup_request?.study_goal ?? null,\n  space_type: parsed.collected_fields?.space_type ?? parsed.space_type ?? parsed.setup_request?.space_type ?? null,\n  building_context: parsed.collected_fields?.building_context ?? parsed.building_context ?? null,\n  target_area: parsed.collected_fields?.target_area ?? parsed.target_area ?? parsed.setup_request?.target_area ?? null,\n  study_duration: parsed.collected_fields?.study_duration ?? parsed.study_duration ?? parsed.setup_request?.study_duration ?? null,\n  desired_output_type: parsed.collected_fields?.desired_output_type ?? parsed.desired_output_type ?? parsed.setup_request?.desired_output_type ?? 'occupancy_summary',\n  hours_of_interest: parsed.collected_fields?.hours_of_interest ?? parsed.hours_of_interest ?? null,\n  known_issues: parsed.collected_fields?.known_issues ?? parsed.known_issues ?? null,\n  study_mode: parsed.collected_fields?.study_mode ?? parsed.study_mode ?? null,\n  preferred_visualization_type: parsed.collected_fields?.preferred_visualization_type ?? parsed.preferred_visualization_type ?? null,\n  business_priority: parsed.collected_fields?.business_priority ?? parsed.priority ?? parsed.business_priority ?? null,\n  comparison_baseline: parsed.collected_fields?.comparison_baseline ?? parsed.comparison_baseline ?? null,\n};\n\nconst required = ['study_goal', 'target_area', 'study_duration'];\nconst hasSpaceContext = Boolean(collected.space_type || collected.building_context);\nconst missing = required.filter((field) => !collected[field]);\nif (!hasSpaceContext) missing.push('space_type_or_building_context');\n\nif (parsed.action_type === 'start_study') {\n  parsed.collected_fields = collected;\n  parsed.missing_required_fields = parsed.missing_required_fields?.length ? parsed.missing_required_fields : missing;\n  parsed.study_readiness_status = missing.length === 0 ? 'ready' : (parsed.study_readiness_status ?? 'needs_followup');\n  parsed.setup_request = parsed.setup_request ?? {};\n  parsed.setup_request.study_goal = parsed.setup_request.study_goal ?? collected.study_goal;\n  parsed.setup_request.space_type = parsed.setup_request.space_type ?? collected.space_type;\n  parsed.setup_request.target_area = parsed.setup_request.target_area ?? collected.target_area;\n  parsed.setup_request.study_duration = parsed.setup_request.study_duration ?? collected.study_duration;\n  parsed.setup_request.desired_output_type = parsed.setup_request.desired_output_type ?? collected.desired_output_type;\n  parsed.setup_request.building_id = parsed.setup_request.building_id ?? $('Normalize Chat Request').item.json.building_id ?? null;\n  parsed.setup_request.study_mode = parsed.setup_request.study_mode ?? collected.study_mode ?? 'hypothesis-driven';\n}\n\nif (!parsed.assistant_response_text) {\n  if (parsed.action_type === 'start_study' && parsed.study_readiness_status === 'ready') {\n    parsed.assistant_response_text = 'I have enough information to start this behavior study. I will create the study plan, run needfinding, and begin monitoring through the orchestrator.';\n  } else if (parsed.action_type === 'start_study') {\n    parsed.assistant_response_text = 'I can help start that study, but I need a little more information first.';\n  } else {\n    parsed.assistant_response_text = 'I understood the request, but I need one more detail before continuing.';\n  }\n}\n\nreturn [{ json: { ...parsed, raw_ai_output: raw } }];\n"
       },
-      "id": "85950660-4f86-41f8-83e4-f889154ec454",
+      "id": "3d43b214-a2ee-432a-a6fc-19f9c5ade3cc",
       "name": "Select Chat Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1760,
-        336
+        -480,
+        160
       ]
     },
     {
@@ -263,13 +263,13 @@
         },
         "options": {}
       },
-      "id": "c29c586c-aa36-440d-bc8a-0af522b93e81",
+      "id": "4a082221-eaff-41ae-97d2-16cb88ad354d",
       "name": "Route Start Study?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2000,
-        336
+        -240,
+        160
       ]
     },
     {
@@ -296,13 +296,13 @@
         },
         "options": {}
       },
-      "id": "b6d6ca61-d954-4ff1-8810-d7164fcd9686",
+      "id": "339590d2-0e7f-45bc-81f0-41d587e0d118",
       "name": "Study Ready For Setup?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2240,
-        176
+        0,
+        0
       ]
     },
     {
@@ -326,26 +326,26 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "4784b306-bab5-46a7-83ec-d4e240702ad5",
+      "id": "6b9d309d-751b-40d4-b6ea-8640c6f5fed4",
       "name": "Call Setup Agent",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2480,
-        176
+        240,
+        0
       ]
     },
     {
       "parameters": {
         "jsCode": "\nconst current = $json;\nif (current.study_plan || current.study_status || current.dashboard_summary || current.assistant_response_text) {\n  const base = current.assistant_response_text\n    ? current\n    : (() => {\n        if (Array.isArray(current) && current.length > 0) return current[0];\n        if (current.study_status) return current;\n        return null;\n      })();\n  if (base) return [{ json: base }];\n}\nconst sourceItems = $input.all().map(i => i.json);\nconst fallback = sourceItems.find(i => i.assistant_response_text) ?? sourceItems[0] ?? {};\nreturn [{\n  json: {\n    assistant_response_text: fallback.assistant_response_text ?? 'I could not complete that request safely. Please try again with a study ID or a clearer study goal.',\n    action_type: fallback.action_type ?? 'clarify_request',\n    study_readiness_status: fallback.study_readiness_status ?? null,\n    study_id: fallback.study_id ?? null,\n    setup_request: fallback.setup_request ?? null,\n    raw_ai_output: fallback.raw_ai_output ?? null,\n  }\n}];\n"
       },
-      "id": "58699624-3333-4ace-80b4-f30900d249ea",
+      "id": "8411780f-9175-401e-a4b5-439e12ead57f",
       "name": "Build Dashboard Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3680,
-        496
+        1440,
+        320
       ]
     },
     {
@@ -372,13 +372,13 @@
         },
         "options": {}
       },
-      "id": "1bf45aa2-ac4a-4161-99ae-5196add53018",
+      "id": "39573714-3c56-4bac-adc4-3352fbd8333e",
       "name": "Route Study Status?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2240,
-        432
+        0,
+        256
       ]
     },
     {
@@ -430,13 +430,13 @@
           }
         }
       },
-      "id": "47131f93-2516-4303-b029-f13a1a9abb53",
+      "id": "7355de69-2e5f-4550-82bb-6f4281c2a28c",
       "name": "Fetch Study Status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2480,
-        432
+        240,
+        256
       ]
     },
     {
@@ -463,13 +463,13 @@
         },
         "options": {}
       },
-      "id": "690d76ed-ceb3-4a2c-bd19-f03ec3a0e0fb",
+      "id": "0e7ce688-4c72-4382-a67d-55cced743d32",
       "name": "Route Results?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2480,
-        656
+        240,
+        480
       ]
     },
     {
@@ -525,13 +525,13 @@
           }
         }
       },
-      "id": "8aaffd63-36c3-42ee-b86f-7e12dc43cf51",
+      "id": "a107894e-ac57-42be-8cda-0399e421bb33",
       "name": "Fetch Stored Results",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2720,
-        656
+        480,
+        480
       ]
     },
     {
@@ -558,13 +558,13 @@
         },
         "options": {}
       },
-      "id": "835c6669-5faf-4512-9ed0-cb33e2ca3aea",
+      "id": "3dbaea70-9db7-4504-bf8e-4b583b2395c7",
       "name": "Route Study Q&A?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2720,
-        880
+        480,
+        704
       ]
     },
     {
@@ -602,13 +602,13 @@
           }
         }
       },
-      "id": "82ae8f19-a61f-4fb5-a6d2-f224450506d1",
+      "id": "c1476c10-35f8-438f-826b-57952104e69f",
       "name": "Fetch Study Context",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2960,
-        880
+        720,
+        704
       ]
     },
     {
@@ -624,13 +624,13 @@
           ]
         }
       },
-      "id": "3dc4e444-5f80-4bae-811d-4f4cbd9396b3",
+      "id": "aad67447-8a74-48aa-a7be-8ce217570a64",
       "name": "Answer From Stored Context",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
       "position": [
-        3200,
-        880
+        960,
+        704
       ]
     },
     {
@@ -643,17 +643,17 @@
         },
         "options": {}
       },
-      "id": "8883d09d-0b63-4eef-a521-f8c354ce27d8",
+      "id": "cbe18060-4d1f-484a-879f-ce8cffbed522",
       "name": "Study QA Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
       "position": [
-        3200,
-        1072
+        960,
+        896
       ],
       "credentials": {
         "openAiApi": {
-          "id": "kZpqcM3SJ8maViAy",
+          "id": "1XomfEQDbvwtbkUl",
           "name": "OpenAI account"
         }
       }
@@ -663,13 +663,13 @@
         "schemaType": "manual",
         "inputSchema": "{\n  \"assistant_response_text\": \"string\",\n  \"action_type\": \"answer_question\",\n  \"study_id\": \"string|null\"\n}"
       },
-      "id": "c2f329af-f2b3-4d89-bc6b-bc3700faec19",
+      "id": "667050f3-d13a-4d4f-8bdc-476e458841ed",
       "name": "Study QA Parser",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
       "position": [
-        3440,
-        1072
+        1200,
+        896
       ]
     }
   ],
@@ -993,11 +993,11 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "a8b36a14-370e-4e1a-bb6f-9d2eaafe1e1c",
+  "versionId": "872b0396-6ea1-4b2a-9181-f8bcbc3b9bf5",
   "meta": {
-    "aiBuilderAssisted": true,
-    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b3e0d56d03ef04850c0691767d8d0573d1a2c8df7da4e1cb264527c1a3ddf8d2"
   },
-  "id": "fzgzExOllnFRlBBK",
+  "id": "uL1iRG1Y4ykWmlJm",
   "tags": []
 }

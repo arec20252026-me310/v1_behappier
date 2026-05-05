@@ -8,26 +8,26 @@
         "width": 760,
         "color": 5
       },
-      "id": "97b0c4c6-dd72-4161-9ef3-72c237e357fa",
+      "id": "642f4076-c01e-4e3e-9f6b-6f0dc5a5842d",
       "name": "Service Notes",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        4656,
-        1968
+        0,
+        0
       ]
     },
     {
       "parameters": {
         "inputSource": "passthrough"
       },
-      "id": "9cf8d153-0531-4610-8ee9-2fd69f02fd54",
+      "id": "702a2129-6ace-40c4-aa54-8a9af38aa677",
       "name": "When Executed by Another Workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        4656,
-        2336
+        0,
+        368
       ]
     },
     {
@@ -41,26 +41,26 @@
           ]
         }
       },
-      "id": "6280d614-cc4d-4842-9959-cfa395718a3f",
+      "id": "ffa4394b-30e8-4dd3-ba1c-0944f0ddbf31",
       "name": "Preview Aggregation Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        4656,
-        2576
+        0,
+        608
       ]
     },
     {
       "parameters": {
         "jsCode": "\nif ($json.command || $json.operation) {\n  return [{ json: { ...$json, operation: $json.operation ?? $json.command } }];\n}\nreturn [{\n  json: {\n    operation: 'aggregate_preview_metrics',\n    scheduled_run: true,\n    triggered_at: new Date().toISOString()\n  }\n}];\n"
       },
-      "id": "9544f686-7f4d-4198-a1ab-2c34b27f2660",
+      "id": "f9bda77a-75fa-41c0-8d2d-76f02adfa31b",
       "name": "Normalize Service Operation",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4928,
-        2432
+        272,
+        464
       ]
     },
     {
@@ -87,13 +87,13 @@
         },
         "options": {}
       },
-      "id": "d6159852-0d76-405a-a47c-856033f3973d",
+      "id": "b1d1659d-17a7-4f5e-bb6c-fc49a5e2df2d",
       "name": "Aggregate Preview Metrics?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        5184,
-        2432
+        528,
+        464
       ],
       "onError": "continueRegularOutput"
     },
@@ -146,13 +146,13 @@
           }
         }
       },
-      "id": "d3fe23a6-647b-4ae4-870a-e0aac115170d",
+      "id": "95ac7722-3312-4f9c-9f01-6e01c325402d",
       "name": "Fetch Running Studies",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        5424,
-        2272
+        768,
+        304
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -163,13 +163,13 @@
       "parameters": {
         "jsCode": "\nconst studies = Array.isArray($json) ? $json : ($json.body ?? $json.data ?? $json);\nconst rows = Array.isArray(studies) ? studies : [];\nreturn rows.map((study) => ({\n  json: {\n    study_id: study.study_id,\n    preview_status: 'preview',\n    provisional_label: 'data collection in progress',\n    metrics: {\n      latest_detection_count: 0,\n      rolling_behavior_counts: {},\n      latest_updated_at: new Date().toISOString()\n    }\n  }\n}));\n"
       },
-      "id": "fe1b55c4-7798-4bda-bdff-4ad1b6c2d4aa",
+      "id": "f8730959-d7b1-4c62-9306-0245953beb39",
       "name": "Build Preview Metrics",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5664,
-        2272
+        1008,
+        304
       ]
     },
     {
@@ -202,13 +202,13 @@
         "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id,\n    status: $json.preview_status,\n    label: $json.provisional_label,\n    metrics: $json.metrics,\n    updated_at: new Date().toISOString()\n  }) }}",
         "options": {}
       },
-      "id": "f01a3be8-5c06-4e56-8a55-4128ce0adf12",
+      "id": "d32c2983-7251-4422-940a-9e413caa41b4",
       "name": "Store Preview Metrics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        5904,
-        2272
+        1248,
+        304
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -239,13 +239,13 @@
         },
         "options": {}
       },
-      "id": "935180be-fece-41ac-bf68-3618d4300050",
+      "id": "0ba8cf79-277a-4123-8f46-e14657d1b998",
       "name": "Log Event?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        5424,
-        2528
+        768,
+        560
       ],
       "onError": "continueRegularOutput"
     },
@@ -279,13 +279,13 @@
         "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id ?? null,\n    workflow_name: $json.workflow_name ?? 'common_services',\n    node_name: $json.node_name ?? 'unknown',\n    timestamp: new Date().toISOString(),\n    input_reference: $json.input_reference ?? null,\n    output_reference: $json.output_reference ?? null,\n    message: $json.message ?? 'log_event'\n  }) }}",
         "options": {}
       },
-      "id": "cc75d194-3606-49bb-b5a7-6d025ccf80af",
+      "id": "9b6bfac1-d9af-4aee-99ba-eea3022f13a6",
       "name": "Store Workflow Log",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        5664,
-        2528
+        1008,
+        560
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -322,13 +322,13 @@
         "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id ?? null,\n    workflow_name: $json.workflow_name ?? 'unknown',\n    node_name: $json.node_name ?? 'unknown',\n    timestamp: new Date().toISOString(),\n    input_reference: $json.input_reference ?? null,\n    error_message: $json.error_message ?? 'unknown_error',\n    retry_count: $json.retry_count ?? 0\n  }) }}",
         "options": {}
       },
-      "id": "d6d1219a-2944-4853-a191-d53b0b89d2ba",
+      "id": "0e15ff5a-2a15-49fc-935e-cc7922d6e1a8",
       "name": "Store Workflow Error",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        5904,
-        2528
+        1248,
+        560
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -339,13 +339,13 @@
       "parameters": {
         "jsCode": "\nreturn [{\n  json: {\n    operation: $('Normalize Service Operation').item.json.operation,\n    status: 'ok',\n    completed_at: new Date().toISOString()\n  }\n}];\n"
       },
-      "id": "4b0c1325-1ec7-40dd-ba81-24246981898f",
+      "id": "aed54163-f8c7-43c9-b4f1-96b8b6dd7b84",
       "name": "Build Service Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        6144,
-        2432
+        1488,
+        464
       ]
     }
   ],
@@ -482,10 +482,10 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "f8c2b7a5-0a89-4070-aa12-ce8003ce10b2",
+  "versionId": "5af11159-e326-4560-8772-a0f5223980da",
   "meta": {
-    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+    "instanceId": "b3e0d56d03ef04850c0691767d8d0573d1a2c8df7da4e1cb264527c1a3ddf8d2"
   },
-  "id": "x4kuAOIoKmKyCQ4c",
+  "id": "Bvdj5QLDdvSZmqqi",
   "tags": []
 }

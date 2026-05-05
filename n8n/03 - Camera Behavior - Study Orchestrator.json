@@ -8,39 +8,39 @@
         "width": 820,
         "color": 3
       },
-      "id": "c1ceb759-1122-4ded-ab6a-32fd084ee017",
+      "id": "35b62159-4977-404a-98a9-044cece00dfb",
       "name": "Orchestrator Notes",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        2640,
-        1008
+        0,
+        0
       ]
     },
     {
       "parameters": {
         "inputSource": "passthrough"
       },
-      "id": "3dcfd572-624b-4aea-98f7-e5ff4a5e6ebc",
+      "id": "b4e9267f-9bf0-4c24-b51e-c5b5b6bbb66b",
       "name": "When Executed by Setup or Services",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        2640,
-        1376
+        0,
+        368
       ]
     },
     {
       "parameters": {
         "jsCode": "\nconst command = $json.command ?? 'initialize_study';\nreturn [{\n  json: {\n    command,\n    study_id: $json.study_id ?? $json.study_plan?.study_id ?? null,\n    study_plan: $json.study_plan ?? null,\n    task_graph: $json.task_graph ?? null,\n    graph_plan: $json.graph_plan ?? null,\n    needfinding_request: $json.needfinding_request ?? null,\n    behavior_monitoring_request_template: $json.behavior_monitoring_request_template ?? null,\n    actionable_insights_request: $json.actionable_insights_request ?? null,\n    completion_criteria: $json.study_plan?.completion_criteria ?? $json.completion_criteria ?? null,\n    debug_mode: $json.debug_mode ?? false,\n  }\n}];\n"
       },
-      "id": "a07fd841-7f97-44e9-a212-30ef75899597",
+      "id": "55064a31-232d-45e5-9395-3fb70b038ce8",
       "name": "Normalize Orchestration Command",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2912,
-        1376
+        272,
+        368
       ]
     },
     {
@@ -67,13 +67,13 @@
         },
         "options": {}
       },
-      "id": "10561fba-821c-44a0-aacb-ef4c07981138",
+      "id": "1483106f-0456-4191-a08c-f4a9573898a4",
       "name": "Initialize Study?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3168,
-        1376
+        528,
+        368
       ],
       "onError": "continueRegularOutput"
     },
@@ -116,13 +116,13 @@
         "jsonBody": "={{ JSON.stringify({ status: 'needfinding_running', current_stage: 'needfinding_running', updated_at: new Date().toISOString() }) }}",
         "options": {}
       },
-      "id": "81df9b9b-f8a9-4904-94ca-db0170add42d",
+      "id": "159074c1-3c2d-44a9-b53d-ed84747b200a",
       "name": "Mark Needfinding Running",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3408,
-        1216
+        768,
+        208
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -150,13 +150,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "87f25ea9-5025-458f-91a9-f6b3745522eb",
+      "id": "5db0b804-4f59-4343-a622-ec9a04265187",
       "name": "Call Needfinding Agent",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3648,
-        1216
+        1008,
+        208
       ],
       "onError": "continueRegularOutput"
     },
@@ -164,13 +164,13 @@
       "parameters": {
         "jsCode": "\nconst need = $json;\nconst original = $('Normalize Orchestration Command').item.json;\nconst monitoring = {\n  ...(original.behavior_monitoring_request_template ?? {}),\n  study_id: original.study_id,\n  behavior_targets: need.behavior_targets ?? [],\n  building_id: original.study_plan?.building_context?.building_id ?? null,\n  zone_ids: [original.study_plan?.building_context?.target_area].filter(Boolean),\n  setup_instructions: original.behavior_monitoring_request_template?.setup_instructions ?? 'Use only requested behavior targets.',\n};\nreturn [{\n  json: {\n    ...original,\n    needfinding_output: need,\n    downstream_monitoring_request: monitoring,\n  }\n}];\n"
       },
-      "id": "2b54cab9-8a78-44d3-b323-329072848e84",
+      "id": "49b504ee-c8de-475b-932e-9b891fdedf94",
       "name": "Merge Needfinding Into Monitoring Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3888,
-        1216
+        1248,
+        208
       ]
     },
     {
@@ -203,13 +203,13 @@
         "jsonBody": "={{ JSON.stringify({\n    study_id: $json.study_id,\n    needfinding_summary: $json.needfinding_output.needfinding_summary,\n    behavior_targets: $json.needfinding_output.behavior_targets,\n    evidence_notes: $json.needfinding_output.evidence_notes,\n    building_relevance_notes: $json.needfinding_output.building_relevance_notes,\n    created_at: new Date().toISOString()\n  }) }}",
         "options": {}
       },
-      "id": "655186b9-ab4d-4d89-8b1a-c2470a135d1c",
+      "id": "04415577-be4e-4c11-aee7-532c0aaae5db",
       "name": "Store Needfinding Output",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4128,
-        1216
+        1488,
+        208
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -255,13 +255,13 @@
         "jsonBody": "={{ JSON.stringify({ status: 'monitoring_running', current_stage: 'monitoring_running', updated_at: new Date().toISOString() }) }}",
         "options": {}
       },
-      "id": "40626b59-a7bb-49ac-8c5a-849a3daa29d9",
+      "id": "2b5a7bd2-0119-4944-8dd0-bc928a95acb2",
       "name": "Mark Monitoring Running",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4368,
-        1216
+        1728,
+        208
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -289,13 +289,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "d61d6f93-4dc8-4e02-8875-3737960ccda6",
+      "id": "fc1810ab-0388-40d0-b0ca-04728743cbe6",
       "name": "Call Behavior Monitoring Agent",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        4608,
-        1216
+        1968,
+        208
       ],
       "onError": "continueRegularOutput"
     },
@@ -320,13 +320,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "b2087b2e-3592-498f-b874-a986f6e3846a",
+      "id": "81c3373e-8e05-4061-af9e-4de1439462ef",
       "name": "Call Preview Aggregation Service",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        4848,
-        1216
+        2208,
+        208
       ],
       "onError": "continueRegularOutput"
     },
@@ -334,13 +334,13 @@
       "parameters": {
         "jsCode": "\nreturn [{\n  json: {\n    study_id: $('Normalize Orchestration Command').item.json.study_id,\n    study_status: 'monitoring_running',\n    current_stage: 'monitoring_running',\n    downstream_requests: {\n      needfinding_complete: true,\n      monitoring_started: true,\n      preview_aggregation_requested: true\n    },\n    final_result_reference: null,\n    orchestration_log: [\n      'Study initialized',\n      'Needfinding completed',\n      'Monitoring started',\n      'Preview aggregation scheduled'\n    ]\n  }\n}];\n"
       },
-      "id": "59a210c0-621f-4cac-a3d8-fc35285c7f8e",
+      "id": "f25c7f9e-145f-4724-8925-e40b506410eb",
       "name": "Build Init Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5088,
-        1216
+        2448,
+        208
       ]
     },
     {
@@ -368,13 +368,13 @@
         },
         "options": {}
       },
-      "id": "2be9c4d1-84d3-468b-b3d0-c9bc2d6c13ee",
+      "id": "33ed6b65-f496-4727-8b5e-7a009a5837cf",
       "name": "Finalize Or Milestone?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3408,
-        1568
+        768,
+        560
       ],
       "onError": "continueRegularOutput"
     },
@@ -399,13 +399,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "843bc178-7f51-4261-82ec-7edb6431238f",
+      "id": "5f16225c-53c7-4ae6-876b-5d0d3bc29055",
       "name": "Call Actionable Insights Agent",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3648,
-        1568
+        1008,
+        560
       ],
       "onError": "continueRegularOutput"
     },
@@ -448,13 +448,13 @@
         "jsonBody": "={{ JSON.stringify({\n    status: $json.output_mode === 'final_insights' ? 'complete' : 'monitoring_running',\n    current_stage: $json.output_mode === 'final_insights' ? 'complete' : 'milestone_review',\n    updated_at: new Date().toISOString()\n  }) }}",
         "options": {}
       },
-      "id": "3c70f981-019a-4a8f-bbec-624f38101cd8",
+      "id": "933f48ec-547e-4c47-8340-1e3f53fb2e08",
       "name": "Mark Study Complete Or Updated",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3888,
-        1568
+        1248,
+        560
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -465,26 +465,26 @@
       "parameters": {
         "jsCode": "\nreturn [{\n  json: {\n    study_id: $json.study_id ?? $('Normalize Orchestration Command').item.json.study_id,\n    study_status: $json.output_mode === 'final_insights' ? 'complete' : 'monitoring_running',\n    current_stage: $json.output_mode === 'final_insights' ? 'complete' : 'milestone_review',\n    downstream_requests: {\n      insights_generated: true\n    },\n    final_result_reference: {\n      study_id: $json.study_id ?? $('Normalize Orchestration Command').item.json.study_id,\n      output_mode: $json.output_mode ?? 'milestone_summary'\n    },\n    orchestration_log: [\n      'Insight generation executed',\n      $json.output_mode === 'final_insights' ? 'Study marked complete' : 'Milestone output stored'\n    ]\n  }\n}];\n"
       },
-      "id": "bf8058c6-684b-4c5b-906b-c908b3d0e7fc",
+      "id": "3f49d9ac-fc33-4f5e-aa2d-be9f0ed1b949",
       "name": "Build Finalize Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4128,
-        1568
+        1488,
+        560
       ]
     },
     {
       "parameters": {
         "jsCode": "\nreturn [{\n  json: {\n    study_id: $('Normalize Orchestration Command').item.json.study_id,\n    study_status: 'failed',\n    current_stage: 'failed',\n    downstream_requests: {},\n    final_result_reference: null,\n    orchestration_log: ['Command not recognized or upstream payload incomplete']\n  }\n}];\n"
       },
-      "id": "06df95ab-ee68-4b14-ba5d-04ed7aa1517d",
+      "id": "89addf2d-f8e2-40f7-a4ba-2ff3fb6b8d19",
       "name": "Orchestrator Fallback",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3648,
-        1808
+        1008,
+        800
       ]
     }
   ],
@@ -654,10 +654,10 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "b4ee434b-ea95-46b7-82a6-78567e4172b3",
+  "versionId": "4bbf5782-6681-44e6-a4cd-80a27707abfb",
   "meta": {
-    "instanceId": "9fdeab0d7cd203966f87ed359e0fc39876f106af07b70cd6cc135d118357c7dc"
+    "instanceId": "b3e0d56d03ef04850c0691767d8d0573d1a2c8df7da4e1cb264527c1a3ddf8d2"
   },
-  "id": "OfnT9Z08lHApgqyR",
+  "id": "Lo4r1VnDfoaeKBO4",
   "tags": []
 }
