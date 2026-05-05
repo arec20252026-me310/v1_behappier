@@ -65,8 +65,7 @@ interface N8nResponse {
 
 interface FormData {
   name: string
-  description: string
-  hypothesis: string
+  study_goal: string
   duration_minutes: number | null
   target_metrics: string[]
   target_zones: string[]
@@ -100,15 +99,14 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
     `I want to start a study with the following details:`,
     ``,
     `Study Name: ${form.name}`,
-    form.description ? `Description: ${form.description}` : null,
-    form.hypothesis ? `Hypothesis: ${form.hypothesis}` : null,
+    form.study_goal ? `Study Goal: ${form.study_goal}` : null,
     `Planned Duration: ${durationLabel}`,
     zoneNames ? `Target Zones: ${zoneNames}` : null,
     metricNames ? `Metrics to Track: ${metricNames}` : null,
     cameraLines.length > 0 ? `Camera Configuration:\n${cameraLines.join("\n")}` : null,
     ``,
     `Please design a complete study plan and start the full analysis pipeline.`,
-    `Use my hypothesis and chosen metrics to guide what the behavior monitoring agent looks for`,
+    `Use the study goal and chosen metrics to guide what the behavior monitoring agent looks for`,
     `and what the actionable insights agent should prioritize in its outputs.`,
   ]
     .filter(line => line !== null)
@@ -126,8 +124,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<FormData>({
     name: "",
-    description: "",
-    hypothesis: "",
+    study_goal: "",
     duration_minutes: null,
     target_metrics: [],
     target_zones: [],
@@ -182,10 +179,8 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
           building_id: space.id,
           study_id: lastStudyId,
           study_name: form.name,
-          hypothesis: form.hypothesis,
-          description: form.description,
+          study_goal: form.study_goal,
           target_zones: form.target_zones,
-          target_metrics: form.target_metrics,
           target_metric_names: form.target_metrics
             .map(id => metrics.find(m => m.id === id)?.name)
             .filter(Boolean),
@@ -199,7 +194,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
       if (data.study_id) setLastStudyId(data.study_id)
 
       if (data.action_type === "start_study") {
-        setForm({ name: "", description: "", hypothesis: "", duration_minutes: null, target_metrics: [], target_zones: [] })
+        setForm({ name: "", study_goal: "", duration_minutes: null, target_metrics: [], target_zones: [] })
         setShowForm(false)
         setTimeout(() => router.refresh(), 2000)
       }
@@ -276,25 +271,13 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="hypothesis">Hypothesis</Label>
+                <Label htmlFor="study-goal">Study Goal</Label>
                 <Textarea
-                  id="hypothesis"
-                  value={form.hypothesis}
-                  onChange={e => setForm(f => ({ ...f, hypothesis: e.target.value }))}
-                  placeholder="What do you expect to find? e.g., The lobby is most congested between 8–9am near the main entrance."
-                  rows={2}
-                  className="resize-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Additional context, goals, or constraints for this study…"
-                  rows={2}
+                  id="study-goal"
+                  value={form.study_goal}
+                  onChange={e => setForm(f => ({ ...f, study_goal: e.target.value }))}
+                  placeholder="What do you want to find out? e.g., Monitor the main entrance for congestion patterns between 8–9am."
+                  rows={3}
                   className="resize-none"
                 />
               </div>
