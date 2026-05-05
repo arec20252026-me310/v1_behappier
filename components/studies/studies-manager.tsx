@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { FlaskConical, Send, RefreshCw, Bot, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
+import { FlaskConical, Send, RefreshCw, Bot, AlertCircle, ChevronDown, ChevronUp, Pencil } from "lucide-react"
 import type { Space, Zone, Metric, BEStudy, Camera } from "@/lib/types"
 import { useRouter } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
@@ -118,6 +118,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
   const sessionId = useRef<string>(crypto.randomUUID())
   const [studies] = useState<BEStudy[]>(initialStudies)
   const [showForm, setShowForm] = useState(false)
+  const [editingStudy, setEditingStudy] = useState<BEStudy | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [lastResponse, setLastResponse] = useState<N8nResponse | null>(null)
   const [lastStudyId, setLastStudyId] = useState<string | null>(null)
@@ -162,6 +163,37 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
         : [...f.target_zones, id],
     }))
 
+  const handleEditStudy = (study: BEStudy) => {
+    const meta = study.metadata as Record<string, unknown>
+    const storedZones = (meta.target_zones as string[]) ?? []
+    const storedMetricNames = (meta.target_metric_names as string[]) ?? []
+    // Reverse-lookup metric IDs from stored names
+    const storedMetricIds = metrics
+      .filter(m => storedMetricNames.includes(m.name))
+      .map(m => m.id)
+
+    setForm({
+      name: (meta.study_name as string) ?? study.study_goal ?? "",
+      study_goal: study.study_goal ?? "",
+      duration_minutes: study.duration_seconds
+        ? Math.round((study.duration_seconds as number) / 60)
+        : null,
+      target_zones: storedZones,
+      target_metrics: storedMetricIds,
+    })
+    setEditingStudy(study)
+    setLastResponse(null)
+    setError(null)
+    setShowForm(true)
+  }
+
+  const handleCancelForm = () => {
+    setShowForm(false)
+    setEditingStudy(null)
+    setLastResponse(null)
+    setError(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim() || isSubmitting) return
@@ -178,6 +210,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
           session_id: sessionId.current,
           building_id: space.id,
           study_id: lastStudyId,
+          existing_study_id: editingStudy?.study_id ?? null,
           study_name: form.name,
           study_goal: form.study_goal,
           target_zones: form.target_zones,
@@ -195,6 +228,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
 
       if (data.action_type === "start_study") {
         setForm({ name: "", study_goal: "", duration_minutes: null, target_metrics: [], target_zones: [] })
+        setEditingStudy(null)
         setShowForm(false)
         setTimeout(() => router.refresh(), 2000)
       }
@@ -235,7 +269,9 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
       {showForm && (
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-medium">Configure Study</CardTitle>
+            <CardTitle className="text-base font-medium">
+              {editingStudy ? "Edit & Start Study" : "Configure Study"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -367,12 +403,12 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
               )}
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" onClick={handleCancelForm}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={!form.name.trim() || isSubmitting} className="gap-2">
                   {isSubmitting ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-                  {isSubmitting ? "Sending…" : "Start Study"}
+                  {isSubmitting ? "Sending…" : editingStudy ? "Update & Start" : "Start Study"}
                 </Button>
               </div>
             </form>
@@ -428,6 +464,19 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                       Started: {new Date(study.started_at).toLocaleDateString()}
                       {study.duration_seconds && ` · ${formatDuration(Math.round(study.duration_seconds / 60))}`}
                     </p>
+                  )}
+                  {study.current_stage === "draft" && (
+                    <div className="pt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 h-7 text-xs"
+                        onClick={() => handleEditStudy(study)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                        Edit & Start
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
