@@ -127,10 +127,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // n8n accepted the study — mark it active in Supabase
+    // n8n accepted the study — mark it active and record start time so
+    // the workflow can correctly calculate the study end time from started_at + duration_seconds
     await supabase
       .from("BE_studies")
-      .update({ status: "active" })
+      .update({ status: "active", started_at: new Date().toISOString() })
       .eq("study_id", study_id)
 
     const data = await response.json()
