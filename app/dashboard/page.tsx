@@ -55,6 +55,9 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(5)
 
+  // Most recent final insight output for the Occupancy Over Time chart
+  const latestOutput = beInsights?.find(o => o.output_mode === "final_insights") ?? beInsights?.[0] ?? null
+
   // Most recent insight for the completed study (for heatmap dialog)
   let completedStudyInsights = null
   if (completedStudy) {
@@ -116,7 +119,7 @@ export default async function DashboardPage() {
             completedStudy={completedStudy}
             completedStudyInsights={completedStudyInsights}
           />
-          <OccupancyChart />
+          <OccupancyChart latestOutput={latestOutput} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

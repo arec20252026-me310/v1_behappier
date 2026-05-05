@@ -6,6 +6,8 @@ import { Lightbulb, Target, BarChart3, Table2 } from "lucide-react"
 import type { BEInsightOutput } from "@/lib/types"
 import { formatDistanceToNow } from "date-fns"
 import { DynamicChart } from "./dynamic-chart"
+import { TimeSeriesChart } from "./time-series-chart"
+import type { ChartSeries } from "./time-series-chart"
 
 interface InsightsListProps {
   outputs: BEInsightOutput[]
@@ -129,25 +131,38 @@ export function InsightsList({ outputs }: InsightsListProps) {
                 </div>
               )}
 
-              {/* Charts */}
-              {output.charts.length > 0 && (
-                <div className="space-y-4 pt-2 border-t border-border">
-                  <div className="flex items-center gap-1.5">
-                    <BarChart3 className="h-3.5 w-3.5 text-chart-1" />
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Charts
-                    </p>
+              {/* Charts — line charts combined, others individual */}
+              {output.charts.length > 0 && (() => {
+                const lineSeries: ChartSeries[] = output.charts
+                  .filter(c => (c as Record<string, unknown>).chart_type === "line")
+                  .map(c => {
+                    const ch = c as Record<string, unknown>
+                    const d = ch.data as { labels: string[]; values: (number | null)[] }
+                    return { title: ch.title as string, labels: d.labels, values: d.values }
+                  })
+                const otherCharts = output.charts.filter(
+                  c => (c as Record<string, unknown>).chart_type !== "line"
+                )
+                return (
+                  <div className="space-y-4 pt-2 border-t border-border">
+                    <div className="flex items-center gap-1.5">
+                      <BarChart3 className="h-3.5 w-3.5 text-chart-1" />
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Charts
+                      </p>
+                    </div>
+                    {lineSeries.length > 0 && <TimeSeriesChart series={lineSeries} height={240} />}
+                    {otherCharts.map((chart, i) => (
+                      <DynamicChart
+                        key={(chart as Record<string, unknown>).chart_id as string ?? i}
+                        chart_type={(chart as Record<string, unknown>).chart_type as string ?? "bar"}
+                        title={(chart as Record<string, unknown>).title as string ?? ""}
+                        data={(chart as Record<string, unknown>).data as { labels: string[]; values: (number | null)[] | (number | null)[][] }}
+                      />
+                    ))}
                   </div>
-                  {output.charts.map((chart, i) => (
-                    <DynamicChart
-                      key={(chart as Record<string, unknown>).chart_id as string ?? i}
-                      chart_type={(chart as Record<string, unknown>).chart_type as string ?? "line"}
-                      title={(chart as Record<string, unknown>).title as string ?? ""}
-                      data={(chart as Record<string, unknown>).data as { labels: string[]; values: (number | null)[] | (number | null)[][] }}
-                    />
-                  ))}
-                </div>
-              )}
+                )
+              })()}
 
               {/* Tables */}
               {output.tables.length > 0 && (
