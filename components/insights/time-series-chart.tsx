@@ -61,13 +61,30 @@ function formatDuration(ms: number): string {
   return `${Math.round(d)} day${Math.round(d) !== 1 ? "s" : ""}`
 }
 
+function parseTimestamp(raw: string): number | null {
+  if (!raw) return null
+  // Standard ISO or browser-parseable string
+  let ms = new Date(raw).getTime()
+  if (!isNaN(ms)) return ms
+  // "2024-01-15 10:30:00" — space instead of T
+  ms = new Date(raw.replace(" ", "T")).getTime()
+  if (!isNaN(ms)) return ms
+  // Unix epoch: seconds (10 digits) or milliseconds (13 digits)
+  const n = Number(raw)
+  if (!isNaN(n) && n > 0) {
+    ms = n > 1e11 ? n : n * 1000
+    if (!isNaN(new Date(ms).getTime())) return ms
+  }
+  return null
+}
+
 function viewDuration(allData: Record<string, unknown>[], start: number, end: number): string | null {
   const a = allData[start]?._raw as string | undefined
   const b = allData[end - 1]?._raw as string | undefined
-  if (!a || !b) return null
-  const t0 = new Date(a).getTime()
-  const t1 = new Date(b).getTime()
-  if (isNaN(t0) || isNaN(t1) || t1 <= t0) return null
+  if (!a || !b || a === b) return null
+  const t0 = parseTimestamp(a)
+  const t1 = parseTimestamp(b)
+  if (t0 === null || t1 === null || t1 <= t0) return null
   return formatDuration(t1 - t0)
 }
 
@@ -218,7 +235,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     ? "oklch(0.68 0.12 200)"
     : "oklch(0.54 0.10 200)"
 
-  const durationLabel = viewDuration(allData, viewStart, viewEnd)
+  const durationLabel = viewDuration(allData, viewStart, viewEnd) ?? (windowLen < total ? `${windowLen} pts` : null)
 
   const statusLabel =
     dragMode === "pan" ? "Panning…" :
@@ -301,7 +318,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
                 left: 0,
                 right: 0,
                 top: "50%",
-                height: 10,
+                height: 12,
                 transform: "translateY(-50%)",
                 borderRadius: "9999px",
                 background: "oklch(0.22 0.01 260)",
@@ -330,6 +347,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
                   <span
                     style={{
                       fontSize: 9,
+                      lineHeight: 1,
                       color: "oklch(0.92 0 0)",
                       pointerEvents: "none",
                       userSelect: "none",
