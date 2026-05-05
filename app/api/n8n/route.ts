@@ -127,6 +127,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // n8n accepted the study — mark it active in Supabase
+    await supabase
+      .from("BE_studies")
+      .update({ status: "active" })
+      .eq("study_id", study_id)
+
     const data = await response.json()
     return Response.json({ ...data, study_id })
   } catch {
