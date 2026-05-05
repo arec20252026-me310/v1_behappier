@@ -1,6 +1,15 @@
 import { NextRequest } from "next/server"
+import { createServerClient } from "@supabase/ssr"
 
 export const maxDuration = 60
+
+function getServiceClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { cookies: { getAll: () => [], setAll: () => {} } }
+  )
+}
 
 export async function POST(req: NextRequest) {
   const n8nUrl = process.env.N8N_URL
@@ -25,29 +34,76 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid request body" }, { status: 400 })
   }
 
+  // Generate a stable study_id for this submission
+  const study_id = `study_${Date.now()}`
+
+  // Create the BE_studies row in Supabase before calling n8n so the workflow
+  // can find and update the record by study_id
+  const supabase = getServiceClient()
+  const { error: insertError } = await supabase.from("BE_studies").insert({
+    study_id,
+    building_id: (body.building_id as string) ?? null,
+    user_id: (body.user_id as string) ?? null,
+    session_id: (body.session_id as string) ?? null,
+    study_goal: (body.study_goal as string) || (body.study_name as string) || "Untitled study",
+    status: "draft",
+    current_stage: "draft",
+    duration_seconds: (body.duration_seconds as number) ?? null,
+    metadata: {
+      study_goal: body.study_goal ?? null,
+      target_zones: body.target_zones ?? [],
+      target_metric_names: body.target_metric_names ?? [],
+    },
+  })
+
+  if (insertError) {
+    console.error("[supabase] Failed to create study row:", insertError)
+    return Response.json(
+      {
+        assistant_response_text: "Failed to create study record. Please try again.",
+        action_type: "clarify_request",
+        study_id: null,
+        study_readiness_status: null,
+      },
+      { status: 500 }
+    )
+  }
+
+  // Build the n8n webhook payload
+  const zone_ids = (body.target_zones as string[]) ?? []
+  const behavior_targets = ((body.target_metric_names as string[]) ?? []).map(
+    (name) => ({ behavior_name: name })
+  )
+  const setup_instructions = (body.message_text as string) ?? ""
+
+  const n8nPayload = { study_id, zone_ids, behavior_targets, setup_instructions }
+
   try {
-    const response = await fetch(`${n8nUrl}/webhook/occupant-behavior-main`, {
+    const response = await fetch(`${n8nUrl}/webhook/start-study`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(n8nPayload),
       signal: AbortSignal.timeout(55000),
     })
 
     if (!response.ok) {
+      const errorText = await response.text().catch(() => "(no body)")
+      console.error(`[n8n] ${response.status} ${response.statusText}:`, errorText)
       return Response.json(
         {
-          assistant_response_text:
-            "The n8n backend returned an error. Make sure all workflows are active and running.",
+          assistant_response_text: `The n8n backend returned an error (HTTP ${response.status}). Make sure all workflows are active and running.`,
           action_type: "clarify_request",
           study_id: null,
           study_readiness_status: null,
+          debug_n8n_status: response.status,
+          debug_n8n_body: errorText,
         },
         { status: 502 }
       )
     }
 
     const data = await response.json()
-    return Response.json(data)
+    return Response.json({ ...data, study_id })
   } catch {
     return Response.json(
       {

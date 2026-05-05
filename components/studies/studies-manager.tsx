@@ -65,10 +65,10 @@ interface N8nResponse {
 
 interface FormData {
   name: string
-  description: string
-  hypothesis: string
+  study_goal: string
   duration_minutes: number | null
   target_metrics: string[]
+  target_zones: string[]
 }
 
 function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], cameras: Camera[]): string {
@@ -77,11 +77,17 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
     .filter(Boolean)
     .join(", ")
 
+  const zoneNames = form.target_zones
+    .map(id => zones.find(z => z.id === id)?.name)
+    .filter(Boolean)
+    .join(", ")
+
   const durationLabel = form.duration_minutes
     ? DURATION_OPTIONS.find(o => o.value === form.duration_minutes)?.label ?? `${form.duration_minutes} minutes`
     : "not specified"
 
   const cameraLines = cameras
+    .filter(cam => form.target_zones.length === 0 || form.target_zones.includes(cam.zone_id))
     .map(cam => {
       const zone = zones.find(z => z.id === cam.zone_id)
       const entityId = cam.metadata?.ha_entity_id ? ` (${String(cam.metadata.ha_entity_id)})` : ""
@@ -93,14 +99,14 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
     `I want to start a study with the following details:`,
     ``,
     `Study Name: ${form.name}`,
-    form.description ? `Description: ${form.description}` : null,
-    form.hypothesis ? `Hypothesis: ${form.hypothesis}` : null,
+    form.study_goal ? `Study Goal: ${form.study_goal}` : null,
     `Planned Duration: ${durationLabel}`,
+    zoneNames ? `Target Zones: ${zoneNames}` : null,
     metricNames ? `Metrics to Track: ${metricNames}` : null,
     cameraLines.length > 0 ? `Camera Configuration:\n${cameraLines.join("\n")}` : null,
     ``,
     `Please design a complete study plan and start the full analysis pipeline.`,
-    `Use my hypothesis and chosen metrics to guide what the behavior monitoring agent looks for`,
+    `Use the study goal and chosen metrics to guide what the behavior monitoring agent looks for`,
     `and what the actionable insights agent should prioritize in its outputs.`,
   ]
     .filter(line => line !== null)
@@ -118,10 +124,10 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<FormData>({
     name: "",
-    description: "",
-    hypothesis: "",
+    study_goal: "",
     duration_minutes: null,
     target_metrics: [],
+    target_zones: [],
   })
 
   if (!space) {
@@ -148,6 +154,14 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
         : [...f.target_metrics, id],
     }))
 
+  const toggleZone = (id: string) =>
+    setForm(f => ({
+      ...f,
+      target_zones: f.target_zones.includes(id)
+        ? f.target_zones.filter(z => z !== id)
+        : [...f.target_zones, id],
+    }))
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim() || isSubmitting) return
@@ -164,6 +178,13 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
           session_id: sessionId.current,
           building_id: space.id,
           study_id: lastStudyId,
+          study_name: form.name,
+          study_goal: form.study_goal,
+          target_zones: form.target_zones,
+          target_metric_names: form.target_metrics
+            .map(id => metrics.find(m => m.id === id)?.name)
+            .filter(Boolean),
+          duration_seconds: form.duration_minutes ? form.duration_minutes * 60 : null,
         }),
       })
 
@@ -173,7 +194,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
       if (data.study_id) setLastStudyId(data.study_id)
 
       if (data.action_type === "start_study") {
-        setForm({ name: "", description: "", hypothesis: "", duration_minutes: null, target_metrics: [] })
+        setForm({ name: "", study_goal: "", duration_minutes: null, target_metrics: [], target_zones: [] })
         setShowForm(false)
         setTimeout(() => router.refresh(), 2000)
       }
@@ -250,28 +271,49 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="hypothesis">Hypothesis</Label>
+                <Label htmlFor="study-goal">Study Goal</Label>
                 <Textarea
-                  id="hypothesis"
-                  value={form.hypothesis}
-                  onChange={e => setForm(f => ({ ...f, hypothesis: e.target.value }))}
-                  placeholder="What do you expect to find? e.g., The lobby is most congested between 8–9am near the main entrance."
-                  rows={2}
+                  id="study-goal"
+                  value={form.study_goal}
+                  onChange={e => setForm(f => ({ ...f, study_goal: e.target.value }))}
+                  placeholder="What do you want to find out? e.g., Monitor the main entrance for congestion patterns between 8–9am."
+                  rows={3}
                   className="resize-none"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Additional context, goals, or constraints for this study…"
-                  rows={2}
-                  className="resize-none"
-                />
-              </div>
+              {zones.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Target Zones</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Select which zones this study should focus on. Leave blank to include all zones.
+                  </p>
+                  <ScrollArea className="h-[130px] rounded border border-border p-3">
+                    <div className="space-y-2">
+                      {zones.map(zone => (
+                        <div key={zone.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`zone-${zone.id}`}
+                            checked={form.target_zones.includes(zone.id)}
+                            onCheckedChange={() => toggleZone(zone.id)}
+                          />
+                          <label
+                            htmlFor={`zone-${zone.id}`}
+                            className="text-sm font-medium leading-none cursor-pointer"
+                          >
+                            {zone.name}
+                            {zone.zone_type && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                ({zone.zone_type.replace(/_/g, " ")})
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
 
               {metrics.length > 0 && (
                 <div className="space-y-2">
@@ -381,10 +423,10 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                       Preview: {study.live_preview_status}
                     </p>
                   )}
-                  {study.start_date_time && (
+                  {study.started_at && (
                     <p className="text-xs text-muted-foreground">
-                      Started: {new Date(study.start_date_time).toLocaleDateString()}
-                      {study.duration_minutes && ` · ${formatDuration(study.duration_minutes)}`}
+                      Started: {new Date(study.started_at).toLocaleDateString()}
+                      {study.duration_seconds && ` · ${formatDuration(Math.round(study.duration_seconds / 60))}`}
                     </p>
                   )}
                 </CardContent>
