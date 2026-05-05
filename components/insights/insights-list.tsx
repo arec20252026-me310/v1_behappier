@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Lightbulb, Target, BarChart3, Table2 } from "lucide-react"
 import type { BEInsightOutput } from "@/lib/types"
 import { formatDistanceToNow } from "date-fns"
+import { DynamicChart } from "./dynamic-chart"
 
 interface InsightsListProps {
   outputs: BEInsightOutput[]
@@ -128,21 +129,70 @@ export function InsightsList({ outputs }: InsightsListProps) {
                 </div>
               )}
 
-              {/* Charts & tables tally */}
-              {(output.charts.length > 0 || output.tables.length > 0) && (
-                <div className="flex items-center gap-3 pt-2 border-t border-border text-xs text-muted-foreground">
-                  {output.charts.length > 0 && (
-                    <span className="flex items-center gap-1">
-                      <BarChart3 className="h-3.5 w-3.5" />
-                      {output.charts.length} chart{output.charts.length !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                  {output.tables.length > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Table2 className="h-3.5 w-3.5" />
-                      {output.tables.length} table{output.tables.length !== 1 ? "s" : ""}
-                    </span>
-                  )}
+              {/* Charts */}
+              {output.charts.length > 0 && (
+                <div className="space-y-4 pt-2 border-t border-border">
+                  <div className="flex items-center gap-1.5">
+                    <BarChart3 className="h-3.5 w-3.5 text-chart-1" />
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Charts
+                    </p>
+                  </div>
+                  {output.charts.map((chart, i) => (
+                    <DynamicChart
+                      key={(chart as Record<string, unknown>).chart_id as string ?? i}
+                      chart_type={(chart as Record<string, unknown>).chart_type as string ?? "line"}
+                      title={(chart as Record<string, unknown>).title as string ?? ""}
+                      data={(chart as Record<string, unknown>).data as { labels: string[]; values: (number | null)[] | (number | null)[][] }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Tables */}
+              {output.tables.length > 0 && (
+                <div className="space-y-4 pt-2 border-t border-border">
+                  <div className="flex items-center gap-1.5">
+                    <Table2 className="h-3.5 w-3.5 text-chart-3" />
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Detection Log
+                    </p>
+                  </div>
+                  {output.tables.map((table, i) => {
+                    const t = table as Record<string, unknown>
+                    const columns = t.columns as string[]
+                    const rows = t.rows as string[][]
+                    const title = t.title as string
+                    return (
+                      <div key={t.table_id as string ?? i} className="space-y-1.5">
+                        {title && <p className="text-xs text-muted-foreground">{title}</p>}
+                        <div className="overflow-x-auto rounded border border-border">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-border bg-muted/40">
+                                {columns.map((col, ci) => (
+                                  <th key={ci} className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rows.map((row, ri) => (
+                                <tr key={ri} className="border-b border-border last:border-0 hover:bg-muted/20">
+                                  {row.map((cell, ci) => (
+                                    <td key={ci} className="px-2 py-1.5 text-foreground/80">
+                                      {cell ?? "—"}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
