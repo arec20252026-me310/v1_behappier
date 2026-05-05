@@ -63,12 +63,18 @@ function formatDuration(ms: number): string {
 
 function parseTimestamp(raw: string): number | null {
   if (!raw) return null
-  // Standard ISO or browser-parseable string
+  // Standard ISO or browser-parseable string (e.g. "2026-05-05T19:55:59.313+00:00")
   let ms = new Date(raw).getTime()
   if (!isNaN(ms)) return ms
-  // "2024-01-15 10:30:00" — space instead of T
+  // Space-separated datetime "2024-01-15 10:30:00"
   ms = new Date(raw.replace(" ", "T")).getTime()
   if (!isNaN(ms)) return ms
+  // Time-only "HH:MM:SS" or "H:MM:SS" — convert to ms from midnight
+  const hms = raw.match(/^(\d{1,2}):(\d{2}):(\d{2})$/)
+  if (hms) return (Number(hms[1]) * 3600 + Number(hms[2]) * 60 + Number(hms[3])) * 1000
+  // Time-only "HH:MM"
+  const hm = raw.match(/^(\d{1,2}):(\d{2})$/)
+  if (hm) return (Number(hm[1]) * 3600 + Number(hm[2]) * 60) * 1000
   // Unix epoch: seconds (10 digits) or milliseconds (13 digits)
   const n = Number(raw)
   if (!isNaN(n) && n > 0) {
@@ -235,7 +241,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     ? "oklch(0.68 0.12 200)"
     : "oklch(0.54 0.10 200)"
 
-  const durationLabel = viewDuration(allData, viewStart, viewEnd) ?? (windowLen < total ? `${windowLen} pts` : null)
+  const durationLabel = viewDuration(allData, viewStart, viewEnd) ?? (windowLen > 1 ? `${windowLen} pts` : null)
 
   const statusLabel =
     dragMode === "pan" ? "Panning…" :
