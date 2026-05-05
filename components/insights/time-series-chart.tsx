@@ -74,7 +74,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
             fontSize={10}
             tickLine={false}
             axisLine={false}
-            width={42}
+            width={52}
             tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))}
           />
           <Tooltip
