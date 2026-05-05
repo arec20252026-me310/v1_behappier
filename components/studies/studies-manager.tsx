@@ -69,6 +69,7 @@ interface FormData {
   hypothesis: string
   duration_minutes: number | null
   target_metrics: string[]
+  target_zones: string[]
 }
 
 function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], cameras: Camera[]): string {
@@ -77,11 +78,17 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
     .filter(Boolean)
     .join(", ")
 
+  const zoneNames = form.target_zones
+    .map(id => zones.find(z => z.id === id)?.name)
+    .filter(Boolean)
+    .join(", ")
+
   const durationLabel = form.duration_minutes
     ? DURATION_OPTIONS.find(o => o.value === form.duration_minutes)?.label ?? `${form.duration_minutes} minutes`
     : "not specified"
 
   const cameraLines = cameras
+    .filter(cam => form.target_zones.length === 0 || form.target_zones.includes(cam.zone_id))
     .map(cam => {
       const zone = zones.find(z => z.id === cam.zone_id)
       const entityId = cam.metadata?.ha_entity_id ? ` (${String(cam.metadata.ha_entity_id)})` : ""
@@ -96,6 +103,7 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
     form.description ? `Description: ${form.description}` : null,
     form.hypothesis ? `Hypothesis: ${form.hypothesis}` : null,
     `Planned Duration: ${durationLabel}`,
+    zoneNames ? `Target Zones: ${zoneNames}` : null,
     metricNames ? `Metrics to Track: ${metricNames}` : null,
     cameraLines.length > 0 ? `Camera Configuration:\n${cameraLines.join("\n")}` : null,
     ``,
@@ -122,6 +130,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
     hypothesis: "",
     duration_minutes: null,
     target_metrics: [],
+    target_zones: [],
   })
 
   if (!space) {
@@ -148,6 +157,14 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
         : [...f.target_metrics, id],
     }))
 
+  const toggleZone = (id: string) =>
+    setForm(f => ({
+      ...f,
+      target_zones: f.target_zones.includes(id)
+        ? f.target_zones.filter(z => z !== id)
+        : [...f.target_zones, id],
+    }))
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim() || isSubmitting) return
@@ -164,6 +181,12 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
           session_id: sessionId.current,
           building_id: space.id,
           study_id: lastStudyId,
+          study_name: form.name,
+          hypothesis: form.hypothesis,
+          description: form.description,
+          target_zones: form.target_zones,
+          target_metrics: form.target_metrics,
+          duration_seconds: form.duration_minutes ? form.duration_minutes * 60 : null,
         }),
       })
 
@@ -173,7 +196,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
       if (data.study_id) setLastStudyId(data.study_id)
 
       if (data.action_type === "start_study") {
-        setForm({ name: "", description: "", hypothesis: "", duration_minutes: null, target_metrics: [] })
+        setForm({ name: "", description: "", hypothesis: "", duration_minutes: null, target_metrics: [], target_zones: [] })
         setShowForm(false)
         setTimeout(() => router.refresh(), 2000)
       }
@@ -272,6 +295,39 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                   className="resize-none"
                 />
               </div>
+
+              {zones.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Target Zones</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Select which zones this study should focus on. Leave blank to include all zones.
+                  </p>
+                  <ScrollArea className="h-[130px] rounded border border-border p-3">
+                    <div className="space-y-2">
+                      {zones.map(zone => (
+                        <div key={zone.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`zone-${zone.id}`}
+                            checked={form.target_zones.includes(zone.id)}
+                            onCheckedChange={() => toggleZone(zone.id)}
+                          />
+                          <label
+                            htmlFor={`zone-${zone.id}`}
+                            className="text-sm font-medium leading-none cursor-pointer"
+                          >
+                            {zone.name}
+                            {zone.zone_type && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                ({zone.zone_type.replace(/_/g, " ")})
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
 
               {metrics.length > 0 && (
                 <div className="space-y-2">
@@ -381,10 +437,10 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                       Preview: {study.live_preview_status}
                     </p>
                   )}
-                  {study.start_date_time && (
+                  {study.started_at && (
                     <p className="text-xs text-muted-foreground">
-                      Started: {new Date(study.start_date_time).toLocaleDateString()}
-                      {study.duration_minutes && ` · ${formatDuration(study.duration_minutes)}`}
+                      Started: {new Date(study.started_at).toLocaleDateString()}
+                      {study.duration_seconds && ` · ${formatDuration(Math.round(study.duration_seconds / 60))}`}
                     </p>
                   )}
                 </CardContent>

@@ -31,9 +31,8 @@ export interface BEStudy {
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
-  // Partner-added columns — nullable until migration lands:
-  start_date_time?: string | null
-  duration_minutes?: number | null
+  started_at?: string | null
+  duration_seconds?: number | null
 }
 
 export interface BEInsightOutput {
