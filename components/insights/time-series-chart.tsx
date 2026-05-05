@@ -4,11 +4,11 @@ import { useRef, useState, useEffect } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 const SERIES_COLORS = [
-  "oklch(0.7 0.15 200)",   // chart-1 teal
-  "oklch(0.65 0.18 160)",  // chart-2 green
-  "oklch(0.75 0.15 80)",   // chart-3 yellow
-  "oklch(0.65 0.2 30)",    // chart-4 orange
-  "oklch(0.6 0.18 280)",   // chart-5 purple
+  "oklch(0.7 0.15 200)",
+  "oklch(0.65 0.18 160)",
+  "oklch(0.75 0.15 80)",
+  "oklch(0.65 0.2 30)",
+  "oklch(0.6 0.18 280)",
 ]
 
 const TOOLTIP_STYLE = {
@@ -45,15 +45,16 @@ function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
   const base = series.reduce((a, b) => (b.labels.length > a.labels.length ? b : a))
   return base.labels.map((label, i) => {
     const point: Record<string, unknown> = { name: formatLabel(label) }
-    series.forEach(s => {
-      point[s.title] = s.values[i] ?? null
-    })
+    series.forEach(s => { point[s.title] = s.values[i] ?? null })
     return point
   })
 }
 
 const MIN_VIEW = 4
-const ZOOM_SENSITIVITY = 0.0008
+// 0.2% zoom per deltaY unit — smooth at typical trackpad pinch speeds
+const ZOOM_SENSITIVITY = 0.002
+
+type DragMode = "pan" | "left" | "right"
 
 export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) {
   const allData = mergeSeriesData(series)
@@ -62,7 +63,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [viewStart, setViewStart] = useState(0)
   const [viewEnd, setViewEnd] = useState(total)
-  const [isScrubbing, setIsScrubbing] = useState(false)
+  const [dragMode, setDragMode] = useState<DragMode | null>(null)
 
   const viewRef = useRef({ start: 0, end: total })
   const totalRef = useRef(total)
@@ -72,7 +73,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     setViewEnd(total)
   }, [total])
 
-  // Pinch-to-zoom attaches to the chart container
+  // Pinch-to-zoom on chart area (ctrl+wheel = trackpad pinch)
   const chartRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = chartRef.current
@@ -83,8 +84,9 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       const { start, end } = viewRef.current
       const len = end - start
       const clamped = Math.max(-80, Math.min(80, e.deltaY))
-      const factor = 1 + clamped * ZOOM_SENSITIVITY * len
-      const newLen = Math.round(Math.min(totalRef.current, Math.max(MIN_VIEW, factor)))
+      // multiply current length by a factor close to 1 — slow and symmetrical
+      const multiplier = 1 + clamped * ZOOM_SENSITIVITY
+      const newLen = Math.round(Math.min(totalRef.current, Math.max(MIN_VIEW, len * multiplier)))
       const center = (start + end) / 2
       const newStart = Math.max(0, Math.round(center - newLen / 2))
       const newEnd = Math.min(totalRef.current, newStart + newLen)
@@ -95,41 +97,67 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     return () => el.removeEventListener("wheel", onWheel)
   }, [])
 
-  // Scrubber drag — click anywhere on the bar to jump there, then drag to pan
+  // Scrubber drag (pan / left-resize / right-resize)
   const scrubberRef = useRef<HTMLDivElement>(null)
-  const scrubDragRef = useRef<{ clientX: number; startIndex: number; len: number } | null>(null)
+  const dragRef = useRef<{
+    clientX: number
+    mode: DragMode
+    initStart: number
+    initEnd: number
+  } | null>(null)
 
-  const onScrubberMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const startDrag = (e: React.MouseEvent, mode: DragMode) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragRef.current = {
+      clientX: e.clientX,
+      mode,
+      initStart: viewRef.current.start,
+      initEnd: viewRef.current.end,
+    }
+    setDragMode(mode)
+  }
+
+  // Click on track outside thumb → jump view center to click position, then pan
+  const onTrackMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return
     const bar = scrubberRef.current
     if (!bar) return
     const rect = bar.getBoundingClientRect()
     const fraction = (e.clientX - rect.left) / rect.width
-    const clickedIndex = fraction * totalRef.current
+    const clicked = fraction * totalRef.current
     const len = viewRef.current.end - viewRef.current.start
-    const newStart = Math.max(0, Math.min(totalRef.current - len, Math.round(clickedIndex - len / 2)))
+    const newStart = Math.max(0, Math.min(totalRef.current - len, Math.round(clicked - len / 2)))
+    const newEnd = newStart + len
     setViewStart(newStart)
-    setViewEnd(newStart + len)
-    scrubDragRef.current = { clientX: e.clientX, startIndex: newStart, len }
-    setIsScrubbing(true)
+    setViewEnd(newEnd)
+    dragRef.current = { clientX: e.clientX, mode: "pan", initStart: newStart, initEnd: newEnd }
+    setDragMode("pan")
     e.preventDefault()
   }
 
+  // Global mouse handlers
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      if (!scrubDragRef.current || !scrubberRef.current) return
-      const { clientX, startIndex, len } = scrubDragRef.current
+      if (!dragRef.current || !scrubberRef.current) return
+      const { clientX, mode, initStart, initEnd } = dragRef.current
       const barWidth = scrubberRef.current.getBoundingClientRect().width
       const delta = Math.round(((e.clientX - clientX) / barWidth) * totalRef.current)
-      const newStart = Math.max(0, Math.min(totalRef.current - len, startIndex + delta))
-      setViewStart(newStart)
-      setViewEnd(newStart + len)
+      const len = initEnd - initStart
+      if (mode === "pan") {
+        const s = Math.max(0, Math.min(totalRef.current - len, initStart + delta))
+        setViewStart(s)
+        setViewEnd(s + len)
+      } else if (mode === "left") {
+        const s = Math.max(0, Math.min(initEnd - MIN_VIEW, initStart + delta))
+        setViewStart(s)
+      } else {
+        const end = Math.min(totalRef.current, Math.max(initStart + MIN_VIEW, initEnd + delta))
+        setViewEnd(end)
+      }
     }
     const onMouseUp = () => {
-      if (scrubDragRef.current) {
-        scrubDragRef.current = null
-        setIsScrubbing(false)
-      }
+      if (dragRef.current) { dragRef.current = null; setDragMode(null) }
     }
     window.addEventListener("mousemove", onMouseMove)
     window.addEventListener("mouseup", onMouseUp)
@@ -138,6 +166,14 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       window.removeEventListener("mouseup", onMouseUp)
     }
   }, [])
+
+  // Keep body cursor consistent while dragging (prevents flicker when mouse moves fast)
+  useEffect(() => {
+    if (dragMode === "pan") document.body.style.cursor = "grabbing"
+    else if (dragMode === "left" || dragMode === "right") document.body.style.cursor = "col-resize"
+    else document.body.style.cursor = ""
+    return () => { document.body.style.cursor = "" }
+  }, [dragMode])
 
   const toggleSeries = (title: string) => {
     setHidden(prev => {
@@ -148,16 +184,22 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     })
   }
 
-  const resetZoom = () => {
-    setViewStart(0)
-    setViewEnd(total)
-  }
+  const resetZoom = () => { setViewStart(0); setViewEnd(total) }
 
   const isZoomed = viewStart !== 0 || viewEnd !== total
   const windowLen = viewEnd - viewStart
   const visibleData = total > 0 ? allData.slice(viewStart, viewEnd) : allData
   const thumbLeft = total > 0 ? (viewStart / total) * 100 : 0
   const thumbWidth = total > 0 ? (windowLen / total) * 100 : 100
+
+  const thumbBg = dragMode === "pan" ? "oklch(0.60 0.1 200)" : "oklch(0.46 0.08 200)"
+  const handleBg = dragMode ? "oklch(0.70 0.12 200)" : "oklch(0.60 0.10 200)"
+
+  const statusLabel =
+    dragMode === "pan" ? "Panning…" :
+    dragMode === "left" || dragMode === "right" ? "Resizing…" :
+    isZoomed ? `${windowLen} of ${total} pts` :
+    `${total} pts`
 
   if (!series.length) return null
 
@@ -181,10 +223,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
                   borderColor: SERIES_COLORS[i % SERIES_COLORS.length],
                 }}
               />
-              <span
-                className="text-xs"
-                style={{ color: hidden.has(s.title) ? "oklch(0.5 0 0)" : "oklch(0.75 0 0)" }}
-              >
+              <span className="text-xs" style={{ color: hidden.has(s.title) ? "oklch(0.5 0 0)" : "oklch(0.75 0 0)" }}>
                 {s.title}
               </span>
             </label>
@@ -192,31 +231,14 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
         </div>
       )}
 
-      {/* Chart — pinch-to-zoom only, no drag */}
+      {/* Chart — pinch-to-zoom only */}
       <div ref={chartRef} style={{ height, userSelect: "none" }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={visibleData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
-            <XAxis
-              dataKey="name"
-              stroke="oklch(0.65 0 0)"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              stroke="oklch(0.65 0 0)"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-              width={52}
-              tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))}
-            />
-            <Tooltip
-              contentStyle={TOOLTIP_STYLE}
-              labelStyle={{ color: "oklch(0.65 0 0)" }}
-            />
+            <XAxis dataKey="name" stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+            <YAxis stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "oklch(0.65 0 0)" }} />
             {series.map((s, i) => (
               <Line
                 key={s.title}
@@ -233,33 +255,65 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
         </ResponsiveContainer>
       </div>
 
-      {/* Scrubber bar — click or drag to pan */}
+      {/* Scrubber */}
       {total > 0 && (
         <div className="px-1 space-y-1">
+          {/* Track */}
           <div
             ref={scrubberRef}
-            className="relative w-full rounded-full overflow-hidden"
-            style={{
-              height: 10,
-              background: "oklch(0.22 0.01 260)",
-              cursor: isScrubbing ? "grabbing" : "ew-resize",
-              userSelect: "none",
-            }}
-            onMouseDown={onScrubberMouseDown}
+            className="relative w-full rounded-full"
+            style={{ height: 12, background: "oklch(0.22 0.01 260)", cursor: "default" }}
+            onMouseDown={onTrackMouseDown}
           >
+            {/* Thumb */}
             <div
-              className="absolute h-full rounded-full"
               style={{
+                position: "absolute",
                 left: `${thumbLeft}%`,
                 width: `${thumbWidth}%`,
-                background: isScrubbing ? "oklch(0.62 0.1 200)" : "oklch(0.48 0.07 200)",
-                transition: isScrubbing ? "none" : "left 0.05s, width 0.05s",
+                top: 0,
+                height: "100%",
+                borderRadius: "9999px",
+                background: thumbBg,
+                cursor: dragMode === "pan" ? "grabbing" : "grab",
               }}
-            />
+              onMouseDown={e => { e.stopPropagation(); startDrag(e, "pan") }}
+            >
+              {/* Left resize handle */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  height: "100%",
+                  width: "calc(min(12px, 40%))",
+                  cursor: "col-resize",
+                  borderRadius: "9999px 0 0 9999px",
+                  background: handleBg,
+                }}
+                onMouseDown={e => { e.stopPropagation(); startDrag(e, "left") }}
+              />
+              {/* Right resize handle */}
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: 0,
+                  height: "100%",
+                  width: "calc(min(12px, 40%))",
+                  cursor: "col-resize",
+                  borderRadius: "0 9999px 9999px 0",
+                  background: handleBg,
+                }}
+                onMouseDown={e => { e.stopPropagation(); startDrag(e, "right") }}
+              />
+            </div>
           </div>
+
+          {/* Status row */}
           <div className="flex items-center justify-between">
             <span className="text-xs" style={{ color: "oklch(0.45 0 0)" }}>
-              {isScrubbing ? "Panning…" : isZoomed ? `${windowLen} of ${total} pts` : `${total} pts`}
+              {statusLabel}
             </span>
             {isZoomed && (
               <button
