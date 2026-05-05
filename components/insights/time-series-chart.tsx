@@ -44,10 +44,31 @@ function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
   if (!series.length) return []
   const base = series.reduce((a, b) => (b.labels.length > a.labels.length ? b : a))
   return base.labels.map((label, i) => {
-    const point: Record<string, unknown> = { name: formatLabel(label) }
+    const point: Record<string, unknown> = { name: formatLabel(label), _raw: label }
     series.forEach(s => { point[s.title] = s.values[i] ?? null })
     return point
   })
+}
+
+function formatDuration(ms: number): string {
+  const s = ms / 1000
+  if (s < 90) return `${Math.round(s)}s`
+  const m = s / 60
+  if (m < 90) return `${Math.round(m)} min`
+  const h = m / 60
+  if (h < 36) return `${Math.round(h)} hr`
+  const d = h / 24
+  return `${Math.round(d)} day${Math.round(d) !== 1 ? "s" : ""}`
+}
+
+function viewDuration(allData: Record<string, unknown>[], start: number, end: number): string | null {
+  const a = allData[start]?._raw as string | undefined
+  const b = allData[end - 1]?._raw as string | undefined
+  if (!a || !b) return null
+  const t0 = new Date(a).getTime()
+  const t1 = new Date(b).getTime()
+  if (isNaN(t0) || isNaN(t1) || t1 <= t0) return null
+  return formatDuration(t1 - t0)
 }
 
 const MIN_VIEW = 4
@@ -193,7 +214,11 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
   const thumbWidth = total > 0 ? (windowLen / total) * 100 : 100
 
   const thumbBg = dragMode === "pan" ? "oklch(0.60 0.1 200)" : "oklch(0.46 0.08 200)"
-  const handleBg = dragMode ? "oklch(0.70 0.12 200)" : "oklch(0.60 0.10 200)"
+  const handleBg = dragMode === "left" || dragMode === "right"
+    ? "oklch(0.68 0.12 200)"
+    : "oklch(0.54 0.10 200)"
+
+  const durationLabel = viewDuration(allData, viewStart, viewEnd)
 
   const statusLabel =
     dragMode === "pan" ? "Panning…" :
@@ -258,56 +283,103 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       {/* Scrubber */}
       {total > 0 && (
         <div className="px-1 space-y-1">
-          {/* Track */}
+          {/*
+            Outer wrapper = scrubberRef (used for width calculations).
+            Height 20px gives circles (14px) room to protrude above/below the 10px track.
+            overflow: visible so circles aren't clipped.
+          */}
           <div
             ref={scrubberRef}
-            className="relative w-full rounded-full"
-            style={{ height: 12, background: "oklch(0.22 0.01 260)", cursor: "default" }}
+            className="relative w-full"
+            style={{ height: 20, cursor: "default" }}
             onMouseDown={onTrackMouseDown}
           >
-            {/* Thumb */}
+            {/* Visual track bar — centered vertically, clips thumb fill to pill shape */}
             <div
               style={{
                 position: "absolute",
-                left: `${thumbLeft}%`,
-                width: `${thumbWidth}%`,
-                top: 0,
-                height: "100%",
+                left: 0,
+                right: 0,
+                top: "50%",
+                height: 10,
+                transform: "translateY(-50%)",
                 borderRadius: "9999px",
-                background: thumbBg,
-                cursor: dragMode === "pan" ? "grabbing" : "grab",
+                background: "oklch(0.22 0.01 260)",
+                overflow: "hidden",
               }}
-              onMouseDown={e => { e.stopPropagation(); startDrag(e, "pan") }}
             >
-              {/* Left resize handle */}
+              {/* Thumb fill — pan zone */}
               <div
                 style={{
                   position: "absolute",
-                  left: 0,
+                  left: `${thumbLeft}%`,
+                  width: `${thumbWidth}%`,
                   top: 0,
                   height: "100%",
-                  width: "calc(min(12px, 40%))",
-                  cursor: "col-resize",
-                  borderRadius: "9999px 0 0 9999px",
-                  background: handleBg,
+                  background: thumbBg,
+                  cursor: dragMode === "pan" ? "grabbing" : "grab",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
                 }}
-                onMouseDown={e => { e.stopPropagation(); startDrag(e, "left") }}
-              />
-              {/* Right resize handle */}
-              <div
-                style={{
-                  position: "absolute",
-                  right: 0,
-                  top: 0,
-                  height: "100%",
-                  width: "calc(min(12px, 40%))",
-                  cursor: "col-resize",
-                  borderRadius: "0 9999px 9999px 0",
-                  background: handleBg,
-                }}
-                onMouseDown={e => { e.stopPropagation(); startDrag(e, "right") }}
-              />
+                onMouseDown={e => { e.stopPropagation(); startDrag(e, "pan") }}
+              >
+                {/* Duration label centered on pill */}
+                {durationLabel && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "oklch(0.92 0 0)",
+                      pointerEvents: "none",
+                      userSelect: "none",
+                      whiteSpace: "nowrap",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {durationLabel}
+                  </span>
+                )}
+              </div>
             </div>
+
+            {/* Left circle handle */}
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: `${thumbLeft}%`,
+                transform: "translate(-50%, -50%)",
+                width: 14,
+                height: 14,
+                borderRadius: "50%",
+                background: handleBg,
+                border: "1.5px solid oklch(0.72 0.13 200)",
+                cursor: "col-resize",
+                zIndex: 2,
+                boxSizing: "border-box",
+              }}
+              onMouseDown={e => { e.stopPropagation(); startDrag(e, "left") }}
+            />
+
+            {/* Right circle handle */}
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: `${thumbLeft + thumbWidth}%`,
+                transform: "translate(-50%, -50%)",
+                width: 14,
+                height: 14,
+                borderRadius: "50%",
+                background: handleBg,
+                border: "1.5px solid oklch(0.72 0.13 200)",
+                cursor: "col-resize",
+                zIndex: 2,
+                boxSizing: "border-box",
+              }}
+              onMouseDown={e => { e.stopPropagation(); startDrag(e, "right") }}
+            />
           </div>
 
           {/* Status row */}
