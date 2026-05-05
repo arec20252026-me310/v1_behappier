@@ -10,8 +10,25 @@ interface InsightsListProps {
   outputs: BEInsightOutput[]
 }
 
+function toArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[]
+  if (value === null || value === undefined) return []
+  return [value as T]
+}
+
+function normalizeOutput(output: BEInsightOutput): BEInsightOutput {
+  return {
+    ...output,
+    insights: toArray<string>(output.insights),
+    recommendations: toArray<string>(output.recommendations),
+    charts: toArray(output.charts),
+    tables: toArray(output.tables),
+  }
+}
+
 export function InsightsList({ outputs }: InsightsListProps) {
-  if (outputs.length === 0) {
+  const normalized = outputs.map(normalizeOutput)
+  if (normalized.length === 0) {
     return (
       <Card className="bg-card border-border">
         <CardContent className="flex flex-col items-center justify-center py-12">
@@ -33,12 +50,12 @@ export function InsightsList({ outputs }: InsightsListProps) {
       <div>
         <h2 className="text-lg font-semibold text-foreground">Study Insights</h2>
         <p className="text-sm text-muted-foreground">
-          {outputs.length} insight report{outputs.length !== 1 ? "s" : ""} generated
+          {normalized.length} insight report{normalized.length !== 1 ? "s" : ""} generated
         </p>
       </div>
 
       <div className="space-y-4">
-        {outputs.map(output => (
+        {normalized.map(output => (
           <Card key={output.id} className="bg-card border-border">
             <CardContent className="p-5 space-y-4">
               {/* Header row */}
