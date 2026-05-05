@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState, useCallback, useEffect } from "react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 const SERIES_COLORS = [
   "oklch(0.7 0.15 200)",   // chart-1 teal
@@ -53,6 +53,8 @@ function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
 }
 
 const MIN_VIEW = 4
+// Sensitivity: fraction of view length to zoom per 100 deltaY units
+const ZOOM_SENSITIVITY = 0.0008
 
 export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) {
   const allData = mergeSeriesData(series)
@@ -93,9 +95,11 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
 
       const { start, end } = viewRef.current
       const len = end - start
-      // deltaY > 0 = pinch out (zoom out), < 0 = pinch in (zoom in)
-      const factor = e.deltaY > 0 ? 1.15 : 0.87
-      const newLen = Math.round(Math.min(totalRef.current, Math.max(MIN_VIEW, len * factor)))
+      // Clamp deltaY so a single fast-swipe can't jump by huge amounts
+      const clamped = Math.max(-80, Math.min(80, e.deltaY))
+      // Positive deltaY = fingers coming together = zoom out (larger window)
+      const factor = 1 + clamped * ZOOM_SENSITIVITY * len
+      const newLen = Math.round(Math.min(totalRef.current, Math.max(MIN_VIEW, factor)))
       const center = (start + end) / 2
       const newStart = Math.max(0, Math.round(center - newLen / 2))
       const newEnd = Math.min(totalRef.current, newStart + newLen)
@@ -110,7 +114,6 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
 
   // Click-and-drag pan
   const onMouseDown = useCallback((e: React.MouseEvent) => {
-    // Only primary button, not on interactive elements
     if (e.button !== 0) return
     dragRef.current = { x: e.clientX, start: viewRef.current.start, end: viewRef.current.end }
     setIsDragging(true)
@@ -123,7 +126,6 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       const { x, start, end } = dragRef.current
       const len = end - start
       const containerWidth = containerRef.current.getBoundingClientRect().width
-      // Map pixel delta to index delta
       const indexPerPx = len / containerWidth
       const delta = Math.round((dragRef.current.x - e.clientX) * indexPerPx)
       const newStart = Math.max(0, Math.min(totalRef.current - len, start + delta))
@@ -161,7 +163,12 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
   }
 
   const isZoomed = viewStart !== 0 || viewEnd !== total
+  const windowLen = viewEnd - viewStart
   const visibleData = total > 0 ? allData.slice(viewStart, viewEnd) : allData
+
+  // Scrubber thumb geometry (percentage of full width)
+  const thumbLeft = total > 0 ? (viewStart / total) * 100 : 0
+  const thumbWidth = total > 0 ? (windowLen / total) * 100 : 100
 
   if (!series.length) return null
 
@@ -198,18 +205,6 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
         </div>
       )}
 
-      {/* Zoom reset */}
-      {isZoomed && (
-        <div className="flex justify-end px-1">
-          <button
-            onClick={resetZoom}
-            className="text-xs px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
-          >
-            Reset zoom
-          </button>
-        </div>
-      )}
-
       {/* Chart */}
       <div
         ref={containerRef}
@@ -217,6 +212,10 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
           height,
           cursor: isDragging ? "grabbing" : "grab",
           userSelect: "none",
+          // Subtle ring while actively dragging so user knows they're in pan mode
+          outline: isDragging ? "1px solid oklch(0.45 0.01 260)" : "1px solid transparent",
+          borderRadius: "0.375rem",
+          transition: "outline-color 0.1s",
         }}
         onMouseDown={onMouseDown}
       >
@@ -258,6 +257,50 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Scrubber bar — always shown when data exists, so panning is always visible */}
+      {total > 0 && (
+        <div className="px-1 space-y-1">
+          <div
+            className="relative w-full rounded-full overflow-hidden"
+            style={{ height: 6, background: "oklch(0.22 0.01 260)" }}
+          >
+            <div
+              className="absolute h-full rounded-full transition-[left,width] duration-75"
+              style={{
+                left: `${thumbLeft}%`,
+                width: `${thumbWidth}%`,
+                background: isDragging ? "oklch(0.6 0.08 200)" : "oklch(0.45 0.05 200)",
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: "oklch(0.45 0 0)" }}>
+              {isDragging ? "Panning…" : isZoomed ? `${windowLen} of ${total} pts` : `${total} pts`}
+            </span>
+            {isZoomed && (
+              <button
+                onClick={resetZoom}
+                className="text-xs px-2 py-0.5 rounded border transition-colors"
+                style={{
+                  borderColor: "oklch(0.35 0.01 260)",
+                  color: "oklch(0.55 0 0)",
+                }}
+                onMouseEnter={e => {
+                  ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.85 0 0)"
+                  ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.55 0.01 260)"
+                }}
+                onMouseLeave={e => {
+                  ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.55 0 0)"
+                  ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.35 0.01 260)"
+                }}
+              >
+                Reset zoom
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
