@@ -11,6 +11,13 @@ export default async function StudiesPage() {
     .limit(1)
     .single()
 
+  // Sync status for any studies n8n has already marked complete
+  await supabase
+    .from("BE_studies")
+    .update({ status: "complete" })
+    .eq("current_stage", "complete")
+    .neq("status", "complete")
+
   const { data: beStudies } = await supabase
     .from("BE_studies")
     .select("*")
