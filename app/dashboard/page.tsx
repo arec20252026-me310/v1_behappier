@@ -50,16 +50,18 @@ export default async function DashboardPage() {
 
   const latestOutput = beInsights.find(o => o.output_mode === "final_insights") ?? beInsights[0] ?? null
 
+  let completedStudies: typeof beStudies = []
   let completedStudy = null
   let completedStudyInsights = null
   if (!demo) {
-    const { data: completedStudies } = await supabase
+    const { data: completed } = await supabase
       .from("BE_studies")
       .select("*")
       .eq("status", "complete")
       .order("created_at", { ascending: false })
-      .limit(1)
-    completedStudy = completedStudies?.[0] ?? null
+      .limit(4)
+    completedStudies = completed ?? []
+    completedStudy = completedStudies[0] ?? null
 
     if (completedStudy) {
       const { data: studyInsight } = await supabase
@@ -142,7 +144,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActiveStudies studies={beStudies} />
+          <ActiveStudies studies={[...beStudies, ...completedStudies]} />
           <RecentInsights outputs={beInsights} />
         </div>
       </div>
