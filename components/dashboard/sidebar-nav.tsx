@@ -30,7 +30,7 @@ const navItems = [
   },
   {
     title: "Behaviors",
-    href: "/dashboard/metrics",
+    href: "/dashboard/behaviors",
     icon: BarChart3,
   },
   {

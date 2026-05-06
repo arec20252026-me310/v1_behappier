@@ -9,8 +9,9 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { MapPin, Activity, CheckCircle2, Eraser, ArrowRight, Loader2, EyeOff, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { enableDemoMode, disableDemoMode } from "@/app/actions/demo"
+import type { DemoScenario } from "@/lib/demo-mode"
 
-type Scenario = "blank" | "space-ready" | "study-in-progress" | "study-complete"
+type Scenario = DemoScenario
 
 const SCENARIOS: {
   id: Scenario
@@ -88,32 +89,16 @@ export default function DemoPage() {
   const [demoActive, setDemoActive] = useState(false)
 
   useEffect(() => {
-    setDemoActive(document.cookie.includes("demo_mode=1"))
+    setDemoActive(document.cookie.includes("demo_mode="))
   }, [])
 
   const loadScenario = async (scenario: Scenario) => {
     setLoading(scenario)
     setError(null)
     try {
-      if (scenario === "blank") {
-        // Cookie-only: hides real data without touching the database
-        await enableDemoMode()
-        return
-      }
-
-      const res = await fetch("/api/demo/seed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario }),
-      })
-      if (!res.ok) {
-        const { error: msg } = await res.json()
-        throw new Error(msg || "Failed")
-      }
-      setLoaded(scenario)
+      await enableDemoMode(scenario)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error")
-    } finally {
       setLoading(null)
     }
   }
@@ -207,8 +192,6 @@ export default function DemoPage() {
                         <><Loader2 className="h-4 w-4 animate-spin" />Loading…</>
                       ) : isLoaded ? (
                         <><CheckCircle2 className="h-4 w-4" />Loaded</>
-                      ) : s.id === "blank" ? (
-                        "Enter Demo Mode"
                       ) : (
                         "Load Scenario"
                       )}
@@ -232,9 +215,7 @@ export default function DemoPage() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Blank mode hides real data using a browser cookie — no database changes are made.
-          <br />
-          Other scenarios rewrite Supabase demo data — refresh any open dashboard tabs after loading.
+          All scenarios use a browser cookie — no database changes are made. Exit demo mode to restore your real data.
         </p>
       </div>
     </div>

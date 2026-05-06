@@ -190,7 +190,7 @@ export function SpaceHeatmap({
             )}
           </div>
           <Link href="/dashboard/space">
-            <Button variant="ghost" size="sm" className="text-xs">Edit Space</Button>
+            <Button variant="ghost" size="sm" className="text-xs">View Space</Button>
           </Link>
         </CardHeader>
 

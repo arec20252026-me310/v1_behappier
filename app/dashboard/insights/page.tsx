@@ -1,14 +1,16 @@
 import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { InsightsList } from "@/components/insights/insights-list"
-import { isDemoMode } from "@/lib/demo-mode"
+import { getDemoScenario } from "@/lib/demo-mode"
+import { BE_INSIGHT_OUTPUT } from "@/lib/demo-seeds"
 
 export default async function InsightsPage() {
-  const demo = await isDemoMode()
+  const scenario = await getDemoScenario()
+  const demo = scenario !== null
   const supabase = await createClient()
 
   const { data: outputs } = demo
-    ? { data: [] }
+    ? { data: scenario === "study-complete" ? [BE_INSIGHT_OUTPUT] : [] }
     : await supabase
         .from("BE_insight_outputs")
         .select("*")

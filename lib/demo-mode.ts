@@ -1,6 +1,16 @@
 import { cookies } from "next/headers"
 
-export async function isDemoMode(): Promise<boolean> {
+export type DemoScenario = "blank" | "space-ready" | "study-in-progress" | "study-complete"
+
+export async function getDemoScenario(): Promise<DemoScenario | null> {
   const cookieStore = await cookies()
-  return cookieStore.get("demo_mode")?.value === "1"
+  const value = cookieStore.get("demo_mode")?.value
+  if (!value) return null
+  // Legacy cookie value "1" maps to blank
+  if (value === "1") return "blank"
+  return value as DemoScenario
+}
+
+export async function isDemoMode(): Promise<boolean> {
+  return (await getDemoScenario()) !== null
 }
