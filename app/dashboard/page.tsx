@@ -6,6 +6,7 @@ import { ActiveStudies } from "@/components/dashboard/active-studies"
 import { OccupancyChart } from "@/components/dashboard/occupancy-chart"
 import { ZoneOverview } from "@/components/dashboard/zone-overview"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
+import { isDemoMode } from "@/lib/demo-mode"
 
 const ACTIVE_STAGES = [
   "planned",
@@ -19,77 +20,79 @@ const ACTIVE_STAGES = [
 ]
 
 export default async function DashboardPage() {
+  const demo = await isDemoMode()
   const supabase = await createClient()
 
-  const { data: space } = await supabase.from("spaces").select("*").limit(1).single()
+  const space = demo ? null : (await supabase.from("spaces").select("*").limit(1).single()).data
 
-  const { data: zones } = await supabase
+  const zones = demo ? [] : ((await supabase
     .from("zones")
     .select("*")
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false })).data ?? [])
 
-  const { data: metrics } = await supabase.from("metrics").select("*").eq("is_active", true)
+  const metrics = demo ? [] : ((await supabase
+    .from("metrics")
+    .select("*")
+    .eq("is_active", true)).data ?? [])
 
-  // Active pipeline studies (for widgets + count)
-  const { data: beStudies } = await supabase
+  const beStudies = demo ? [] : ((await supabase
     .from("BE_studies")
     .select("*")
     .in("current_stage", ACTIVE_STAGES)
     .order("created_at", { ascending: false })
-    .limit(5)
+    .limit(5)).data ?? [])
 
-  // Completed studies — for heatmap zone highlights
-  const { data: completedStudies } = await supabase
-    .from("BE_studies")
-    .select("*")
-    .eq("status", "complete")
-    .order("created_at", { ascending: false })
-    .limit(1)
-
-  const completedStudy = completedStudies?.[0] ?? null
-
-  // BE insight outputs — for Recent Insights widget and completed study heatmap
-  const { data: beInsights } = await supabase
+  const beInsights = demo ? [] : ((await supabase
     .from("BE_insight_outputs")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(5)
+    .limit(5)).data ?? [])
 
-  // Most recent final insight output for the Occupancy Over Time chart
-  const latestOutput = beInsights?.find(o => o.output_mode === "final_insights") ?? beInsights?.[0] ?? null
+  const latestOutput = beInsights.find(o => o.output_mode === "final_insights") ?? beInsights[0] ?? null
 
-  // Most recent insight for the completed study (for heatmap dialog)
+  let completedStudy = null
   let completedStudyInsights = null
-  if (completedStudy) {
-    const { data: studyInsight } = await supabase
-      .from("BE_insight_outputs")
+  if (!demo) {
+    const { data: completedStudies } = await supabase
+      .from("BE_studies")
       .select("*")
-      .eq("study_id", completedStudy.study_id)
-      .eq("output_mode", "final_insights")
+      .eq("status", "complete")
       .order("created_at", { ascending: false })
       .limit(1)
-      .single()
-    completedStudyInsights = studyInsight ?? null
-  }
+    completedStudy = completedStudies?.[0] ?? null
 
-  // Live preview metrics for monitoring_running studies
-  const activeStudyIds = (beStudies || [])
-    .filter(s => s.current_stage === "monitoring_running")
-    .map(s => s.study_id)
+    if (completedStudy) {
+      const { data: studyInsight } = await supabase
+        .from("BE_insight_outputs")
+        .select("*")
+        .eq("study_id", completedStudy.study_id)
+        .eq("output_mode", "final_insights")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+      completedStudyInsights = studyInsight ?? null
+    }
+  }
 
   let livePreviewMetrics = null
-  if (activeStudyIds.length > 0) {
-    const { data: preview } = await supabase
-      .from("BE_live_preview_metrics")
-      .select("*")
-      .in("study_id", activeStudyIds)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .single()
-    livePreviewMetrics = preview ?? null
+  if (!demo) {
+    const activeStudyIds = beStudies
+      .filter(s => s.current_stage === "monitoring_running")
+      .map(s => s.study_id)
+
+    if (activeStudyIds.length > 0) {
+      const { data: preview } = await supabase
+        .from("BE_live_preview_metrics")
+        .select("*")
+        .in("study_id", activeStudyIds)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single()
+      livePreviewMetrics = preview ?? null
+    }
   }
 
-  const insightsCount = (beInsights || []).reduce(
+  const insightsCount = beInsights.reduce(
     (sum, o) => sum + (o.insights?.length ?? 0),
     0
   )
@@ -103,15 +106,15 @@ export default async function DashboardPage() {
 
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         <MetricCards
-          zonesCount={zones?.length || 0}
-          studiesCount={beStudies?.length || 0}
+          zonesCount={zones.length}
+          studiesCount={beStudies.length}
           insightsCount={insightsCount}
-          metricsCount={metrics?.length || 0}
+          metricsCount={metrics.length}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SpaceHeatmap
-            zones={zones || []}
+            zones={zones}
             insights={[]}
             space={space}
             studies={[]}
@@ -123,12 +126,12 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ZoneOverview zones={zones || []} />
+          <ZoneOverview zones={zones} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActiveStudies studies={beStudies || []} />
-          <RecentInsights outputs={beInsights || []} />
+          <ActiveStudies studies={beStudies} />
+          <RecentInsights outputs={beInsights} />
         </div>
       </div>
     </div>

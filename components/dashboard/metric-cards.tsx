@@ -21,19 +21,19 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
       color: "text-chart-1",
     },
     {
+      title: "Tracked Behaviors",
+      value: metricsCount,
+      change: metricsCount === 0 ? "Add behaviors" : `${metricsCount} active`,
+      trend: "neutral",
+      icon: BarChart3,
+      color: "text-chart-2",
+    },
+    {
       title: "Running Studies",
       value: studiesCount,
       change: studiesCount === 0 ? "Create a study" : `${studiesCount} in progress`,
       trend: "neutral",
       icon: FlaskConical,
-      color: "text-chart-2",
-    },
-    {
-      title: "Tracked Metrics",
-      value: metricsCount,
-      change: metricsCount === 0 ? "Add metrics" : `${metricsCount} active`,
-      trend: "neutral",
-      icon: BarChart3,
       color: "text-chart-3",
     },
     {

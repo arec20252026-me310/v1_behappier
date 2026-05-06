@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { MapPin, Activity, CheckCircle2, Eraser, ArrowRight, Loader2 } from "lucide-react"
+import { MapPin, Activity, CheckCircle2, Eraser, ArrowRight, Loader2, EyeOff, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { enableDemoMode, disableDemoMode } from "@/app/actions/demo"
 
 type Scenario = "blank" | "space-ready" | "study-in-progress" | "study-complete"
 
@@ -28,7 +29,7 @@ const SCENARIOS: {
     badgeColor: "bg-muted text-muted-foreground",
     icon: Eraser,
     iconColor: "text-muted-foreground",
-    description: "A brand-new account — no space, no zones, no studies.",
+    description: "Hides all your real data from the UI without deleting anything. Exit demo mode to restore the view.",
     visible: [
       "Empty space setup prompt",
       "No heatmap or zone data",
@@ -42,7 +43,7 @@ const SCENARIOS: {
     badgeColor: "bg-blue-500/20 text-blue-400",
     icon: MapPin,
     iconColor: "text-blue-400",
-    description: "ME310 Loft is configured — 10 zones, Kitchen camera assigned.",
+    description: "ME310 Loft is configured — 10 zones, Kitchen camera assigned. No studies or insights.",
     visible: [
       "Full floor plan with 10 zones",
       "Kitchen camera pin visible",
@@ -56,7 +57,7 @@ const SCENARIOS: {
     badgeColor: "bg-green-500/20 text-green-400",
     icon: Activity,
     iconColor: "text-green-400",
-    description: "A 5-minute occupancy study is actively monitoring the Kitchen zone.",
+    description: "A 5-minute occupancy study is actively monitoring the Kitchen zone. No insights yet.",
     visible: [
       "Live heatmap with colored zones",
       "Kitchen at ~63% occupancy",
@@ -84,11 +85,22 @@ export default function DemoPage() {
   const [loading, setLoading] = useState<Scenario | null>(null)
   const [loaded, setLoaded] = useState<Scenario | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [demoActive, setDemoActive] = useState(false)
+
+  useEffect(() => {
+    setDemoActive(document.cookie.includes("demo_mode=1"))
+  }, [])
 
   const loadScenario = async (scenario: Scenario) => {
     setLoading(scenario)
     setError(null)
     try {
+      if (scenario === "blank") {
+        // Cookie-only: hides real data without touching the database
+        await enableDemoMode()
+        return
+      }
+
       const res = await fetch("/api/demo/seed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -109,11 +121,37 @@ export default function DemoPage() {
   return (
     <div className="flex flex-col h-full">
       <DashboardHeader
-        title="Demo Scenarios"
-        subtitle="Load a preset state into Supabase for demos and user interviews"
+        title="Start Demo"
+        subtitle="Load a preset state for demos and user interviews"
       />
 
       <div className="flex-1 p-6 space-y-6 overflow-auto">
+
+        {/* Demo mode status */}
+        {demoActive ? (
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
+            <div className="flex items-center gap-2 text-yellow-400 text-sm">
+              <EyeOff className="h-4 w-4 shrink-0" />
+              <span className="font-medium">Demo mode is active</span>
+              <span className="text-yellow-400/60 hidden sm:inline">— real database data is hidden</span>
+            </div>
+            <form action={disableDemoMode}>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-yellow-500/40 text-yellow-400 hover:border-yellow-500/80 hover:text-yellow-300 transition-colors"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Exit demo mode
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            <Eye className="h-4 w-4 shrink-0" />
+            <span>Demo mode is off — real data is visible. Load a scenario below to begin.</span>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}
@@ -169,6 +207,8 @@ export default function DemoPage() {
                         <><Loader2 className="h-4 w-4 animate-spin" />Loading…</>
                       ) : isLoaded ? (
                         <><CheckCircle2 className="h-4 w-4" />Loaded</>
+                      ) : s.id === "blank" ? (
+                        "Enter Demo Mode"
                       ) : (
                         "Load Scenario"
                       )}
@@ -192,9 +232,9 @@ export default function DemoPage() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Loading a scenario rewrites Supabase data immediately — refresh any open dashboard tabs after loading.
+          Blank mode hides real data using a browser cookie — no database changes are made.
           <br />
-          Terminal alternative: <code className="bg-muted px-1.5 py-0.5 rounded text-xs">npm run seed -- &lt;scenario&gt;</code>
+          Other scenarios rewrite Supabase demo data — refresh any open dashboard tabs after loading.
         </p>
       </div>
     </div>

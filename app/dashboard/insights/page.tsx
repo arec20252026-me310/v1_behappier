@@ -1,14 +1,18 @@
 import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { InsightsList } from "@/components/insights/insights-list"
+import { isDemoMode } from "@/lib/demo-mode"
 
 export default async function InsightsPage() {
+  const demo = await isDemoMode()
   const supabase = await createClient()
 
-  const { data: outputs } = await supabase
-    .from("BE_insight_outputs")
-    .select("*")
-    .order("created_at", { ascending: false })
+  const { data: outputs } = demo
+    ? { data: [] }
+    : await supabase
+        .from("BE_insight_outputs")
+        .select("*")
+        .order("created_at", { ascending: false })
 
   return (
     <div className="flex flex-col h-full">
