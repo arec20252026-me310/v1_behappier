@@ -29,14 +29,14 @@ const navItems = [
     icon: Map,
   },
   {
+    title: "Behaviors",
+    href: "/dashboard/metrics",
+    icon: BarChart3,
+  },
+  {
     title: "Micro-Studies",
     href: "/dashboard/studies",
     icon: FlaskConical,
-  },
-  {
-    title: "Metrics",
-    href: "/dashboard/metrics",
-    icon: BarChart3,
   },
   {
     title: "Insights",
