@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-interface ActiveStudiesProps {
+interface ActiveRecent StudiesProps {
   studies: BEStudy[]
 }
 
@@ -26,12 +26,12 @@ const STAGE_CONFIG: Record<string, { label: string; color: string }> = {
   failed:               { label: "Failed",          color: "bg-destructive/20 text-destructive" },
 }
 
-export function ActiveStudies({ studies }: ActiveStudiesProps) {
+export function ActiveRecent Studies({ studies }: ActiveRecent StudiesProps) {
   if (studies.length === 0) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5">
-          <CardTitle className="text-base font-medium">Studies</CardTitle>
+          <CardTitle className="text-base font-medium">Recent Studies</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -51,7 +51,7 @@ export function ActiveStudies({ studies }: ActiveStudiesProps) {
   return (
     <Card className="bg-card border-border pt-2 pb-4">
       <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-medium">Studies</CardTitle>
+        <CardTitle className="text-base font-medium">Recent Studies</CardTitle>
         <Link href="/dashboard/studies">
           <Button variant="ghost" size="sm" className="text-xs">View All</Button>
         </Link>
