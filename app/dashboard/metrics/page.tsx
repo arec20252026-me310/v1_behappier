@@ -26,7 +26,7 @@ export default async function MetricsPage() {
   return (
     <div className="flex flex-col h-full">
       <DashboardHeader 
-        title="Metrics" 
+        title="Behaviors"
         subtitle="Configure behavioral metrics for your space"
       />
       
