@@ -1,6 +1,5 @@
 /**
  * Demo scenario seed data — ME310 Loft space.
- * IDs match real Supabase rows so upserts are idempotent.
  *
  * Zone-to-insight linkage uses BE_studies.metadata.monitored_zone_id so
  * the heatmap can highlight the correct zone without any schema changes.
@@ -18,18 +17,35 @@ export const SEED_BE_STUDY_ID   = "00000000-0000-0000-0000-000000000001"
 export const SEED_LIVE_ID       = "00000000-0000-0000-0000-000000000002"
 export const SEED_INSIGHT_ID    = "00000000-0000-0000-0000-000000000003"
 
+// ── Space ────────────────────────────────────────────────────────────────────
+export const DEMO_SPACE = {
+  id: SPACE_ID,
+  name: "ME310 Loft",
+  description: "Stanford ME310 design studio space",
+  address: null,
+  total_area_sqft: null,
+  building_type: "office",
+  floor_plan_url: "/api/file?pathname=floor-plans%2F1776921523908.png",
+  grid_resolution: 20,
+  metadata: {},
+  created_at: "2024-01-01T00:00:00Z",
+  updated_at: "2024-01-01T00:00:00Z",
+}
+
 // ── Zones ────────────────────────────────────────────────────────────────────
+const TS = { created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" }
+
 export const ZONES = [
-  { id: "bc51d7f6-d81d-421a-9a82-11f96220ae4b", space_id: SPACE_ID, name: "Team 1",            zone_type: "workspace", grid_x: 3,  grid_y: 4,  grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {} },
-  { id: "57ba4211-be1f-49b5-bf1a-b70314aa6e25", space_id: SPACE_ID, name: "Team 2",            zone_type: "workspace", grid_x: 3,  grid_y: 8,  grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {} },
-  { id: "63f18aeb-6b63-4c0b-9db1-3c7b9a7f52f5", space_id: SPACE_ID, name: "Team 3",            zone_type: "workspace", grid_x: 3,  grid_y: 12, grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {} },
-  { id: "0a3a375b-125a-4924-8d6b-a8a6325d9066", space_id: SPACE_ID, name: "Team 4",            zone_type: "workspace", grid_x: 7,  grid_y: 13, grid_width: 2, grid_height: 2, color: "#10B981", capacity: 10, metadata: {} },
-  { id: "d171a3bb-afab-4b81-8408-25b5cc53266d", space_id: SPACE_ID, name: "Team 5",            zone_type: "workspace", grid_x: 13, grid_y: 4,  grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {} },
-  { id: "57ef901d-2f29-4d0e-ad43-d35439498ef4", space_id: SPACE_ID, name: "Team 6",            zone_type: "workspace", grid_x: 13, grid_y: 8,  grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {} },
-  { id: "76a61a27-e7e3-4105-9f37-1b97d98b0b65", space_id: SPACE_ID, name: "Team 7",            zone_type: "workspace", grid_x: 10, grid_y: 13, grid_width: 2, grid_height: 2, color: "#10B981", capacity: 10, metadata: {} },
-  { id: "a1e9f303-cdce-465d-bd02-0ecdb31d15bd", space_id: SPACE_ID, name: "Team 8",            zone_type: "workspace", grid_x: 13, grid_y: 12, grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {} },
-  { id: KITCHEN_ID,                              space_id: SPACE_ID, name: "Kitchen",           zone_type: "kitchen",   grid_x: 6,  grid_y: 1,  grid_width: 6, grid_height: 3, color: "#EC4899", capacity: 10, metadata: {} },
-  { id: "7a42add1-dc7b-4aab-866b-55d69d7cdad6", space_id: SPACE_ID, name: "Electronics Space", zone_type: "workspace", grid_x: 7,  grid_y: 16, grid_width: 5, grid_height: 4, color: "#10B981", capacity: 10, metadata: {} },
+  { id: "bc51d7f6-d81d-421a-9a82-11f96220ae4b", space_id: SPACE_ID, name: "Team 1",            zone_type: "workspace", grid_x: 3,  grid_y: 4,  grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {}, ...TS },
+  { id: "57ba4211-be1f-49b5-bf1a-b70314aa6e25", space_id: SPACE_ID, name: "Team 2",            zone_type: "workspace", grid_x: 3,  grid_y: 8,  grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {}, ...TS },
+  { id: "63f18aeb-6b63-4c0b-9db1-3c7b9a7f52f5", space_id: SPACE_ID, name: "Team 3",            zone_type: "workspace", grid_x: 3,  grid_y: 12, grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {}, ...TS },
+  { id: "0a3a375b-125a-4924-8d6b-a8a6325d9066", space_id: SPACE_ID, name: "Team 4",            zone_type: "workspace", grid_x: 7,  grid_y: 13, grid_width: 2, grid_height: 2, color: "#10B981", capacity: 10, metadata: {}, ...TS },
+  { id: "d171a3bb-afab-4b81-8408-25b5cc53266d", space_id: SPACE_ID, name: "Team 5",            zone_type: "workspace", grid_x: 13, grid_y: 4,  grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {}, ...TS },
+  { id: "57ef901d-2f29-4d0e-ad43-d35439498ef4", space_id: SPACE_ID, name: "Team 6",            zone_type: "workspace", grid_x: 13, grid_y: 8,  grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {}, ...TS },
+  { id: "76a61a27-e7e3-4105-9f37-1b97d98b0b65", space_id: SPACE_ID, name: "Team 7",            zone_type: "workspace", grid_x: 10, grid_y: 13, grid_width: 2, grid_height: 2, color: "#10B981", capacity: 10, metadata: {}, ...TS },
+  { id: "a1e9f303-cdce-465d-bd02-0ecdb31d15bd", space_id: SPACE_ID, name: "Team 8",            zone_type: "workspace", grid_x: 13, grid_y: 12, grid_width: 4, grid_height: 3, color: "#10B981", capacity: 10, metadata: {}, ...TS },
+  { id: KITCHEN_ID,                              space_id: SPACE_ID, name: "Kitchen",           zone_type: "kitchen",   grid_x: 6,  grid_y: 1,  grid_width: 6, grid_height: 3, color: "#EC4899", capacity: 10, metadata: {}, ...TS },
+  { id: "7a42add1-dc7b-4aab-866b-55d69d7cdad6", space_id: SPACE_ID, name: "Electronics Space", zone_type: "workspace", grid_x: 7,  grid_y: 16, grid_width: 5, grid_height: 4, color: "#10B981", capacity: 10, metadata: {}, ...TS },
 ]
 
 // ── Camera ───────────────────────────────────────────────────────────────────
@@ -38,9 +54,11 @@ export const CAMERA = {
   zone_id: KITCHEN_ID,
   name: "Loft Camera Fluent (Motion)",
   stream_url: null,
-  status: "active",
+  status: "active" as const,
   field_of_view: {},
   metadata: { ha_entity_id: "camera.loft_camera_fluent" },
+  created_at: "2024-01-01T00:00:00Z",
+  updated_at: "2024-01-01T00:00:00Z",
 }
 
 // ── BE_studies ───────────────────────────────────────────────────────────────
@@ -61,19 +79,21 @@ const BE_STUDY_BASE = {
     monitored_zone_id: KITCHEN_ID,
   },
   live_preview_status: null,
+  created_at: "2024-01-01T00:00:00Z",
+  updated_at: "2024-01-01T00:00:00Z",
 }
 
 export const BE_STUDY_IN_PROGRESS = {
   ...BE_STUDY_BASE,
   status: "active",
-  current_stage: "monitoring_running",
+  current_stage: "monitoring_running" as const,
   live_preview_status: "Monitoring active — 10 snapshots analyzed",
 }
 
 export const BE_STUDY_COMPLETE = {
   ...BE_STUDY_BASE,
   status: "complete",
-  current_stage: "complete",
+  current_stage: "complete" as const,
 }
 
 // ── BE_live_preview_metrics ───────────────────────────────────────────────────
@@ -83,6 +103,7 @@ export const BE_LIVE_METRICS = {
   study_id: STUDY_ID,
   status: "active",
   label: "Monitoring active — Kitchen zone at 63% capacity",
+  updated_at: "2024-01-01T00:00:00Z",
   metrics: {
     zone_metrics: {
       Kitchen:             { occupancy_pct: 63, count: 6 },
@@ -101,8 +122,9 @@ export const BE_LIVE_METRICS = {
 export const BE_INSIGHT_OUTPUT = {
   id: SEED_INSIGHT_ID,
   study_id: STUDY_ID,
-  output_mode: "final_insights",
+  output_mode: "final_insights" as const,
   status: "complete",
+  created_at: "2024-01-01T00:00:00Z",
   dashboard_summary:
     "The study measured occupant fluctuation in the east lobby over a 5-minute period, " +
     "divided into three phases: active fluctuation (0–2 min), empty period (2–3:30), and " +

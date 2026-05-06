@@ -53,8 +53,11 @@ export function OccupancyChart({ latestOutput }: OccupancyChartProps) {
 
   return (
     <Card className="bg-card border-border pt-2 pb-4">
-      <CardHeader className="pb-1.5">
+      <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
+        <Link href="/dashboard/insights">
+          <Button variant="ghost" size="sm" className="text-xs">View All</Button>
+        </Link>
       </CardHeader>
       <CardContent>
         <TimeSeriesChart series={series} height={280} />

@@ -31,14 +31,14 @@ export function ActiveStudies({ studies }: ActiveStudiesProps) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5">
-          <CardTitle className="text-base font-medium">Active Studies</CardTitle>
+          <CardTitle className="text-base font-medium">Recent Studies</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
               <FlaskConical className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground mb-4">No studies in progress</p>
+            <p className="text-sm text-muted-foreground mb-4">No studies yet</p>
             <Link href="/dashboard/studies">
               <Button size="sm">Create Study</Button>
             </Link>
@@ -51,7 +51,7 @@ export function ActiveStudies({ studies }: ActiveStudiesProps) {
   return (
     <Card className="bg-card border-border pt-2 pb-4">
       <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-medium">Active Studies</CardTitle>
+        <CardTitle className="text-base font-medium">Recent Studies</CardTitle>
         <Link href="/dashboard/studies">
           <Button variant="ghost" size="sm" className="text-xs">View All</Button>
         </Link>

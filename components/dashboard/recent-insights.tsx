@@ -31,11 +31,18 @@ export function RecentInsights({ outputs }: RecentInsightsProps) {
     )
   }
 
+  function toArr(v: unknown): string[] {
+    if (Array.isArray(v)) return v as string[]
+    if (v === null || v === undefined || v === "") return []
+    return [String(v)]
+  }
+
   // Flatten the most recent insight strings across all outputs (up to 4)
   const recentItems: { text: string; key: string; mode: BEInsightOutput["output_mode"] }[] = []
   for (const output of outputs) {
-    for (let i = 0; i < output.insights.length; i++) {
-      recentItems.push({ text: output.insights[i], key: `${output.id}-${i}`, mode: output.output_mode })
+    const items = toArr(output.insights)
+    for (let i = 0; i < items.length; i++) {
+      recentItems.push({ text: items[i], key: `${output.id}-${i}`, mode: output.output_mode })
       if (recentItems.length >= 4) break
     }
     if (recentItems.length >= 4) break

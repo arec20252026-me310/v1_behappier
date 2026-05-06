@@ -29,14 +29,14 @@ const navItems = [
     icon: Map,
   },
   {
+    title: "Behaviors",
+    href: "/dashboard/behaviors",
+    icon: BarChart3,
+  },
+  {
     title: "Micro-Studies",
     href: "/dashboard/studies",
     icon: FlaskConical,
-  },
-  {
-    title: "Metrics",
-    href: "/dashboard/metrics",
-    icon: BarChart3,
   },
   {
     title: "Insights",
@@ -60,14 +60,14 @@ export function SidebarNav() {
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">IQ</span>
+              <span className="text-primary-foreground font-bold text-sm">BH</span>
             </div>
-            <span className="font-semibold text-sidebar-foreground">OccupancyIQ</span>
+            <span className="font-semibold text-sidebar-foreground">BeHappier</span>
           </div>
         )}
         {collapsed && (
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
-            <span className="text-primary-foreground font-bold text-sm">IQ</span>
+            <span className="text-primary-foreground font-bold text-sm">BH</span>
           </div>
         )}
         <Button
@@ -113,7 +113,7 @@ export function SidebarNav() {
           )}
         >
           <Clapperboard className="h-5 w-5 shrink-0 text-muted-foreground" />
-          {!collapsed && <span className="text-sm font-medium text-muted-foreground">Demo</span>}
+          {!collapsed && <span className="text-sm font-medium text-muted-foreground">Start Demo</span>}
         </Link>
         <Link
           href="/dashboard/settings"

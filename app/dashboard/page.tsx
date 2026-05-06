@@ -6,6 +6,12 @@ import { ActiveStudies } from "@/components/dashboard/active-studies"
 import { OccupancyChart } from "@/components/dashboard/occupancy-chart"
 import { ZoneOverview } from "@/components/dashboard/zone-overview"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
+import { getDemoScenario } from "@/lib/demo-mode"
+import {
+  DEMO_SPACE, ZONES,
+  BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
+  BE_LIVE_METRICS, BE_INSIGHT_OUTPUT,
+} from "@/lib/demo-seeds"
 
 const ACTIVE_STAGES = [
   "planned",
@@ -19,47 +25,119 @@ const ACTIVE_STAGES = [
 ]
 
 export default async function DashboardPage() {
+  const scenario = await getDemoScenario()
+  const demo = scenario !== null
   const supabase = await createClient()
 
-  const { data: space } = await supabase.from("spaces").select("*").limit(1).single()
+  // ── Demo mode: serve hardcoded data per scenario ──────────────────────────
+  if (demo) {
+    const hasSpace  = scenario !== "blank"
+    const hasStudy  = scenario === "study-in-progress" || scenario === "study-complete"
+    const hasLive   = false
+    const hasInsights = scenario === "study-complete"
 
-  const { data: zones } = await supabase
+    const demoSpace   = hasSpace ? DEMO_SPACE : null
+    const demoZones   = hasSpace ? ZONES : []
+    const demoStudies = hasStudy ? (scenario === "study-in-progress" ? [BE_STUDY_IN_PROGRESS] : []) : []
+    const demoCompleted = hasInsights ? [BE_STUDY_COMPLETE] : []
+    const demoInsights  = hasInsights ? [BE_INSIGHT_OUTPUT] : []
+    const demoLive      = hasLive ? BE_LIVE_METRICS : null
+    const demoCompletedStudy    = hasInsights ? BE_STUDY_COMPLETE : null
+    const demoCompletedInsights = hasInsights ? BE_INSIGHT_OUTPUT : null
+    const latestOutput = demoInsights[0] ?? null
+
+    function toArr(v: unknown): unknown[] {
+      if (Array.isArray(v)) return v
+      if (v === null || v === undefined || v === "") return []
+      return [v]
+    }
+    const insightsCount = demoInsights.reduce(
+      (sum, o) =>
+        sum +
+        toArr(o.insights).length +
+        toArr(o.recommendations).length +
+        toArr(o.charts).length +
+        toArr(o.tables).length,
+      0
+    )
+
+    return (
+      <div className="flex flex-col h-full">
+        <DashboardHeader
+          title="Dashboard"
+          subtitle={demoSpace?.name || "Get started by setting up your space"}
+        />
+        <div className="flex-1 p-6 space-y-6 overflow-auto">
+          <MetricCards
+            zonesCount={demoZones.length}
+            studiesCount={demoStudies.length}
+            insightsCount={insightsCount}
+            metricsCount={0}
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SpaceHeatmap
+              zones={demoZones}
+              insights={[]}
+              space={demoSpace}
+              studies={[]}
+              livePreviewMetrics={demoLive}
+              completedStudy={demoCompletedStudy}
+              completedStudyInsights={demoCompletedInsights}
+            />
+            <OccupancyChart latestOutput={latestOutput} />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ZoneOverview zones={demoZones} />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ActiveStudies studies={[...demoStudies, ...demoCompleted]} />
+            <RecentInsights outputs={demoInsights} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Real data ─────────────────────────────────────────────────────────────
+  const space = (await supabase.from("spaces").select("*").limit(1).single()).data
+
+  const zones = ((await supabase
     .from("zones")
     .select("*")
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false })).data ?? [])
 
-  const { data: metrics } = await supabase.from("metrics").select("*").eq("is_active", true)
+  const metrics = ((await supabase
+    .from("metrics")
+    .select("*")
+    .eq("is_active", true)).data ?? [])
 
-  // Active pipeline studies (for widgets + count)
-  const { data: beStudies } = await supabase
+  const beStudies = ((await supabase
     .from("BE_studies")
     .select("*")
     .in("current_stage", ACTIVE_STAGES)
     .order("created_at", { ascending: false })
-    .limit(5)
+    .limit(5)).data ?? [])
 
-  // Completed studies — for heatmap zone highlights
-  const { data: completedStudies } = await supabase
+  const beInsights = ((await supabase
+    .from("BE_insight_outputs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(5)).data ?? [])
+
+  const latestOutput = beInsights.find(o => o.output_mode === "final_insights") ?? beInsights[0] ?? null
+
+  let completedStudies: typeof beStudies = []
+  let completedStudy = null
+  let completedStudyInsights = null
+  const { data: completed } = await supabase
     .from("BE_studies")
     .select("*")
     .eq("status", "complete")
     .order("created_at", { ascending: false })
-    .limit(1)
+    .limit(4)
+  completedStudies = completed ?? []
+  completedStudy = completedStudies[0] ?? null
 
-  const completedStudy = completedStudies?.[0] ?? null
-
-  // BE insight outputs — for Recent Insights widget and completed study heatmap
-  const { data: beInsights } = await supabase
-    .from("BE_insight_outputs")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(5)
-
-  // Most recent final insight output for the Occupancy Over Time chart
-  const latestOutput = beInsights?.find(o => o.output_mode === "final_insights") ?? beInsights?.[0] ?? null
-
-  // Most recent insight for the completed study (for heatmap dialog)
-  let completedStudyInsights = null
   if (completedStudy) {
     const { data: studyInsight } = await supabase
       .from("BE_insight_outputs")
@@ -72,12 +150,11 @@ export default async function DashboardPage() {
     completedStudyInsights = studyInsight ?? null
   }
 
-  // Live preview metrics for monitoring_running studies
-  const activeStudyIds = (beStudies || [])
+  let livePreviewMetrics = null
+  const activeStudyIds = beStudies
     .filter(s => s.current_stage === "monitoring_running")
     .map(s => s.study_id)
 
-  let livePreviewMetrics = null
   if (activeStudyIds.length > 0) {
     const { data: preview } = await supabase
       .from("BE_live_preview_metrics")
@@ -89,8 +166,18 @@ export default async function DashboardPage() {
     livePreviewMetrics = preview ?? null
   }
 
-  const insightsCount = (beInsights || []).reduce(
-    (sum, o) => sum + (o.insights?.length ?? 0),
+  function toArr(v: unknown): unknown[] {
+    if (Array.isArray(v)) return v
+    if (v === null || v === undefined || v === "") return []
+    return [v]
+  }
+  const insightsCount = beInsights.reduce(
+    (sum, o) =>
+      sum +
+      toArr(o.insights).length +
+      toArr(o.recommendations).length +
+      toArr(o.charts).length +
+      toArr(o.tables).length,
     0
   )
 
@@ -103,15 +190,15 @@ export default async function DashboardPage() {
 
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         <MetricCards
-          zonesCount={zones?.length || 0}
-          studiesCount={beStudies?.length || 0}
+          zonesCount={zones.length}
+          studiesCount={beStudies.length}
           insightsCount={insightsCount}
-          metricsCount={metrics?.length || 0}
+          metricsCount={metrics.length}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SpaceHeatmap
-            zones={zones || []}
+            zones={zones}
             insights={[]}
             space={space}
             studies={[]}
@@ -123,12 +210,12 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ZoneOverview zones={zones || []} />
+          <ZoneOverview zones={zones} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActiveStudies studies={beStudies || []} />
-          <RecentInsights outputs={beInsights || []} />
+          <ActiveStudies studies={[...beStudies, ...completedStudies]} />
+          <RecentInsights outputs={beInsights} />
         </div>
       </div>
     </div>
