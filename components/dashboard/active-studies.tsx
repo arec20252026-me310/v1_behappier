@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-interface ActiveRecent StudiesProps {
+interface ActiveStudiesProps {
   studies: BEStudy[]
 }
 
@@ -26,7 +26,7 @@ const STAGE_CONFIG: Record<string, { label: string; color: string }> = {
   failed:               { label: "Failed",          color: "bg-destructive/20 text-destructive" },
 }
 
-export function ActiveRecent Studies({ studies }: ActiveRecent StudiesProps) {
+export function ActiveStudies({ studies }: ActiveStudiesProps) {
   if (studies.length === 0) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
