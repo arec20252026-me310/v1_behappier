@@ -92,8 +92,20 @@ export default async function DashboardPage() {
     }
   }
 
+  // Count each key finding, recommendation, chart, and table as one insight.
+  // Use toArray so a raw string from n8n counts as 1, not as its character length.
+  function toArr(v: unknown): unknown[] {
+    if (Array.isArray(v)) return v
+    if (v === null || v === undefined || v === "") return []
+    return [v]
+  }
   const insightsCount = beInsights.reduce(
-    (sum, o) => sum + (o.insights?.length ?? 0),
+    (sum, o) =>
+      sum +
+      toArr(o.insights).length +
+      toArr(o.recommendations).length +
+      toArr(o.charts).length +
+      toArr(o.tables).length,
     0
   )
 
