@@ -107,6 +107,13 @@ function msToTimeLabel(ms: number): string {
   return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
 }
 
+function hasCIData(s: ChartSeries): boolean {
+  return (
+    Array.isArray(s.lower) && s.lower.some(v => v !== null) &&
+    Array.isArray(s.upper) && s.upper.some(v => v !== null)
+  )
+}
+
 function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
   if (!series.length) return []
   const base = series.reduce((a, b) => (b.labels.length > a.labels.length ? b : a))
@@ -116,9 +123,9 @@ function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
     const point: Record<string, unknown> = { name: formatLabel(label), _raw: label, _ms: ms ?? i * 1000 }
     series.forEach(s => {
       point[s.title] = s.values[i] ?? null
-      if (s.lower && s.upper) {
-        const lo = s.lower[i] ?? null
-        const hi = s.upper[i] ?? null
+      if (hasCIData(s)) {
+        const lo = s.lower![i] ?? null
+        const hi = s.upper![i] ?? null
         point[`${s.title}_ci_base`] = lo
         point[`${s.title}_ci_band`] = lo !== null && hi !== null ? Math.max(0, hi - lo) : null
       }
@@ -374,12 +381,12 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
               const isHidden = hidden.has(s.title)
               return [
-                s.lower && s.upper ? (
+                hasCIData(s) ? (
                   <Area key={`${s.title}_ci_base`} type="monotone" dataKey={`${s.title}_ci_base`}
                     stackId={`ci_${s.title}`} stroke="none" fill="transparent" legendType="none"
                     connectNulls hide={isHidden} />
                 ) : null,
-                s.lower && s.upper ? (
+                hasCIData(s) ? (
                   <Area key={`${s.title}_ci_band`} type="monotone" dataKey={`${s.title}_ci_band`}
                     stackId={`ci_${s.title}`} stroke="none" fill={color} fillOpacity={0.15}
                     legendType="none" connectNulls hide={isHidden} />
