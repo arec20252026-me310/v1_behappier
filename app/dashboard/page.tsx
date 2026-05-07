@@ -13,16 +13,7 @@ import {
   BE_LIVE_METRICS, BE_INSIGHT_OUTPUT,
 } from "@/lib/demo-seeds"
 
-const ACTIVE_STAGES = [
-  "planned",
-  "needfinding_running",
-  "needfinding_complete",
-  "monitoring_running",
-  "monitoring_paused",
-  "milestone_review",
-  "monitoring_complete",
-  "insights_running",
-]
+const ACTIVE_STATUSES = ["running", "analyzing"]
 
 export default async function DashboardPage() {
   const scenario = await getDemoScenario()
@@ -114,7 +105,7 @@ export default async function DashboardPage() {
   const beStudies = ((await supabase
     .from("BE_studies")
     .select("*")
-    .in("current_stage", ACTIVE_STAGES)
+    .in("status", ACTIVE_STATUSES)
     .order("created_at", { ascending: false })
     .limit(5)).data ?? [])
 
