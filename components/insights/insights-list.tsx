@@ -19,7 +19,12 @@ function toArray<T>(value: unknown): T[] {
   return [value as T]
 }
 
-function normalizeOutput(output: BEInsightOutput): BEInsightOutput {
+type NormalizedOutput = Omit<BEInsightOutput, 'insights' | 'recommendations'> & {
+  insights: string[]
+  recommendations: string[]
+}
+
+function normalizeOutput(output: BEInsightOutput): NormalizedOutput {
   return {
     ...output,
     insights: toArray<string>(output.insights),
