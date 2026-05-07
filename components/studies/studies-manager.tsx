@@ -220,7 +220,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
           behavior_targets: form.target_metrics
             .map(id => metrics.find(m => m.id === id))
             .filter(Boolean)
-            .map(m => ({ behavior_name: m!.name, behavior_description: m!.description ?? "" })),
+            .map(m => ({ behavior_name: m!.name, behavior_description: m!.description ?? "", behavior_units: m!.unit ?? "" })),
           duration_seconds: form.duration_minutes ? form.duration_minutes * 60 : null,
         }),
       })
