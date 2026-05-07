@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
+import React, { useRef, useState, useEffect } from "react"
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 const SERIES_COLORS = [
@@ -11,12 +11,63 @@ const SERIES_COLORS = [
   "oklch(0.6 0.18 280)",
 ]
 
-const TOOLTIP_STYLE = {
+const TOOLTIP_STYLE: React.CSSProperties = {
   backgroundColor: "oklch(0.17 0.01 260)",
   border: "1px solid oklch(0.28 0.01 260)",
   borderRadius: "0.5rem",
   color: "oklch(0.95 0 0)",
   fontSize: 11,
+  padding: "6px 10px",
+}
+
+interface TooltipPayloadEntry {
+  name: string
+  value: unknown
+  color?: string
+  payload: Record<string, unknown>
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  seriesColors,
+}: {
+  active?: boolean
+  payload?: TooltipPayloadEntry[]
+  label?: string
+  seriesColors: Record<string, string>
+}) {
+  if (!active || !payload?.length) return null
+  const entries = payload.filter(
+    p => !p.name.endsWith("_ci_base") && !p.name.endsWith("_ci_band")
+  )
+  if (!entries.length) return null
+  return (
+    <div style={TOOLTIP_STYLE}>
+      {label && (
+        <p style={{ color: "oklch(0.65 0 0)", marginBottom: 4, fontSize: 10 }}>{label}</p>
+      )}
+      {entries.map(entry => {
+        const v = typeof entry.value === "number" ? entry.value : null
+        const ciBase = entry.payload[`${entry.name}_ci_base`]
+        const ciBand = entry.payload[`${entry.name}_ci_band`]
+        let displayValue: string
+        if (v !== null && typeof ciBase === "number" && typeof ciBand === "number") {
+          const halfGap = ciBand / 2
+          displayValue = `${v.toFixed(3)} ± ${halfGap.toFixed(3)}`
+        } else {
+          displayValue = v !== null ? v.toFixed(3) : String(entry.value ?? "—")
+        }
+        return (
+          <p key={entry.name} style={{ color: seriesColors[entry.name] ?? "oklch(0.95 0 0)", margin: "1px 0" }}>
+            <span style={{ color: "oklch(0.65 0 0)" }}>{entry.name}: </span>
+            {displayValue}
+          </p>
+        )
+      })}
+    </div>
+  )
 }
 
 export interface ChartSeries {
@@ -246,6 +297,10 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
   const thumbLeft = total > 0 ? (viewStart / total) * 100 : 0
   const thumbWidth = total > 0 ? (windowLen / total) * 100 : 100
 
+  const seriesColors: Record<string, string> = Object.fromEntries(
+    series.map((s, i) => [s.title, SERIES_COLORS[i % SERIES_COLORS.length]])
+  )
+
   const thumbBg = dragMode === "pan" ? "oklch(0.60 0.1 200)" : "oklch(0.46 0.08 200)"
   const handleBg = dragMode === "left" || dragMode === "right"
     ? "oklch(0.68 0.12 200)"
@@ -297,12 +352,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
             <XAxis dataKey="name" stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} interval="preserveStartEnd" />
             <YAxis stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} />
             <Tooltip
-              contentStyle={TOOLTIP_STYLE}
-              labelStyle={{ color: "oklch(0.65 0 0)" }}
-              formatter={(value: unknown, name: string) => {
-                if (typeof name === "string" && (name.endsWith("_ci_base") || name.endsWith("_ci_band"))) return null
-                return [typeof value === "number" ? value.toFixed(3) : value, name]
-              }}
+              content={<ChartTooltip seriesColors={seriesColors} />}
             />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
