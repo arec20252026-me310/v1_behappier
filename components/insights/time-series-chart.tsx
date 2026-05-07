@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 const SERIES_COLORS = [
   "oklch(0.7 0.15 200)",
@@ -23,6 +23,8 @@ export interface ChartSeries {
   title: string
   labels: string[]
   values: (number | null)[]
+  lower?: (number | null)[]
+  upper?: (number | null)[]
 }
 
 interface TimeSeriesChartProps {
@@ -45,7 +47,15 @@ function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
   const base = series.reduce((a, b) => (b.labels.length > a.labels.length ? b : a))
   return base.labels.map((label, i) => {
     const point: Record<string, unknown> = { name: formatLabel(label), _raw: label }
-    series.forEach(s => { point[s.title] = s.values[i] ?? null })
+    series.forEach(s => {
+      point[s.title] = s.values[i] ?? null
+      if (s.lower && s.upper) {
+        const lo = s.lower[i] ?? null
+        const hi = s.upper[i] ?? null
+        point[`${s.title}_ci_base`] = lo
+        point[`${s.title}_ci_band`] = lo !== null && hi !== null ? Math.max(0, hi - lo) : null
+      }
+    })
     return point
   })
 }
@@ -282,24 +292,37 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       {/* Chart — pinch-to-zoom only */}
       <div ref={chartRef} style={{ height, userSelect: "none" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={visibleData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+          <ComposedChart data={visibleData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
             <XAxis dataKey="name" stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} interval="preserveStartEnd" />
             <YAxis stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "oklch(0.65 0 0)" }} />
-            {series.map((s, i) => (
-              <Line
-                key={s.title}
-                type="monotone"
-                dataKey={s.title}
-                stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
-                strokeWidth={2}
-                dot={false}
-                connectNulls
-                hide={hidden.has(s.title)}
-              />
-            ))}
-          </LineChart>
+            <Tooltip
+              contentStyle={TOOLTIP_STYLE}
+              labelStyle={{ color: "oklch(0.65 0 0)" }}
+              formatter={(value: unknown, name: string) => {
+                if (typeof name === "string" && (name.endsWith("_ci_base") || name.endsWith("_ci_band"))) return null
+                return [typeof value === "number" ? value.toFixed(3) : value, name]
+              }}
+            />
+            {series.map((s, i) => {
+              const color = SERIES_COLORS[i % SERIES_COLORS.length]
+              const isHidden = hidden.has(s.title)
+              return [
+                s.lower && s.upper ? (
+                  <Area key={`${s.title}_ci_base`} type="monotone" dataKey={`${s.title}_ci_base`}
+                    stackId={`ci_${s.title}`} stroke="none" fill="transparent" legendType="none"
+                    connectNulls hide={isHidden} />
+                ) : null,
+                s.lower && s.upper ? (
+                  <Area key={`${s.title}_ci_band`} type="monotone" dataKey={`${s.title}_ci_band`}
+                    stackId={`ci_${s.title}`} stroke="none" fill={color} fillOpacity={0.15}
+                    legendType="none" connectNulls hide={isHidden} />
+                ) : null,
+                <Line key={s.title} type="monotone" dataKey={s.title}
+                  stroke={color} strokeWidth={2} dot={false} connectNulls hide={isHidden} />,
+              ]
+            })}
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 

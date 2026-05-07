@@ -18,8 +18,8 @@ function extractLineSeries(output: BEInsightOutput): ChartSeries[] {
     .filter(c => (c as Record<string, unknown>).chart_type === "line")
     .map(c => {
       const ch = c as Record<string, unknown>
-      const d = ch.data as { labels: string[]; values: (number | null)[] }
-      return { title: ch.title as string, labels: d?.labels ?? [], values: d?.values ?? [] }
+      const d = ch.data as { labels: string[]; values: (number | null)[]; lower?: (number | null)[]; upper?: (number | null)[] }
+      return { title: ch.title as string, labels: d?.labels ?? [], values: d?.values ?? [], lower: d?.lower, upper: d?.upper }
     })
     .filter(s => s.labels.length > 0)
 }
