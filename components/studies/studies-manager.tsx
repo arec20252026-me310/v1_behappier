@@ -16,18 +16,12 @@ import { Spinner } from "@/components/ui/spinner"
 import { formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
 
-const STAGE_CONFIG: Record<string, { label: string; color: string }> = {
-  draft:                { label: "Draft",                color: "bg-muted text-muted-foreground" },
-  planned:              { label: "Planned",              color: "bg-blue-500/20 text-blue-400" },
-  needfinding_running:  { label: "Researching",          color: "bg-purple-500/20 text-purple-400" },
-  needfinding_complete: { label: "Behaviors Identified", color: "bg-purple-500/20 text-purple-400" },
-  monitoring_running:   { label: "Monitoring Live",      color: "bg-success/20 text-success" },
-  monitoring_paused:    { label: "Monitoring Paused",    color: "bg-warning/20 text-warning" },
-  milestone_review:     { label: "Milestone Review",     color: "bg-chart-1/20 text-chart-1" },
-  monitoring_complete:  { label: "Collection Done",      color: "bg-chart-2/20 text-chart-2" },
-  insights_running:     { label: "Generating Insights",  color: "bg-chart-3/20 text-chart-3" },
-  complete:             { label: "Complete",             color: "bg-primary/20 text-primary" },
-  failed:               { label: "Failed",               color: "bg-destructive/20 text-destructive" },
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  draft:    { label: "Draft",    color: "bg-muted text-muted-foreground" },
+  planned:  { label: "Planned",  color: "bg-blue-500/20 text-blue-400" },
+  active:   { label: "Active",   color: "bg-success/20 text-success" },
+  complete: { label: "Complete", color: "bg-primary/20 text-primary" },
+  failed:   { label: "Failed",   color: "bg-destructive/20 text-destructive" },
 }
 
 const DURATION_OPTIONS = [
@@ -437,8 +431,8 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {studies.map(study => {
-            const stage = STAGE_CONFIG[study.current_stage] ?? {
-              label: study.current_stage,
+            const stage = STATUS_CONFIG[study.status] ?? {
+              label: study.status,
               color: "bg-muted text-muted-foreground",
             }
             return (
