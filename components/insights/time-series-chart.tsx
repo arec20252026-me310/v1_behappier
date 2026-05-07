@@ -30,12 +30,11 @@ interface TooltipPayloadEntry {
 function ChartTooltip({
   active,
   payload,
-  label,
   seriesColors,
 }: {
   active?: boolean
   payload?: TooltipPayloadEntry[]
-  label?: string
+  label?: unknown
   seriesColors: Record<string, string>
 }) {
   if (!active || !payload?.length) return null
@@ -43,10 +42,12 @@ function ChartTooltip({
     p => !p.name.endsWith("_ci_base") && !p.name.endsWith("_ci_band")
   )
   if (!entries.length) return null
+  // Use the pre-formatted label stored on the data point rather than the raw numeric _ms value
+  const readableLabel = entries[0]?.payload?.name as string | undefined
   return (
     <div style={TOOLTIP_STYLE}>
-      {label && (
-        <p style={{ color: "oklch(0.65 0 0)", marginBottom: 4, fontSize: 10 }}>{label}</p>
+      {readableLabel && (
+        <p style={{ color: "oklch(0.65 0 0)", marginBottom: 4, fontSize: 10 }}>{readableLabel}</p>
       )}
       {entries.map(entry => {
         const v = typeof entry.value === "number" ? entry.value : null
@@ -93,11 +94,26 @@ function formatLabel(label: string): string {
   return label
 }
 
+// Convert ms (epoch or ms-from-midnight) back to a readable time string for axis ticks
+function msToTimeLabel(ms: number): string {
+  if (ms < 86400000) {
+    // Time-only labels stored as ms elapsed since midnight
+    const s = Math.floor(ms / 1000)
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const sec = s % 60
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+  }
+  return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+}
+
 function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
   if (!series.length) return []
   const base = series.reduce((a, b) => (b.labels.length > a.labels.length ? b : a))
   return base.labels.map((label, i) => {
-    const point: Record<string, unknown> = { name: formatLabel(label), _raw: label }
+    const ms = parseTimestamp(label)
+    // _ms drives proportional x-axis positioning; fall back to equal spacing if label can't be parsed
+    const point: Record<string, unknown> = { name: formatLabel(label), _raw: label, _ms: ms ?? i * 1000 }
     series.forEach(s => {
       point[s.title] = s.values[i] ?? null
       if (s.lower && s.upper) {
@@ -349,7 +365,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={visibleData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
-            <XAxis dataKey="name" stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={msToTimeLabel} stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} />
             <YAxis stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} />
             <Tooltip
               content={<ChartTooltip seriesColors={seriesColors} />}
