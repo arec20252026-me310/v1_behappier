@@ -96,9 +96,7 @@ export async function POST(req: NextRequest) {
 
   // Build the n8n webhook payload
   const zone_ids = (body.target_zones as string[]) ?? []
-  const behavior_targets = ((body.target_metric_names as string[]) ?? []).map(
-    (name) => ({ behavior_name: name })
-  )
+  const behavior_targets = (body.behavior_targets as Array<{ behavior_name: string; behavior_description: string }>) ?? []
   const setup_instructions = (body.message_text as string) ?? ""
 
   const n8nPayload = { study_id, zone_ids, behavior_targets, setup_instructions }

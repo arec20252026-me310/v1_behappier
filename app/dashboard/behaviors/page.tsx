@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { MetricsManager } from "@/components/metrics/metrics-manager"
 import { getDemoScenario } from "@/lib/demo-mode"
-import { DEMO_SPACE } from "@/lib/demo-seeds"
+import { DEMO_SPACE, DEMO_METRICS } from "@/lib/demo-seeds"
 import type { Metric } from "@/lib/types"
 
 export default async function MetricsPage() {
@@ -10,12 +10,16 @@ export default async function MetricsPage() {
   const demo = scenario !== null
   const supabase = await createClient()
 
+  const hasSpace  = demo && scenario !== "blank"
+  const hasStudy  = demo && (scenario === "study-in-progress" || scenario === "study-complete")
   const space = demo
-    ? (scenario !== "blank" ? DEMO_SPACE : null)
+    ? (hasSpace ? DEMO_SPACE : null)
     : (await supabase.from('spaces').select('*').limit(1).single()).data
 
   let metrics: Metric[] = []
-  if (!demo && space) {
+  if (demo) {
+    metrics = hasStudy ? (DEMO_METRICS as Metric[]) : []
+  } else if (space) {
     const { data } = await supabase
       .from('metrics')
       .select('*')

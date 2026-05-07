@@ -3,7 +3,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { StudiesManager } from "@/components/studies/studies-manager"
 import { getDemoScenario } from "@/lib/demo-mode"
 import {
-  DEMO_SPACE, ZONES,
+  DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
 } from "@/lib/demo-seeds"
 
@@ -39,10 +39,13 @@ export default async function StudiesPage() {
     ? (hasSpace ? ZONES : [])
     : ((await supabase.from("zones").select("*")).data ?? [])
 
-  const metrics = demo ? [] : ((await supabase
-    .from("metrics")
-    .select("*")
-    .eq("is_active", true)).data ?? [])
+  const hasStudy = demo && (scenario === "study-in-progress" || scenario === "study-complete")
+  const metrics = demo
+    ? (hasStudy ? DEMO_METRICS.filter(m => m.is_active) : [])
+    : ((await supabase
+        .from("metrics")
+        .select("*")
+        .eq("is_active", true)).data ?? [])
 
   const cameras = demo ? [] : ((await supabase.from("cameras").select("*")).data ?? [])
 

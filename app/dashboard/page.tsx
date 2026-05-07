@@ -8,7 +8,7 @@ import { ZoneOverview } from "@/components/dashboard/zone-overview"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
 import { getDemoScenario } from "@/lib/demo-mode"
 import {
-  DEMO_SPACE, ZONES,
+  DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
   BE_LIVE_METRICS, BE_INSIGHT_OUTPUT,
 } from "@/lib/demo-seeds"
@@ -72,7 +72,7 @@ export default async function DashboardPage() {
             zonesCount={demoZones.length}
             studiesCount={demoStudies.length}
             insightsCount={insightsCount}
-            metricsCount={0}
+            metricsCount={hasStudy ? DEMO_METRICS.filter(m => m.is_active).length : 0}
           />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <SpaceHeatmap
