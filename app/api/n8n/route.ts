@@ -132,8 +132,14 @@ export async function POST(req: NextRequest) {
       .update({ status: "active", started_at: new Date().toISOString() })
       .eq("study_id", study_id)
 
-    const data = await response.json()
-    return Response.json({ ...data, study_id })
+    const data = await response.json().catch(() => ({}))
+    return Response.json({
+      assistant_response_text: "Study started successfully. Monitoring is now active.",
+      action_type: "start_study",
+      study_readiness_status: null,
+      ...data,
+      study_id,
+    })
   } catch {
     return Response.json(
       {
