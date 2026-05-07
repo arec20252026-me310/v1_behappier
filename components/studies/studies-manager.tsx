@@ -110,7 +110,7 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
 export function StudiesManager({ space, initialStudies, zones, metrics, cameras = [] }: StudiesManagerProps) {
   const router = useRouter()
   const sessionId = useRef<string>(crypto.randomUUID())
-  const [studies] = useState<BEStudy[]>(initialStudies)
+  const studies = initialStudies
   const [showForm, setShowForm] = useState(false)
   const [editingStudy, setEditingStudy] = useState<BEStudy | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
