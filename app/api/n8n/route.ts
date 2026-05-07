@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
     // the workflow can correctly calculate the study end time from started_at + duration_seconds
     await supabase
       .from("BE_studies")
-      .update({ status: "active", started_at: new Date().toISOString() })
+      .update({ status: "active", current_stage: "planned", started_at: new Date().toISOString() })
       .eq("study_id", study_id)
 
     const data = await response.json().catch(() => ({}))
