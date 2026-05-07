@@ -50,10 +50,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (existingStudyId) {
-    // Editing a draft: update the existing row and advance to planned
+    // Editing a draft: update study goal fields only — status/stage managed by backend
     const { error: updateError } = await supabase
       .from("BE_studies")
-      .update({ ...studyFields, current_stage: "planned", status: "planned" })
+      .update(studyFields)
       .eq("study_id", existingStudyId)
 
     if (updateError) {
@@ -124,13 +124,6 @@ export async function POST(req: NextRequest) {
         { status: 502 }
       )
     }
-
-    // n8n accepted the study — mark it active and record start time so
-    // the workflow can correctly calculate the study end time from started_at + duration_seconds
-    await supabase
-      .from("BE_studies")
-      .update({ status: "active", current_stage: "planned", started_at: new Date().toISOString() })
-      .eq("study_id", study_id)
 
     const data = await response.json().catch(() => ({}))
     return Response.json({
