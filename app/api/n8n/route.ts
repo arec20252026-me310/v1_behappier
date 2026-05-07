@@ -125,6 +125,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    await supabase
+      .from("BE_studies")
+      .update({ status: "running" })
+      .eq("study_id", study_id)
+
     const data = await response.json().catch(() => ({}))
     return Response.json({
       assistant_response_text: "Study started successfully. Monitoring is now active.",
