@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nreturn [{\n  json: {\n    study_id: 'study_test_05',\n    building_id: 'bldg_001',\n    zone_ids: ['north_entrance_lobby'],\n    behavior_targets: [\n      { behavior_name: 'entry_surge' },\n      { behavior_name: 'door_hesitation' },\n      { behavior_name: 'queue_formation' },\n      { behavior_name: 'directional_flow_imbalance' }\n    ],\n    setup_instructions: 'Monitor the main turnstile zone for occupant flow behaviors.',\n    last_etag_seen: null,\n    debug_mode: true,\n  }\n}];\n"
+        "jsCode": "\nreturn [{\n  json: {\n    study_id: 'study_test_05',\n    building_id: 'bldg_001',\n    zone_ids: ['north_entrance_lobby'],\n    behavior_targets: [\n      { behavior_name: 'Utilization Rate', behavior_description: 'Percentage of capacity being used over time', behavior_units: 'percentage' },\n      { behavior_name: 'Foot Traffic Count', behavior_description: 'Number of people entering/exiting a zone', behavior_units: 'count' },\n    ],\n    setup_instructions: 'Monitor the main turnstile zone for occupant flow behaviors.',\n    last_etag_seen: null,\n    debug_mode: true,\n  }\n}];\n"
       },
       "id": "7b44f063-3304-4b02-a79a-ac68362d385b",
       "name": "Inject Test Payload",
@@ -107,7 +107,7 @@
         0,
         288
       ],
-      "webhookId": "4e75f1f6-4384-4171-80b4-77719cf13c62"
+      "webhookId": "ddf402d5-10cb-4285-84a5-32a15b488f69"
     },
     {
       "parameters": {
@@ -141,7 +141,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nlet input = {};\ntry { input = $('When Executed by Orchestrator').item.json; } catch {}\nif (!input.study_id) { try { input = $('Inject Test Payload').item.json; } catch {} }\nif (!input.study_id) { try { input = $('Extract Webhook Body').item.json; } catch {} }\n\nconst studyRows = Array.isArray($input.first().json) ? $input.first().json : [$input.first().json];\nconst study = studyRows[0] ?? {};\nconst startedAt = study.started_at ? new Date(study.started_at) : new Date();\nconst durationSeconds = study.duration_seconds ?? input.duration_seconds ?? 600;\nconst studyEndTime = new Date(startedAt.getTime() + durationSeconds * 1000);\nconst inheritedEndTime = input.study_end_time ?? null;\n\nreturn [{\n  json: {\n    study_id: study.study_id ?? input.study_id,\n    building_id: study.building_id ?? input.building_id ?? null,\n    zone_ids: input.zone_ids ?? [],\n    behavior_targets: input.behavior_targets ?? [],\n    setup_instructions: input.setup_instructions ?? study.study_goal ?? '',\n    proxy_url: input.proxy_url ?? 'http://127.0.0.1:5680',\n    study_end_time: inheritedEndTime ?? studyEndTime.toISOString(),\n    last_etag_seen: input.last_etag_seen ?? null,\n    debug_mode: input.debug_mode ?? false,\n  }\n}];\n"
+        "jsCode": "\nlet input = {};\ntry { input = $('When Executed by Orchestrator').item.json; } catch {}\nif (!input.study_id) { try { input = $('Inject Test Payload').item.json; } catch {} }\nif (!input.study_id) { try { input = $('Extract Webhook Body').item.json; } catch {} }\n\nconst studyRows = Array.isArray($input.first().json) ? $input.first().json : [$input.first().json];\nconst study = studyRows[0] ?? {};\nconst startedAt = study.started_at ? new Date(study.started_at) : new Date();\nconst durationSeconds = study.duration_seconds ?? input.duration_seconds ?? 600;\nconst studyEndTime = new Date(startedAt.getTime() + durationSeconds * 1000);\nconst inheritedEndTime = input.study_end_time ?? null;\nconst isFirstCycle = (input.last_etag_seen ?? null) === null;\n\n// Set status to Running on first cycle\nif (isFirstCycle) {\n  const supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\n  const supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\n  const sid = study.study_id ?? input.study_id;\n  try {\n    await this.helpers.httpRequest({\n      method: 'PATCH',\n      url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(sid),\n      headers: {\n        'apikey': supabaseKey,\n        'Authorization': 'Bearer ' + supabaseKey,\n        'Content-Type': 'application/json',\n        'Prefer': 'return=minimal'\n      },\n      body: JSON.stringify({ status: 'running', current_stage: 'monitoring', updated_at: new Date().toISOString() })\n    });\n  } catch(e) {}\n}\n\nreturn [{\n  json: {\n    study_id: study.study_id ?? input.study_id,\n    building_id: study.building_id ?? input.building_id ?? null,\n    zone_ids: input.zone_ids ?? [],\n    behavior_targets: input.behavior_targets ?? [],\n    setup_instructions: input.setup_instructions ?? study.study_goal ?? '',\n    proxy_url: input.proxy_url ?? 'http://127.0.0.1:5680',\n    study_end_time: inheritedEndTime ?? studyEndTime.toISOString(),\n    last_etag_seen: input.last_etag_seen ?? null,\n    debug_mode: input.debug_mode ?? false,\n  }\n}];\n"
       },
       "id": "5e058f1c-9dcd-41d8-b1b8-44789f07de00",
       "name": "Prepare Monitoring Context",
@@ -221,6 +221,19 @@
     },
     {
       "parameters": {
+        "jsCode": "\nconst ctx = $json;\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\ntry {\n  await this.helpers.httpRequest({\n    method: 'PATCH',\n    url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(ctx.study_id),\n    headers: {\n      'apikey': supabaseKey,\n      'Authorization': 'Bearer ' + supabaseKey,\n      'Content-Type': 'application/json',\n      'Prefer': 'return=minimal'\n    },\n    body: JSON.stringify({ status: 'analyzing', current_stage: 'analyzing', updated_at: new Date().toISOString() })\n  });\n} catch(e) {}\nreturn [{ json: ctx }];\n"
+      },
+      "id": "0fe76fde-3676-4fc2-bd58-92310a29757a",
+      "name": "Set Status: Analyzing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        96
+      ]
+    },
+    {
+      "parameters": {
         "workflowId": {
           "__rl": true,
           "value": "7jzwiCjlwZXDZt2A",
@@ -246,8 +259,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1568,
-        288
+        1792,
+        96
       ]
     },
     {
@@ -303,7 +316,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-4.1-mini',\n  input: [\n    { role: 'system', content: [{ type: 'input_text', text: 'You are a building behavior monitoring agent. Analyze the image and return ONLY valid JSON with keys: detected_behaviors (array of {name, present}), confidence_scores (object), occupant_count (int or null), notes (string).' }] },\n    { role: 'user', content: [\n      { type: 'input_text', text: 'Study: ' + $json.study_id + ' Zone: ' + ($json.zone_id || 'unknown') + ' Targets: ' + JSON.stringify($json.behavior_targets) },\n      { type: 'input_image', image_url: $json.image_data_url }\n    ]}\n  ],\n  max_output_tokens: 1500\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-4.1-mini',\n  input: [\n    { role: 'system', content: [{ type: 'input_text', text: 'You are a building behavior monitoring agent. Analyze the image and return ONLY valid JSON with these exact keys:\\n- detected_behaviors: array of objects, each with { name, value, unit } where value is a quantified measurement in the given unit (not true/false)\\n- occupant_count: integer or null\\n- notes: string\\n\\nFor unit types:\\n- percentage: return a float 0.0 to 1.0 (e.g. 0.75 means 75% utilized)\\n- count: return an integer (e.g. 2 people)\\n- score: return a float 0.0 to 1.0\\n- rate: return a float (events per minute)\\nIf a behavior is not present, return value: 0 (not null).' }] },\n    { role: 'user', content: [\n      { type: 'input_text', text: 'Study: ' + $json.study_id + '\\nZone: ' + ($json.zone_id || 'unknown') + '\\nSetup: ' + ($json.setup_instructions || '') + '\\n\\nBehaviors to detect and quantify:\\n' + ($json.behavior_targets || []).map(b => '- ' + b.behavior_name + ' (' + (b.behavior_units || 'value') + ')' + (b.behavior_description ? ': ' + b.behavior_description : '')).join('\\n') },\n      { type: 'input_image', image_url: $json.image_data_url }\n    ]}\n  ],\n  max_output_tokens: 1500\n}) }}",
         "options": {
           "response": {
             "response": {
@@ -324,7 +337,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst ctx = $('Check If Image Changed').item.json;\nconst body = $json;\nlet rawText = '';\nif (body.output && Array.isArray(body.output)) {\n  for (const block of body.output) {\n    if (block.type === 'message' && Array.isArray(block.content)) {\n      for (const c of block.content) {\n        if (c.type === 'output_text' || c.type === 'text') { rawText = c.text ?? ''; break; }\n      }\n    }\n    if (rawText) break;\n  }\n}\nif (!rawText && body.choices) rawText = body.choices?.[0]?.message?.content ?? '';\nif (!rawText) rawText = body.output_text ?? '';\nconst debugResponse = { status: body.status ?? null, error: body.error ?? null, usage: body.usage ?? null, raw_text_extracted: rawText.slice(0, 500) };\nlet parsed = {}, parseError = null;\ntry {\n  const clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();\n  parsed = JSON.parse(clean);\n} catch (e) { parseError = 'parse_failed: ' + rawText.slice(0, 200); }\nreturn [{\n  json: {\n    study_id: ctx.study_id, image_id: ctx.image_id, timestamp: ctx.timestamp, zone_id: ctx.zone_id,\n    detected_behaviors: parsed.detected_behaviors ?? [], confidence_scores: parsed.confidence_scores ?? {},\n    notes: parsed.notes ?? (parseError ? parseError : ''), model_version: 'gpt-4.1-mini',\n    parse_error: parseError, raw_api_response: debugResponse,\n    proxy_url: ctx.proxy_url, study_end_time: ctx.study_end_time,\n    behavior_targets: ctx.behavior_targets, setup_instructions: ctx.setup_instructions,\n    zone_ids: ctx.zone_ids, building_id: ctx.building_id,\n    current_etag: ctx.current_etag, debug_mode: ctx.debug_mode,\n  }\n}];\n"
+        "jsCode": "\nconst ctx = $('Check If Image Changed').item.json;\nconst body = $json;\nlet rawText = '';\nif (body.output && Array.isArray(body.output)) {\n  for (const block of body.output) {\n    if (block.type === 'message' && Array.isArray(block.content)) {\n      for (const c of block.content) {\n        if (c.type === 'output_text' || c.type === 'text') { rawText = c.text ?? ''; break; }\n      }\n    }\n    if (rawText) break;\n  }\n}\nif (!rawText && body.choices) rawText = body.choices?.[0]?.message?.content ?? '';\nif (!rawText) rawText = body.output_text ?? '';\nconst debugResponse = { status: body.status ?? null, error: body.error ?? null, usage: body.usage ?? null, raw_text_extracted: rawText.slice(0, 500) };\nlet parsed = {}, parseError = null;\ntry {\n  const clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();\n  parsed = JSON.parse(clean);\n} catch (e) { parseError = 'parse_failed: ' + rawText.slice(0, 200); }\nreturn [{\n  json: {\n    study_id: ctx.study_id, image_id: ctx.image_id, timestamp: ctx.timestamp, zone_id: ctx.zone_id,\n    detected_behaviors: parsed.detected_behaviors ?? [],\n    notes: parsed.notes ?? (parseError ? parseError : ''),\n    model_version: 'gpt-4.1-mini',\n    parse_error: parseError, raw_api_response: debugResponse,\n    proxy_url: ctx.proxy_url, study_end_time: ctx.study_end_time,\n    behavior_targets: ctx.behavior_targets, setup_instructions: ctx.setup_instructions,\n    zone_ids: ctx.zone_ids, building_id: ctx.building_id,\n    current_etag: ctx.current_etag, debug_mode: ctx.debug_mode,\n  }\n}];\n"
       },
       "id": "2e9d57ff-fe21-4d35-8f14-eab28ac4cc72",
       "name": "Parse Detection JSON",
@@ -362,7 +375,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  study_id: $json.study_id, image_id: $json.image_id, timestamp: $json.timestamp,\n  zone_id: $json.zone_id, detected_behaviors: $json.detected_behaviors,\n  confidence_scores: $json.confidence_scores, notes: $json.notes,\n  model_version: $json.model_version, raw_api_response: $json.raw_api_response,\n  created_at: new Date().toISOString()\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  study_id: $json.study_id, image_id: $json.image_id, timestamp: $json.timestamp,\n  zone_id: $json.zone_id, detected_behaviors: $json.detected_behaviors,\n  notes: $json.notes, model_version: $json.model_version,\n  raw_api_response: $json.raw_api_response,\n  created_at: new Date().toISOString()\n}) }}",
         "options": {
           "response": {
             "response": {
@@ -406,7 +419,7 @@
         2688,
         480
       ],
-      "webhookId": "aa55b8db-ee52-4113-8dbe-3d2580137fe6"
+      "webhookId": "85b0bfc4-86fd-4487-b77b-5dbd8c48c108"
     },
     {
       "parameters": {
@@ -570,7 +583,7 @@
       "main": [
         [
           {
-            "node": "Call Insights Agent (06)",
+            "node": "Set Status: Analyzing",
             "type": "main",
             "index": 0
           }
@@ -578,6 +591,17 @@
         [
           {
             "node": "Image Changed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Status: Analyzing": {
+      "main": [
+        [
+          {
+            "node": "Call Insights Agent (06)",
             "type": "main",
             "index": 0
           }
@@ -675,7 +699,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "9d766f97-1cae-4fde-8636-c545bb836a86",
+  "versionId": "f8dce30d-af2f-4ef1-858b-b1b582168e69",
   "meta": {
     "aiBuilderAssisted": true,
     "builderVariant": "mcp",

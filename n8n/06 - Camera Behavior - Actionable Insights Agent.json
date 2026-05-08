@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst studyId = $json.study_id ?? 'study_test_001';\nconst outputMode = $json.output_mode ?? 'final_insights';\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\nconst headers = { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json' };\nconst studyRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(studyId) + '&limit=1', headers });\nconst study = Array.isArray(studyRes) ? studyRes[0] : null;\nif (!study) throw new Error('Study not found: ' + studyId);\nconst detectionsRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_behavior_detections?study_id=eq.' + encodeURIComponent(studyId) + '&order=timestamp.asc&limit=1000', headers });\nconst detections = Array.isArray(detectionsRes) ? detectionsRes : [];\nreturn [{ json: {\n  study_id: studyId,\n  output_mode: outputMode,\n  study_plan: study.study_plan ?? {},\n  graph_plan: study.graph_plan ?? {},\n  instructions: study.metadata?.instructions ?? '',\n  detection_log: detections.map(d => ({\n    study_id: d.study_id, image_id: d.image_id, timestamp: d.timestamp, zone_id: d.zone_id,\n    detected_behaviors: d.detected_behaviors ?? [], confidence_scores: d.confidence_scores ?? {},\n    notes: d.notes ?? '', model_version: d.model_version ?? '', parse_error: null\n  }))\n} }];\n"
+        "jsCode": "\nconst studyId = $json.study_id ?? 'study_test_001';\nconst outputMode = $json.output_mode ?? 'final_insights';\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\nconst headers = { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json' };\nconst studyRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(studyId) + '&limit=1', headers });\nconst study = Array.isArray(studyRes) ? studyRes[0] : null;\nif (!study) throw new Error('Study not found: ' + studyId);\nconst detectionsRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_behavior_detections?study_id=eq.' + encodeURIComponent(studyId) + '&order=timestamp.asc&limit=1000', headers });\nconst detections = Array.isArray(detectionsRes) ? detectionsRes : [];\nreturn [{ json: {\n  study_id: studyId,\n  output_mode: outputMode,\n  study_plan: study.study_plan ?? {},\n  graph_plan: study.graph_plan ?? {},\n  instructions: study.metadata?.instructions ?? '',\n  detection_log: detections.map(d => ({\n    study_id: d.study_id,\n    image_id: d.image_id,\n    // Only expose timestamp_pt — no raw UTC timestamp so the model cannot accidentally use it\n    timestamp: d.timestamp_pt ?? d.timestamp,\n    zone_id: d.zone_id,\n    detected_behaviors: d.detected_behaviors ?? [],\n    notes: d.notes ?? '',\n    model_version: d.model_version ?? ''\n  }))\n} }];\n"
       },
       "id": "75178584-f9e6-4e39-9f36-b00824ead85a",
       "name": "Fetch Study Data from Supabase",
@@ -57,7 +57,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o\",\n  messages: [\n    { role: \"system\", content: \"You are the reporting and visualization specialist.\\nReturn a single valid JSON object only — no markdown, no code fences, no explanation.\\nThe JSON must have exactly these top-level keys: study_id, output_mode, dashboard_summary, charts, tables, insights, recommendations.\\nEach chart must have: chart_id, chart_type (line|bar|heatmap|table|stat), title, and data (with labels array and values array).\\nEach table must have: table_id, title, columns (array of strings), rows (array of arrays).\\nAlways populate study_id from the input study_id field.\" },\n    { role: \"user\", content: JSON.stringify($json, null, 2) }\n  ],\n  temperature: 0\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o\",\n  messages: [\n    { role: \"system\", content: \"You are the reporting and visualization specialist.\\nReturn a single valid JSON object only — no markdown, no code fences, no explanation.\\nThe JSON must have exactly these top-level keys: study_id, output_mode, dashboard_summary, charts, tables, insights, recommendations.\\n\\nCHART DATA RULES:\\n- Each detected_behavior has a name, value (quantified), and unit. Use these actual values for charts.\\n- Create one chart per behavior, plotting its value over time using the timestamp field as the x-axis label.\\n- IMPORTANT: The timestamp field is already in Pacific Time (PT) — use it exactly as provided. Do NOT reformat, convert, or parse it. Copy it verbatim into chart labels.\\n- Use the unit in the chart title (e.g. 'Utilization Rate (percentage)', 'Foot Traffic Count (count)').\\n- For percentage units, values are 0.0–1.0 floats. For count units, values are integers.\\n- Each chart's data object must include two parallel arrays: labels (timestamps copied verbatim) and values (behavior values).\\n\\nTABLE RULES:\\n- Tables should log each detection row with: timestamp, behavior name, value, unit, notes.\\n- Use the timestamp field verbatim in table rows.\\n\\nChart format: { chart_id, chart_type (line|bar|heatmap|stat), title, data: { labels[], values[] } }\\nTable format: { table_id, title, columns[], rows[][] }\\nAlways populate study_id from the input study_id field.\" },\n    { role: \"user\", content: JSON.stringify($json, null, 2) }\n  ],\n  temperature: 0\n}) }}",
         "options": {
           "response": {
             "response": {
@@ -176,7 +176,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst parsed = $json.parsed_output ?? $json;\nreturn [{ json: parsed }];\n"
+        "jsCode": "const parsed = $json.parsed_output ?? $json;\nreturn [{ json: parsed }];"
       },
       "id": "1928103d-7263-471a-9c98-f1a5e5108ae0",
       "name": "Finalize Insight Output",
@@ -227,6 +227,51 @@
       ],
       "retryOnFail": true,
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ ($env.SUPABASE_URL || 'https://SET_SUPABASE_URL') + '/rest/v1/BE_studies?study_id=eq.' + $json.study_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"status\":\"complete\",\"current_stage\":\"complete\",\"updated_at\":\"2026-05-08T01:36:36.261Z\"}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "48ca3e33-2d96-4516-900b-7ab34130571d",
+      "name": "Set Status: Completed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2016,
+        96
+      ]
     }
   ],
   "pinData": {},
@@ -336,6 +381,17 @@
           }
         ]
       ]
+    },
+    "Store Insight Outputs": {
+      "main": [
+        [
+          {
+            "node": "Set Status: Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -344,7 +400,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "6fa2cb12-c527-4a65-8b6c-a128ee10852f",
+  "versionId": "6e6412b5-3a3f-4303-817c-896d680171c7",
   "meta": {
     "aiBuilderAssisted": true,
     "builderVariant": "mcp",
