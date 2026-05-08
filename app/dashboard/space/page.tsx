@@ -1,37 +1,49 @@
 import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { SpaceEditor } from "@/components/space/space-editor"
+import { getDemoScenario } from "@/lib/demo-mode"
+import { DEMO_SPACE, ZONES, CAMERA } from "@/lib/demo-seeds"
+import type { HACameraMapping } from "@/lib/types"
 
 export default async function SpacePage() {
+  const scenario = await getDemoScenario()
+  const demo = scenario !== null
   const supabase = await createClient()
 
-  let { data: space } = await supabase
-    .from("spaces")
-    .select("*")
-    .limit(1)
-    .single()
+  let space = null
+  let zones: typeof ZONES = []
+  let cameras: typeof CAMERA[] = []
+  let haCameras: HACameraMapping[] = []
 
-  let zones = []
-  if (space) {
-    const { data } = await supabase
-      .from("zones")
+  if (demo) {
+    if (scenario !== "blank") {
+      space = DEMO_SPACE
+      zones = ZONES
+      cameras = [CAMERA]
+    }
+  } else {
+    const { data: dbSpace } = await supabase.from("spaces").select("*").limit(1).single()
+    space = dbSpace
+
+    if (space) {
+      const { data } = await supabase
+        .from("zones")
+        .select("*")
+        .eq("space_id", space.id)
+        .order("created_at", { ascending: true })
+      zones = data || []
+    }
+
+    const { data: dbCameras } = await supabase.from("cameras").select("*")
+    cameras = dbCameras || []
+
+    const { data: dbHaCameras } = await supabase
+      .from("ha_camera_mappings")
       .select("*")
-      .eq("space_id", space.id)
-      .order("created_at", { ascending: true })
-    zones = data || []
+      .eq("is_active", true)
+      .order("ha_friendly_name")
+    haCameras = dbHaCameras || []
   }
-
-  // Real camera assignments (zone_id → camera record)
-  const { data: cameras } = await supabase
-    .from("cameras")
-    .select("*")
-
-  // Available HA cameras to assign
-  const { data: haCameras } = await supabase
-    .from("ha_camera_mappings")
-    .select("*")
-    .eq("is_active", true)
-    .order("ha_friendly_name")
 
   return (
     <div className="flex flex-col h-full">

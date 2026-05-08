@@ -148,10 +148,11 @@ export function SpaceHeatmap({
   const handleZoneClick = (zone: ZoneWithOccupancy) => {
     // Completed study insight takes priority
     if (monitoredZoneId === zone.id && completedStudyInsights) {
+      const toArr = (v: string | string[]): string[] => Array.isArray(v) ? v : (v ? [v] : [])
       setSelectedBEInsight({
         zoneName: zone.name,
-        insights: completedStudyInsights.insights,
-        recommendations: completedStudyInsights.recommendations,
+        insights: toArr(completedStudyInsights.insights),
+        recommendations: toArr(completedStudyInsights.recommendations),
         summary: completedStudyInsights.dashboard_summary,
       })
       return
@@ -190,7 +191,7 @@ export function SpaceHeatmap({
             )}
           </div>
           <Link href="/dashboard/space">
-            <Button variant="ghost" size="sm" className="text-xs">Edit Space</Button>
+            <Button variant="ghost" size="sm" className="text-xs">View Space</Button>
           </Link>
         </CardHeader>
 

@@ -50,10 +50,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (existingStudyId) {
-    // Editing a draft: update the existing row and advance to planned
+    // Editing a draft: update study goal fields only — status/stage managed by backend
     const { error: updateError } = await supabase
       .from("BE_studies")
-      .update({ ...studyFields, current_stage: "planned", status: "planned" })
+      .update(studyFields)
       .eq("study_id", existingStudyId)
 
     if (updateError) {
@@ -96,9 +96,7 @@ export async function POST(req: NextRequest) {
 
   // Build the n8n webhook payload
   const zone_ids = (body.target_zones as string[]) ?? []
-  const behavior_targets = ((body.target_metric_names as string[]) ?? []).map(
-    (name) => ({ behavior_name: name })
-  )
+  const behavior_targets = (body.behavior_targets as Array<{ behavior_name: string; behavior_description: string; behavior_units: string }>) ?? []
   const setup_instructions = (body.message_text as string) ?? ""
 
   const n8nPayload = { study_id, zone_ids, behavior_targets, setup_instructions }
@@ -127,15 +125,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // n8n accepted the study — mark it active and record start time so
-    // the workflow can correctly calculate the study end time from started_at + duration_seconds
     await supabase
       .from("BE_studies")
-      .update({ status: "active", started_at: new Date().toISOString() })
+      .update({ status: "running" })
       .eq("study_id", study_id)
 
-    const data = await response.json()
-    return Response.json({ ...data, study_id })
+    const data = await response.json().catch(() => ({}))
+    return Response.json({
+      assistant_response_text: "Study started successfully. Monitoring is now active.",
+      action_type: "start_study",
+      study_readiness_status: null,
+      ...data,
+      study_id,
+    })
   } catch {
     return Response.json(
       {

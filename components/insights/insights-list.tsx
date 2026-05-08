@@ -19,7 +19,12 @@ function toArray<T>(value: unknown): T[] {
   return [value as T]
 }
 
-function normalizeOutput(output: BEInsightOutput): BEInsightOutput {
+type NormalizedOutput = Omit<BEInsightOutput, 'insights' | 'recommendations'> & {
+  insights: string[]
+  recommendations: string[]
+}
+
+function normalizeOutput(output: BEInsightOutput): NormalizedOutput {
   return {
     ...output,
     insights: toArray<string>(output.insights),
@@ -137,8 +142,8 @@ export function InsightsList({ outputs }: InsightsListProps) {
                   .filter(c => (c as Record<string, unknown>).chart_type === "line")
                   .map(c => {
                     const ch = c as Record<string, unknown>
-                    const d = ch.data as { labels: string[]; values: (number | null)[] }
-                    return { title: ch.title as string, labels: d.labels, values: d.values }
+                    const d = ch.data as { labels: string[]; values: (number | null)[]; lower?: (number | null)[]; upper?: (number | null)[] }
+                    return { title: ch.title as string, labels: d.labels, values: d.values, lower: d.lower, upper: d.upper }
                   })
                 const otherCharts = output.charts.filter(
                   c => (c as Record<string, unknown>).chart_type !== "line"

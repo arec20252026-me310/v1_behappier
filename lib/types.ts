@@ -53,8 +53,8 @@ export interface BEInsightOutput {
     columns: string[]
     rows: unknown[][]
   }>
-  insights: string[]
-  recommendations: string[]
+  insights: string | string[]
+  recommendations: string | string[]
   created_at: string
 }
 

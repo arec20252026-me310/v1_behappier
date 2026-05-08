@@ -1,7 +1,7 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import React, { useRef, useState, useEffect } from "react"
+import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 const SERIES_COLORS = [
   "oklch(0.7 0.15 200)",
@@ -11,18 +11,72 @@ const SERIES_COLORS = [
   "oklch(0.6 0.18 280)",
 ]
 
-const TOOLTIP_STYLE = {
+const TOOLTIP_STYLE: React.CSSProperties = {
   backgroundColor: "oklch(0.17 0.01 260)",
   border: "1px solid oklch(0.28 0.01 260)",
   borderRadius: "0.5rem",
   color: "oklch(0.95 0 0)",
   fontSize: 11,
+  padding: "6px 10px",
+}
+
+interface TooltipPayloadEntry {
+  name: string
+  value: unknown
+  color?: string
+  payload: Record<string, unknown>
+}
+
+function ChartTooltip({
+  active,
+  payload,
+  seriesColors,
+}: {
+  active?: boolean
+  payload?: TooltipPayloadEntry[]
+  label?: unknown
+  seriesColors: Record<string, string>
+}) {
+  if (!active || !payload?.length) return null
+  const entries = payload.filter(
+    p => !p.name.endsWith("_ci_base") && !p.name.endsWith("_ci_band")
+  )
+  if (!entries.length) return null
+  // Use the pre-formatted label stored on the data point rather than the raw numeric _ms value
+  const readableLabel = entries[0]?.payload?.name as string | undefined
+  return (
+    <div style={TOOLTIP_STYLE}>
+      {readableLabel && (
+        <p style={{ color: "oklch(0.65 0 0)", marginBottom: 4, fontSize: 10 }}>{readableLabel}</p>
+      )}
+      {entries.map(entry => {
+        const v = typeof entry.value === "number" ? entry.value : null
+        const ciBase = entry.payload[`${entry.name}_ci_base`]
+        const ciBand = entry.payload[`${entry.name}_ci_band`]
+        let displayValue: string
+        if (v !== null && typeof ciBase === "number" && typeof ciBand === "number") {
+          const halfGap = ciBand / 2
+          displayValue = `${v.toFixed(3)} ± ${halfGap.toFixed(3)}`
+        } else {
+          displayValue = v !== null ? v.toFixed(3) : String(entry.value ?? "—")
+        }
+        return (
+          <p key={entry.name} style={{ color: seriesColors[entry.name] ?? "oklch(0.95 0 0)", margin: "1px 0" }}>
+            <span style={{ color: "oklch(0.65 0 0)" }}>{entry.name}: </span>
+            {displayValue}
+          </p>
+        )
+      })}
+    </div>
+  )
 }
 
 export interface ChartSeries {
   title: string
   labels: string[]
   values: (number | null)[]
+  lower?: (number | null)[]
+  upper?: (number | null)[]
 }
 
 interface TimeSeriesChartProps {
@@ -40,12 +94,42 @@ function formatLabel(label: string): string {
   return label
 }
 
+// Convert ms (epoch or ms-from-midnight) back to a readable time string for axis ticks
+function msToTimeLabel(ms: number): string {
+  if (ms < 86400000) {
+    // Time-only labels stored as ms elapsed since midnight
+    const s = Math.floor(ms / 1000)
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const sec = s % 60
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+  }
+  return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+}
+
+function hasCIData(s: ChartSeries): boolean {
+  return (
+    Array.isArray(s.lower) && s.lower.some(v => v !== null) &&
+    Array.isArray(s.upper) && s.upper.some(v => v !== null)
+  )
+}
+
 function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
   if (!series.length) return []
   const base = series.reduce((a, b) => (b.labels.length > a.labels.length ? b : a))
   return base.labels.map((label, i) => {
-    const point: Record<string, unknown> = { name: formatLabel(label), _raw: label }
-    series.forEach(s => { point[s.title] = s.values[i] ?? null })
+    const ms = parseTimestamp(label)
+    // _ms drives proportional x-axis positioning; fall back to equal spacing if label can't be parsed
+    const point: Record<string, unknown> = { name: formatLabel(label), _raw: label, _ms: ms ?? i * 1000 }
+    series.forEach(s => {
+      point[s.title] = s.values[i] ?? null
+      if (hasCIData(s)) {
+        const lo = s.lower![i] ?? null
+        const hi = s.upper![i] ?? null
+        point[`${s.title}_ci_base`] = lo
+        point[`${s.title}_ci_band`] = lo !== null && hi !== null ? Math.max(0, hi - lo) : null
+      }
+    })
     return point
   })
 }
@@ -236,6 +320,10 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
   const thumbLeft = total > 0 ? (viewStart / total) * 100 : 0
   const thumbWidth = total > 0 ? (windowLen / total) * 100 : 100
 
+  const seriesColors: Record<string, string> = Object.fromEntries(
+    series.map((s, i) => [s.title, SERIES_COLORS[i % SERIES_COLORS.length]])
+  )
+
   const thumbBg = dragMode === "pan" ? "oklch(0.60 0.1 200)" : "oklch(0.46 0.08 200)"
   const handleBg = dragMode === "left" || dragMode === "right"
     ? "oklch(0.68 0.12 200)"
@@ -282,24 +370,32 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       {/* Chart — pinch-to-zoom only */}
       <div ref={chartRef} style={{ height, userSelect: "none" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={visibleData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+          <ComposedChart data={visibleData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
-            <XAxis dataKey="name" stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={msToTimeLabel} stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} />
             <YAxis stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: "oklch(0.65 0 0)" }} />
-            {series.map((s, i) => (
-              <Line
-                key={s.title}
-                type="monotone"
-                dataKey={s.title}
-                stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
-                strokeWidth={2}
-                dot={false}
-                connectNulls
-                hide={hidden.has(s.title)}
-              />
-            ))}
-          </LineChart>
+            <Tooltip
+              content={<ChartTooltip seriesColors={seriesColors} />}
+            />
+            {series.map((s, i) => {
+              const color = SERIES_COLORS[i % SERIES_COLORS.length]
+              const isHidden = hidden.has(s.title)
+              return [
+                hasCIData(s) ? (
+                  <Area key={`${s.title}_ci_base`} type="monotone" dataKey={`${s.title}_ci_base`}
+                    stackId={`ci_${s.title}`} stroke="none" fill="transparent" legendType="none"
+                    connectNulls hide={isHidden} />
+                ) : null,
+                hasCIData(s) ? (
+                  <Area key={`${s.title}_ci_band`} type="monotone" dataKey={`${s.title}_ci_band`}
+                    stackId={`ci_${s.title}`} stroke="none" fill={color} fillOpacity={0.15}
+                    legendType="none" connectNulls hide={isHidden} />
+                ) : null,
+                <Line key={s.title} type="monotone" dataKey={s.title}
+                  stroke={color} strokeWidth={2} dot={false} connectNulls hide={isHidden} />,
+              ]
+            })}
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 

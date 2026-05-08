@@ -18,8 +18,8 @@ function extractLineSeries(output: BEInsightOutput): ChartSeries[] {
     .filter(c => (c as Record<string, unknown>).chart_type === "line")
     .map(c => {
       const ch = c as Record<string, unknown>
-      const d = ch.data as { labels: string[]; values: (number | null)[] }
-      return { title: ch.title as string, labels: d?.labels ?? [], values: d?.values ?? [] }
+      const d = ch.data as { labels: string[]; values: (number | null)[]; lower?: (number | null)[]; upper?: (number | null)[] }
+      return { title: ch.title as string, labels: d?.labels ?? [], values: d?.values ?? [], lower: d?.lower, upper: d?.upper }
     })
     .filter(s => s.labels.length > 0)
 }
@@ -53,8 +53,11 @@ export function OccupancyChart({ latestOutput }: OccupancyChartProps) {
 
   return (
     <Card className="bg-card border-border pt-2 pb-4">
-      <CardHeader className="pb-1.5">
+      <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
         <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
+        <Link href="/dashboard/insights">
+          <Button variant="ghost" size="sm" className="text-xs">View All</Button>
+        </Link>
       </CardHeader>
       <CardContent>
         <TimeSeriesChart series={series} height={280} />

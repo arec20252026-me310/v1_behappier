@@ -48,13 +48,10 @@ export async function POST(req: NextRequest) {
     const db = makeClient()
     const zoneIds = ZONES.map(z => z.id).join(",")
 
-    // Wipe BE data
-    await db.del("BE_live_preview_metrics", `id=eq.${SEED_LIVE_ID}`)
-    await db.del("BE_insight_outputs",      `id=eq.${SEED_INSIGHT_ID}`)
-    await db.del("BE_studies",              `id=eq.${SEED_BE_STUDY_ID}`)
-    await db.del("BE_live_preview_metrics", `study_id=eq.study_test_001`)
-    await db.del("BE_insight_outputs",      `study_id=eq.study_test_001`)
-    await db.del("BE_studies",              `study_id=eq.study_test_001`)
+    // Wipe ALL BE data so no prior real or seed records bleed into the demo state
+    await db.del("BE_live_preview_metrics", `id=gte.00000000-0000-0000-0000-000000000000`)
+    await db.del("BE_insight_outputs",      `id=gte.00000000-0000-0000-0000-000000000000`)
+    await db.del("BE_studies",              `id=gte.00000000-0000-0000-0000-000000000000`)
 
     // Wipe space data
     await db.patch("ha_camera_mappings", `id=eq.${HA_MAP_ID}`, { camera_id: null })
