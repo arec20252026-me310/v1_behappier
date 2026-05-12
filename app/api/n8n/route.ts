@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
+import { isReviewMode } from "@/lib/review-mode"
 
 export const maxDuration = 60
 
@@ -98,8 +99,9 @@ export async function POST(req: NextRequest) {
   const zone_ids = (body.target_zones as string[]) ?? []
   const behavior_targets = (body.behavior_targets as Array<{ behavior_name: string; behavior_description: string; behavior_units: string }>) ?? []
   const setup_instructions = (body.message_text as string) ?? ""
+  const review_mode = await isReviewMode()
 
-  const n8nPayload = { study_id, zone_ids, behavior_targets, setup_instructions }
+  const n8nPayload = { study_id, zone_ids, behavior_targets, setup_instructions, review_mode }
 
   try {
     const response = await fetch(`${n8nUrl}/webhook/start-study`, {
