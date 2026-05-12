@@ -8,9 +8,19 @@ import { formatDistanceToNow } from "date-fns"
 import { DynamicChart } from "./dynamic-chart"
 import { TimeSeriesChart } from "./time-series-chart"
 import type { ChartSeries } from "./time-series-chart"
+import { SnapshotCell } from "./snapshot-cell"
+
+export interface DetectionRow {
+  id: string
+  study_id: string
+  image_id: string
+  timestamp_pt: string | null
+  notes: string | null
+}
 
 interface InsightsListProps {
   outputs: BEInsightOutput[]
+  detectionsByStudy?: Record<string, DetectionRow[]>
 }
 
 function toArray<T>(value: unknown): T[] {
@@ -34,7 +44,7 @@ function normalizeOutput(output: BEInsightOutput): NormalizedOutput {
   }
 }
 
-export function InsightsList({ outputs }: InsightsListProps) {
+export function InsightsList({ outputs, detectionsByStudy = {} }: InsightsListProps) {
   const normalized = outputs.map(normalizeOutput)
   if (normalized.length === 0) {
     return (
@@ -183,6 +193,7 @@ export function InsightsList({ outputs }: InsightsListProps) {
                     const columns = t.columns as string[]
                     const rows = t.rows as string[][]
                     const title = t.title as string
+                    const studyDetections = detectionsByStudy[output.study_id] ?? []
                     return (
                       <div key={t.table_id as string ?? i} className="space-y-1.5">
                         {title && <p className="text-xs text-muted-foreground">{title}</p>}
@@ -190,6 +201,9 @@ export function InsightsList({ outputs }: InsightsListProps) {
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="border-b border-border bg-muted/40">
+                                <th className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap w-14">
+                                  Snapshot
+                                </th>
                                 {columns.map((col, ci) => (
                                   <th key={ci} className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                                     {col}
@@ -200,6 +214,9 @@ export function InsightsList({ outputs }: InsightsListProps) {
                             <tbody>
                               {rows.map((row, ri) => (
                                 <tr key={ri} className="border-b border-border last:border-0 hover:bg-muted/20">
+                                  <td className="px-2 py-1">
+                                    <SnapshotCell imageId={studyDetections[ri]?.image_id} />
+                                  </td>
                                   {row.map((cell, ci) => (
                                     <td key={ci} className="px-2 py-1.5 text-foreground/80">
                                       {cell ?? "—"}
