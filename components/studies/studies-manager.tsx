@@ -287,20 +287,33 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
 
                 <div className="space-y-2">
                   <Label htmlFor="duration">Planned Duration</Label>
-                  <select
-                    id="duration"
-                    value={form.duration_minutes ?? ""}
-                    onChange={e => setForm(f => ({
-                      ...f,
-                      duration_minutes: e.target.value ? parseInt(e.target.value) : null,
-                    }))}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  >
-                    <option value="">Select a duration…</option>
-                    {DURATION_OPTIONS.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <input
+                      id="duration"
+                      type="number"
+                      min={1}
+                      placeholder="Minutes"
+                      value={form.duration_minutes ?? ""}
+                      onChange={e => setForm(f => ({
+                        ...f,
+                        duration_minutes: e.target.value ? parseInt(e.target.value) : null,
+                      }))}
+                      className="w-28 px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                    <select
+                      value={form.duration_minutes ?? ""}
+                      onChange={e => setForm(f => ({
+                        ...f,
+                        duration_minutes: e.target.value ? parseInt(e.target.value) : null,
+                      }))}
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    >
+                      <option value="">Select a preset…</option>
+                      {DURATION_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
