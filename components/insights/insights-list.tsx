@@ -21,6 +21,7 @@ export interface DetectionRow {
 interface InsightsListProps {
   outputs: BEInsightOutput[]
   detectionsByStudy?: Record<string, DetectionRow[]>
+  reviewMode?: boolean
 }
 
 function toArray<T>(value: unknown): T[] {
@@ -44,7 +45,7 @@ function normalizeOutput(output: BEInsightOutput): NormalizedOutput {
   }
 }
 
-export function InsightsList({ outputs, detectionsByStudy = {} }: InsightsListProps) {
+export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = false }: InsightsListProps) {
   const normalized = outputs.map(normalizeOutput)
   if (normalized.length === 0) {
     return (
@@ -201,9 +202,11 @@ export function InsightsList({ outputs, detectionsByStudy = {} }: InsightsListPr
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="border-b border-border bg-muted/40">
-                                <th className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap w-14">
-                                  Snapshot
-                                </th>
+                                {reviewMode && (
+                                  <th className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap w-14">
+                                    Snapshot
+                                  </th>
+                                )}
                                 {columns.map((col, ci) => (
                                   <th key={ci} className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                                     {col}
@@ -214,9 +217,11 @@ export function InsightsList({ outputs, detectionsByStudy = {} }: InsightsListPr
                             <tbody>
                               {rows.map((row, ri) => (
                                 <tr key={ri} className="border-b border-border last:border-0 hover:bg-muted/20">
-                                  <td className="px-2 py-1">
-                                    <SnapshotCell imageId={studyDetections[ri]?.image_id} />
-                                  </td>
+                                  {reviewMode && (
+                                    <td className="px-2 py-1">
+                                      <SnapshotCell imageId={studyDetections[ri]?.image_id} />
+                                    </td>
+                                  )}
                                   {row.map((cell, ci) => (
                                     <td key={ci} className="px-2 py-1.5 text-foreground/80">
                                       {cell ?? "—"}
