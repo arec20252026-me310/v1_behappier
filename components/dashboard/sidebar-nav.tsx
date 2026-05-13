@@ -52,7 +52,7 @@ export function SidebarNav() {
   return (
     <aside
       className={cn(
-        "flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300",
+        "relative flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}
     >
@@ -75,7 +75,7 @@ export function SidebarNav() {
           size="icon"
           className={cn(
             "h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent",
-            collapsed && "absolute right-2"
+            collapsed && "absolute right-2 top-4"
           )}
           onClick={() => setCollapsed(!collapsed)}
         >
