@@ -238,7 +238,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
   }
 
   const activeCount = studies.filter(s =>
-    ["monitoring_running", "needfinding_running", "insights_running", "planned", "needfinding_complete"].includes(s.current_stage)
+    ["running", "analyzing"].includes(s.status)
   ).length
 
   return (
