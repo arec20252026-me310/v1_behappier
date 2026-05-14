@@ -10,10 +10,11 @@ function snapshotUrl(imageId: string): string {
 
 export function SnapshotCell({ imageId }: { imageId?: string | null }) {
   const [open, setOpen] = useState(false)
-  const [imgError, setImgError] = useState(false)
+  // Start in "loading" so the camera icon shows until the image confirms success
+  const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">("loading")
 
-  const hasImage = !!imageId && !imgError
   const url = imageId ? snapshotUrl(imageId) : null
+  const hasImage = !!url && imgStatus === "loaded"
 
   return (
     <>
@@ -28,14 +29,16 @@ export function SnapshotCell({ imageId }: { imageId?: string | null }) {
         disabled={!hasImage}
         title={hasImage ? "Click to enlarge" : "No snapshot"}
       >
-        {url && !imgError ? (
+        {url && (
           <img
             src={url}
             alt=""
-            className="w-full h-full object-cover"
-            onError={() => setImgError(true)}
+            className={`w-full h-full object-cover ${imgStatus === "loaded" ? "" : "hidden"}`}
+            onLoad={() => setImgStatus("loaded")}
+            onError={() => setImgStatus("error")}
           />
-        ) : (
+        )}
+        {imgStatus !== "loaded" && (
           <Camera className="h-3 w-3 text-muted-foreground/30" />
         )}
       </button>
