@@ -171,9 +171,11 @@ function viewDuration(allData: Record<string, unknown>[], start: number, end: nu
 
 const PRESETS: { label: string; ms: number | null }[] = [
   { label: "1 min", ms: 60_000 },
+  { label: "5 min", ms: 300_000 },
   { label: "10 min", ms: 600_000 },
   { label: "1 day", ms: 86_400_000 },
   { label: "1 week", ms: 604_800_000 },
+  { label: "1 month", ms: 2_592_000_000 },
   { label: "All time", ms: null },
 ]
 
