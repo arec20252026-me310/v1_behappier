@@ -170,11 +170,11 @@ function viewDuration(allData: Record<string, unknown>[], start: number, end: nu
 }
 
 const PRESETS: { label: string; ms: number | null }[] = [
-  { label: "1m", ms: 60_000 },
-  { label: "10m", ms: 600_000 },
-  { label: "1day", ms: 86_400_000 },
-  { label: "1week", ms: 604_800_000 },
-  { label: "All", ms: null },
+  { label: "1 min", ms: 60_000 },
+  { label: "10 min", ms: 600_000 },
+  { label: "1 day", ms: 86_400_000 },
+  { label: "1 week", ms: 604_800_000 },
+  { label: "All time", ms: null },
 ]
 
 const MIN_VIEW = 4
@@ -190,7 +190,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
   const [viewStart, setViewStart] = useState(0)
   const [viewEnd, setViewEnd] = useState(total)
   const [dragMode, setDragMode] = useState<DragMode | null>(null)
-  const [activePreset, setActivePreset] = useState<string>("All")
+  const [activePreset, setActivePreset] = useState<string>("All time")
 
   const viewRef = useRef({ start: 0, end: total })
   const totalRef = useRef(total)
@@ -199,8 +199,14 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     totalRef.current = total
     setViewEnd(total)
     setViewStart(0)
-    setActivePreset("All")
+    setActivePreset("All time")
   }, [total])
+
+  // Total span of data in ms — used to filter out presets longer than the study
+  const totalDurationMs = total >= 2
+    ? Math.abs((allData[total - 1]._ms as number) - (allData[0]._ms as number))
+    : 0
+  const visiblePresets = PRESETS.filter(p => p.ms === null || (totalDurationMs > 0 && p.ms < totalDurationMs))
 
   // Preset button handler — finds the index corresponding to the last N ms of data
   const applyPreset = (preset: { label: string; ms: number | null }) => {
@@ -409,7 +415,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       {/* Preset duration buttons */}
       {total > 0 && (
         <div className="flex items-center gap-1 px-1">
-          {PRESETS.map(preset => {
+          {visiblePresets.map(preset => {
             const isActive = activePreset === preset.label
             return (
               <button
