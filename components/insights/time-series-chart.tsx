@@ -42,7 +42,6 @@ function ChartTooltip({
     p => !p.name.endsWith("_ci_base") && !p.name.endsWith("_ci_band")
   )
   if (!entries.length) return null
-  // Use the pre-formatted label stored on the data point rather than the raw numeric _ms value
   const readableLabel = entries[0]?.payload?.name as string | undefined
   return (
     <div style={TOOLTIP_STYLE}>
@@ -94,10 +93,8 @@ function formatLabel(label: string): string {
   return label
 }
 
-// Convert ms (epoch or ms-from-midnight) back to a readable time string for axis ticks
 function msToTimeLabel(ms: number): string {
   if (ms < 86400000) {
-    // Time-only labels stored as ms elapsed since midnight
     const s = Math.floor(ms / 1000)
     const h = Math.floor(s / 3600)
     const m = Math.floor((s % 3600) / 60)
@@ -119,7 +116,6 @@ function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
   const base = series.reduce((a, b) => (b.labels.length > a.labels.length ? b : a))
   return base.labels.map((label, i) => {
     const ms = parseTimestamp(label)
-    // _ms drives proportional x-axis positioning; fall back to equal spacing if label can't be parsed
     const point: Record<string, unknown> = { name: formatLabel(label), _raw: label, _ms: ms ?? i * 1000 }
     series.forEach(s => {
       point[s.title] = s.values[i] ?? null
@@ -147,19 +143,14 @@ function formatDuration(ms: number): string {
 
 function parseTimestamp(raw: string): number | null {
   if (!raw) return null
-  // Standard ISO or browser-parseable string (e.g. "2026-05-05T19:55:59.313+00:00")
   let ms = new Date(raw).getTime()
   if (!isNaN(ms)) return ms
-  // Space-separated datetime "2024-01-15 10:30:00"
   ms = new Date(raw.replace(" ", "T")).getTime()
   if (!isNaN(ms)) return ms
-  // Time-only "HH:MM:SS" or "H:MM:SS" — convert to ms from midnight
   const hms = raw.match(/^(\d{1,2}):(\d{2}):(\d{2})$/)
   if (hms) return (Number(hms[1]) * 3600 + Number(hms[2]) * 60 + Number(hms[3])) * 1000
-  // Time-only "HH:MM"
   const hm = raw.match(/^(\d{1,2}):(\d{2})$/)
   if (hm) return (Number(hm[1]) * 3600 + Number(hm[2]) * 60) * 1000
-  // Unix epoch: seconds (10 digits) or milliseconds (13 digits)
   const n = Number(raw)
   if (!isNaN(n) && n > 0) {
     ms = n > 1e11 ? n : n * 1000
@@ -178,8 +169,15 @@ function viewDuration(allData: Record<string, unknown>[], start: number, end: nu
   return formatDuration(t1 - t0)
 }
 
+const PRESETS: { label: string; ms: number | null }[] = [
+  { label: "1m", ms: 60_000 },
+  { label: "10m", ms: 600_000 },
+  { label: "1day", ms: 86_400_000 },
+  { label: "1week", ms: 604_800_000 },
+  { label: "All", ms: null },
+]
+
 const MIN_VIEW = 4
-// 0.2% zoom per deltaY unit — smooth at typical trackpad pinch speeds
 const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
@@ -192,6 +190,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
   const [viewStart, setViewStart] = useState(0)
   const [viewEnd, setViewEnd] = useState(total)
   const [dragMode, setDragMode] = useState<DragMode | null>(null)
+  const [activePreset, setActivePreset] = useState<string>("All")
 
   const viewRef = useRef({ start: 0, end: total })
   const totalRef = useRef(total)
@@ -199,9 +198,33 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
   useEffect(() => {
     totalRef.current = total
     setViewEnd(total)
+    setViewStart(0)
+    setActivePreset("All")
   }, [total])
 
-  // Pinch-to-zoom on chart area (ctrl+wheel = trackpad pinch)
+  // Preset button handler — finds the index corresponding to the last N ms of data
+  const applyPreset = (preset: { label: string; ms: number | null }) => {
+    setActivePreset(preset.label)
+    if (preset.ms === null || total === 0) {
+      setViewStart(0)
+      setViewEnd(total)
+      return
+    }
+    const lastMs = allData[total - 1]?._ms as number | undefined
+    if (lastMs === undefined) return
+    const targetMs = lastMs - preset.ms
+    let newStart = 0
+    for (let i = 0; i < total; i++) {
+      if ((allData[i]._ms as number) >= targetMs) {
+        newStart = i
+        break
+      }
+    }
+    setViewStart(newStart)
+    setViewEnd(total)
+  }
+
+  // Pinch-to-zoom on chart area
   const chartRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = chartRef.current
@@ -212,7 +235,6 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       const { start, end } = viewRef.current
       const len = end - start
       const clamped = Math.max(-80, Math.min(80, e.deltaY))
-      // multiply current length by a factor close to 1 — slow and symmetrical
       const multiplier = 1 + clamped * ZOOM_SENSITIVITY
       const newLen = Math.round(Math.min(totalRef.current, Math.max(MIN_VIEW, len * multiplier)))
       const center = (start + end) / 2
@@ -220,12 +242,13 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       const newEnd = Math.min(totalRef.current, newStart + newLen)
       setViewStart(newStart)
       setViewEnd(newEnd)
+      setActivePreset("")
     }
     el.addEventListener("wheel", onWheel, { passive: false })
     return () => el.removeEventListener("wheel", onWheel)
   }, [])
 
-  // Scrubber drag (pan / left-resize / right-resize)
+  // Scrubber drag
   const scrubberRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
     clientX: number
@@ -244,9 +267,9 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       initEnd: viewRef.current.end,
     }
     setDragMode(mode)
+    if (mode === "left" || mode === "right") setActivePreset("")
   }
 
-  // Click on track outside thumb → jump view center to click position, then pan
   const onTrackMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return
     const bar = scrubberRef.current
@@ -264,7 +287,6 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     e.preventDefault()
   }
 
-  // Global mouse handlers
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!dragRef.current || !scrubberRef.current) return
@@ -295,7 +317,6 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     }
   }, [])
 
-  // Keep body cursor consistent while dragging (prevents flicker when mouse moves fast)
   useEffect(() => {
     if (dragMode === "pan") document.body.style.cursor = "grabbing"
     else if (dragMode === "left" || dragMode === "right") document.body.style.cursor = "col-resize"
@@ -312,9 +333,6 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     })
   }
 
-  const resetZoom = () => { setViewStart(0); setViewEnd(total) }
-
-  const isZoomed = viewStart !== 0 || viewEnd !== total
   const windowLen = viewEnd - viewStart
   const visibleData = total > 0 ? allData.slice(viewStart, viewEnd) : allData
   const thumbLeft = total > 0 ? (viewStart / total) * 100 : 0
@@ -334,8 +352,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
   const statusLabel =
     dragMode === "pan" ? "Panning…" :
     dragMode === "left" || dragMode === "right" ? "Resizing…" :
-    isZoomed ? `${windowLen} of ${total} pts` :
-    `${total} pts`
+    `${windowLen} of ${total} pts`
 
   if (!series.length) return null
 
@@ -367,16 +384,55 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
         </div>
       )}
 
-      {/* Chart — pinch-to-zoom only */}
+      {/* Preset duration buttons */}
+      {total > 0 && (
+        <div className="flex items-center gap-1 px-1">
+          {PRESETS.map(preset => {
+            const isActive = activePreset === preset.label
+            return (
+              <button
+                key={preset.label}
+                onClick={() => applyPreset(preset)}
+                style={{
+                  fontSize: 10,
+                  padding: "2px 7px",
+                  borderRadius: "9999px",
+                  border: `1px solid ${isActive ? "oklch(0.55 0.12 200)" : "oklch(0.30 0.01 260)"}`,
+                  background: isActive ? "oklch(0.30 0.10 200)" : "transparent",
+                  color: isActive ? "oklch(0.88 0.08 200)" : "oklch(0.50 0 0)",
+                  cursor: "pointer",
+                  transition: "all 0.12s",
+                  fontVariantNumeric: "tabular-nums",
+                  lineHeight: 1.6,
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) {
+                    ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.78 0 0)"
+                    ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.45 0.01 260)"
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) {
+                    ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.50 0 0)"
+                    ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.30 0.01 260)"
+                  }
+                }}
+              >
+                {preset.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Chart */}
       <div ref={chartRef} style={{ height, userSelect: "none" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={visibleData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
             <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={msToTimeLabel} stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} />
             <YAxis stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} />
-            <Tooltip
-              content={<ChartTooltip seriesColors={seriesColors} />}
-            />
+            <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
               const isHidden = hidden.has(s.title)
@@ -402,18 +458,13 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
       {/* Scrubber */}
       {total > 0 && (
         <div className="px-1 space-y-1">
-          {/*
-            Outer wrapper = scrubberRef (used for width calculations).
-            Height 20px gives circles (14px) room to protrude above/below the 10px track.
-            overflow: visible so circles aren't clipped.
-          */}
           <div
             ref={scrubberRef}
             className="relative w-full"
             style={{ height: 20, cursor: "default" }}
             onMouseDown={onTrackMouseDown}
           >
-            {/* Visual track bar — centered vertically, clips thumb fill to pill shape */}
+            {/* Track */}
             <div
               style={{
                 position: "absolute",
@@ -427,7 +478,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
                 overflow: "hidden",
               }}
             >
-              {/* Thumb fill — pan zone */}
+              {/* Thumb fill */}
               <div
                 style={{
                   position: "absolute",
@@ -444,7 +495,6 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
                 }}
                 onMouseDown={e => { e.stopPropagation(); startDrag(e, "pan") }}
               >
-                {/* Duration label centered on pill */}
                 {durationLabel && (
                   <span
                     style={{
@@ -463,7 +513,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
               </div>
             </div>
 
-            {/* Left circle handle */}
+            {/* Left handle */}
             <div
               style={{
                 position: "absolute",
@@ -482,7 +532,7 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
               onMouseDown={e => { e.stopPropagation(); startDrag(e, "left") }}
             />
 
-            {/* Right circle handle */}
+            {/* Right handle */}
             <div
               style={{
                 position: "absolute",
@@ -504,26 +554,9 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
 
           {/* Status row */}
           <div className="flex items-center justify-between">
-            <span className="text-xs" style={{ color: "oklch(0.45 0 0)" }}>
+            <span className="text-xs" style={{ color: "oklch(0.40 0 0)" }}>
               {statusLabel}
             </span>
-            {isZoomed && (
-              <button
-                onClick={resetZoom}
-                className="text-xs px-2 py-0.5 rounded border transition-colors"
-                style={{ borderColor: "oklch(0.35 0.01 260)", color: "oklch(0.55 0 0)" }}
-                onMouseEnter={e => {
-                  ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.85 0 0)"
-                  ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.55 0.01 260)"
-                }}
-                onMouseLeave={e => {
-                  ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.55 0 0)"
-                  ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.35 0.01 260)"
-                }}
-              >
-                Reset zoom
-              </button>
-            )}
           </div>
         </div>
       )}

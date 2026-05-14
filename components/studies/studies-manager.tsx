@@ -270,7 +270,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-medium">
-              {editingStudy ? "Edit & Start Study" : "Configure Study"}
+              {editingStudy ? "Edit Study" : "Configure Study"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -487,7 +487,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                         onClick={() => handleEditStudy(study)}
                       >
                         <Pencil className="h-3 w-3" />
-                        Edit & Start
+                        Edit
                       </Button>
                     </div>
                   )}
