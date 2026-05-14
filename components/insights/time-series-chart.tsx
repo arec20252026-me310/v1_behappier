@@ -347,7 +347,9 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     ? "oklch(0.68 0.12 200)"
     : "oklch(0.54 0.10 200)"
 
-  const durationLabel = viewDuration(allData, viewStart, viewEnd) ?? (windowLen > 1 ? `${windowLen} pts` : null)
+  const durationLabel = activePreset
+    ? activePreset
+    : (viewDuration(allData, viewStart, viewEnd) ?? (windowLen > 1 ? `${windowLen} pts` : null))
 
   const statusLabel =
     dragMode === "pan" ? "Panning…" :
