@@ -471,15 +471,15 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
                 hasCIData(s) ? (
                   <Area key={`${s.title}_ci_base`} type="monotone" dataKey={`${s.title}_ci_base`}
                     stackId={`ci_${s.title}`} stroke="none" fill="transparent" legendType="none"
-                    connectNulls hide={isHidden} />
+                    connectNulls hide={isHidden} isAnimationActive={false} />
                 ) : null,
                 hasCIData(s) ? (
                   <Area key={`${s.title}_ci_band`} type="monotone" dataKey={`${s.title}_ci_band`}
                     stackId={`ci_${s.title}`} stroke="none" fill={color} fillOpacity={0.15}
-                    legendType="none" connectNulls hide={isHidden} />
+                    legendType="none" connectNulls hide={isHidden} isAnimationActive={false} />
                 ) : null,
                 <Line key={s.title} type="monotone" dataKey={s.title}
-                  stroke={color} strokeWidth={2} dot={false} connectNulls hide={isHidden} />,
+                  stroke={color} strokeWidth={2} dot={false} connectNulls hide={isHidden} isAnimationActive={false} />,
               ]
             })}
           </ComposedChart>
