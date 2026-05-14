@@ -10,6 +10,7 @@ import type { ChartSeries } from "@/components/insights/time-series-chart"
 
 interface OccupancyChartProps {
   latestOutput?: BEInsightOutput | null
+  studyDurationMs?: number
 }
 
 function extractLineSeries(output: BEInsightOutput): ChartSeries[] {
@@ -24,7 +25,7 @@ function extractLineSeries(output: BEInsightOutput): ChartSeries[] {
     .filter(s => s.labels.length > 0)
 }
 
-export function OccupancyChart({ latestOutput }: OccupancyChartProps) {
+export function OccupancyChart({ latestOutput, studyDurationMs }: OccupancyChartProps) {
   const series = latestOutput ? extractLineSeries(latestOutput) : []
 
   if (!series.length) {
@@ -60,7 +61,7 @@ export function OccupancyChart({ latestOutput }: OccupancyChartProps) {
         </Link>
       </CardHeader>
       <CardContent>
-        <TimeSeriesChart series={series} height={280} />
+        <TimeSeriesChart series={series} height={280} studyDurationMs={studyDurationMs} />
       </CardContent>
     </Card>
   )

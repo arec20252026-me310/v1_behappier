@@ -21,6 +21,17 @@ export default async function InsightsPage() {
 
   const studyIds = (outputs ?? []).map((o: { study_id: string }) => o.study_id).filter(Boolean)
 
+  let studyDurations: Record<string, number> = {}
+  if (!demo && studyIds.length > 0) {
+    const { data: studies } = await supabase
+      .from("BE_studies")
+      .select("study_id, duration_seconds")
+      .in("study_id", studyIds)
+    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null }[]) {
+      if (s.duration_seconds) studyDurations[s.study_id] = s.duration_seconds * 1000
+    }
+  }
+
   let detectionsByStudy: Record<string, DetectionRow[]> = {}
   if (review && studyIds.length > 0) {
     const { data: detections } = await supabase
@@ -43,7 +54,7 @@ export default async function InsightsPage() {
       />
 
       <div className="flex-1 p-6 overflow-auto">
-        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} />
+        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} studyDurations={studyDurations} />
       </div>
     </div>
   )

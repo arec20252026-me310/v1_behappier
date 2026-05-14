@@ -81,6 +81,7 @@ export interface ChartSeries {
 interface TimeSeriesChartProps {
   series: ChartSeries[]
   height?: number
+  studyDurationMs?: number
 }
 
 function formatLabel(label: string): string {
@@ -184,7 +185,7 @@ const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
 
-export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) {
+export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeSeriesChartProps) {
   const allData = mergeSeriesData(series)
   const total = allData.length
 
@@ -204,11 +205,12 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
     setActivePreset("All time")
   }, [total])
 
-  // Total span of data in ms — used to filter out presets longer than the study
-  const totalDurationMs = total >= 2
+  // Duration used to filter presets: prefer planned study duration, fall back to actual data span
+  const dataDurationMs = total >= 2
     ? Math.abs((allData[total - 1]._ms as number) - (allData[0]._ms as number))
     : 0
-  const visiblePresets = PRESETS.filter(p => p.ms === null || (totalDurationMs > 0 && p.ms < totalDurationMs))
+  const filterDurationMs = studyDurationMs ?? dataDurationMs
+  const visiblePresets = PRESETS.filter(p => p.ms === null || (filterDurationMs > 0 && p.ms <= filterDurationMs))
 
   // Preset button handler — finds the index corresponding to the last N ms of data
   const applyPreset = (preset: { label: string; ms: number | null }) => {

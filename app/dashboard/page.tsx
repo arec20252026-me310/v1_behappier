@@ -116,6 +116,7 @@ export default async function DashboardPage() {
     .limit(5)).data ?? [])
 
   const latestOutput = beInsights.find(o => o.output_mode === "final_insights") ?? beInsights[0] ?? null
+  const allFetchedStudies = [...beStudies]
 
   let completedStudies: typeof beStudies = []
   let completedStudy = null
@@ -128,6 +129,7 @@ export default async function DashboardPage() {
     .limit(4)
   completedStudies = completed ?? []
   completedStudy = completedStudies[0] ?? null
+  allFetchedStudies.push(...completedStudies)
 
   if (completedStudy) {
     const { data: studyInsight } = await supabase
@@ -197,7 +199,13 @@ export default async function DashboardPage() {
             completedStudy={completedStudy}
             completedStudyInsights={completedStudyInsights}
           />
-          <OccupancyChart latestOutput={latestOutput} />
+          <OccupancyChart
+            latestOutput={latestOutput}
+            studyDurationMs={(() => {
+              const s = allFetchedStudies.find(s => s.study_id === latestOutput?.study_id)
+              return s?.duration_seconds ? s.duration_seconds * 1000 : undefined
+            })()}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
