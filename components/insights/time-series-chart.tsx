@@ -286,7 +286,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
       const len = end - start
       const raw = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
       const barWidth = el.getBoundingClientRect().width || 1
-      const shift = Math.round((raw / barWidth) * totalRef.current * 6)
+      const shift = Math.round((raw / barWidth) * totalRef.current * 4)
       const s = Math.max(0, Math.min(totalRef.current - len, start + shift))
       setViewStart(s)
       setViewEnd(s + len)
