@@ -7,6 +7,7 @@ import type { DemoScenario } from "@/lib/demo-mode"
 export async function enableDemoMode(scenario: DemoScenario = "blank") {
   const cookieStore = await cookies()
   cookieStore.set("demo_mode", scenario, { path: "/", httpOnly: false })
+  cookieStore.delete("review_mode")
   redirect("/dashboard")
 }
 
