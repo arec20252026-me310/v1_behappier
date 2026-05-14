@@ -194,6 +194,15 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
   const [viewEnd, setViewEnd] = useState(total)
   const [dragMode, setDragMode] = useState<DragMode | null>(null)
   const [activePreset, setActivePreset] = useState<string>("All time")
+  const [animationActive, setAnimationActive] = useState(true)
+  const hasInteracted = useRef(false)
+
+  const disableAnimation = () => {
+    if (!hasInteracted.current) {
+      hasInteracted.current = true
+      setAnimationActive(false)
+    }
+  }
 
   const viewRef = useRef({ start: 0, end: total })
   const totalRef = useRef(total)
@@ -253,6 +262,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
       setViewStart(newStart)
       setViewEnd(newEnd)
       setActivePreset("")
+      disableAnimation()
     }
     el.addEventListener("wheel", onWheel, { passive: false })
     return () => el.removeEventListener("wheel", onWheel)
@@ -275,6 +285,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
       const s = Math.max(0, Math.min(totalRef.current - len, start + shift))
       setViewStart(s)
       setViewEnd(s + len)
+      disableAnimation()
     }
     el.addEventListener("wheel", onWheel, { passive: false })
     return () => el.removeEventListener("wheel", onWheel)
@@ -297,6 +308,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
     }
     setDragMode(mode)
     if (mode === "left" || mode === "right") setActivePreset("")
+    disableAnimation()
   }
 
   const onTrackMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -471,15 +483,15 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
                 hasCIData(s) ? (
                   <Area key={`${s.title}_ci_base`} type="monotone" dataKey={`${s.title}_ci_base`}
                     stackId={`ci_${s.title}`} stroke="none" fill="transparent" legendType="none"
-                    connectNulls hide={isHidden} isAnimationActive={false} />
+                    connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
                 hasCIData(s) ? (
                   <Area key={`${s.title}_ci_band`} type="monotone" dataKey={`${s.title}_ci_band`}
                     stackId={`ci_${s.title}`} stroke="none" fill={color} fillOpacity={0.15}
-                    legendType="none" connectNulls hide={isHidden} isAnimationActive={false} />
+                    legendType="none" connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
                 <Line key={s.title} type="monotone" dataKey={s.title}
-                  stroke={color} strokeWidth={2} dot={false} connectNulls hide={isHidden} isAnimationActive={false} />,
+                  stroke={color} strokeWidth={2} dot={false} connectNulls hide={isHidden} isAnimationActive={animationActive} />,
               ]
             })}
           </ComposedChart>
