@@ -75,7 +75,7 @@ export default async function DashboardPage() {
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
             />
-            <OccupancyChart latestOutput={latestOutput} />
+            <OccupancyChart latestOutput={latestOutput} studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ZoneOverview zones={demoZones} />

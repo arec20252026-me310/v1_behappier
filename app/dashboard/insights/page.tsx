@@ -4,7 +4,7 @@ import { InsightsList } from "@/components/insights/insights-list"
 import type { DetectionRow } from "@/components/insights/insights-list"
 import { getDemoScenario } from "@/lib/demo-mode"
 import { isReviewMode } from "@/lib/review-mode"
-import { BE_INSIGHT_OUTPUT } from "@/lib/demo-seeds"
+import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE } from "@/lib/demo-seeds"
 
 export default async function InsightsPage() {
   const scenario = await getDemoScenario()
@@ -22,7 +22,9 @@ export default async function InsightsPage() {
   const studyIds = (outputs ?? []).map((o: { study_id: string }) => o.study_id).filter(Boolean)
 
   let studyDurations: Record<string, number> = {}
-  if (!demo && studyIds.length > 0) {
+  if (demo) {
+    studyDurations = { [BE_STUDY_COMPLETE.study_id]: BE_STUDY_COMPLETE.duration_seconds * 1000 }
+  } else if (studyIds.length > 0) {
     const { data: studies } = await supabase
       .from("BE_studies")
       .select("study_id, duration_seconds")
