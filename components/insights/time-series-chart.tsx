@@ -167,7 +167,12 @@ function viewDuration(allData: Record<string, unknown>[], start: number, end: nu
   const t0 = parseTimestamp(a)
   const t1 = parseTimestamp(b)
   if (t0 === null || t1 === null || t1 <= t0) return null
-  return formatDuration(t1 - t0)
+  const minutes = Math.max(1, Math.round((t1 - t0) / 60_000))
+  if (minutes < 60) return `${minutes} min`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours} hr`
+  const days = Math.round(hours / 24)
+  return `${days} day${days !== 1 ? "s" : ""}`
 }
 
 const PRESETS: { label: string; ms: number | null }[] = [
