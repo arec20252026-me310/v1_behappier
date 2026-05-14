@@ -8,7 +8,12 @@ function snapshotUrl(imageId: string): string {
   return `/api/snapshot?path=${encodeURIComponent(path)}`
 }
 
-export function SnapshotCell({ imageId }: { imageId?: string | null }) {
+interface SnapshotCellProps {
+  imageId?: string | null
+  onExpand?: () => void
+}
+
+export function SnapshotCell({ imageId, onExpand }: SnapshotCellProps) {
   const [open, setOpen] = useState(false)
   // Start in "loading" so the camera icon shows until the image confirms success
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">("loading")
@@ -16,11 +21,17 @@ export function SnapshotCell({ imageId }: { imageId?: string | null }) {
   const url = imageId ? snapshotUrl(imageId) : null
   const hasImage = !!url && imgStatus === "loaded"
 
+  const handleClick = () => {
+    if (!hasImage) return
+    if (onExpand) onExpand()
+    else setOpen(true)
+  }
+
   return (
     <>
       {/* Thumbnail */}
       <button
-        onClick={() => hasImage && setOpen(true)}
+        onClick={handleClick}
         className={`w-12 h-9 rounded overflow-hidden border flex items-center justify-center transition-colors ${
           hasImage
             ? "border-border hover:border-primary/60 cursor-zoom-in"
@@ -43,8 +54,8 @@ export function SnapshotCell({ imageId }: { imageId?: string | null }) {
         )}
       </button>
 
-      {/* Lightbox */}
-      {open && url && (
+      {/* Standalone lightbox (used when no onExpand is provided) */}
+      {!onExpand && open && url && (
         <div
           className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-6"
           onClick={() => setOpen(false)}

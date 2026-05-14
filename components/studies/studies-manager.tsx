@@ -138,6 +138,9 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
     if (result.error) {
       setError(`Delete failed: ${result.error}`)
     } else {
+      setLastResponse(null)
+      setLastStudyId(null)
+      setError(null)
       router.refresh()
     }
   }
