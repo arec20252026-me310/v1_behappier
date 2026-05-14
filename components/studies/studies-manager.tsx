@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { FlaskConical, Send, RefreshCw, Bot, AlertCircle, ChevronDown, ChevronUp, Pencil } from "lucide-react"
+import { FlaskConical, Send, RefreshCw, Bot, AlertCircle, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react"
 import type { Space, Zone, Metric, BEStudy, Camera } from "@/lib/types"
 import { useRouter } from "next/navigation"
+import { deleteStudy } from "@/app/actions/study"
 import { Spinner } from "@/components/ui/spinner"
 import { formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -126,6 +127,20 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
     target_metrics: [],
     target_zones: [],
   })
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async (studyId: string) => {
+    setIsDeleting(true)
+    const result = await deleteStudy(studyId)
+    setIsDeleting(false)
+    setConfirmDeleteId(null)
+    if (result.error) {
+      setError(`Delete failed: ${result.error}`)
+    } else {
+      router.refresh()
+    }
+  }
 
   if (!space) {
     return (
@@ -478,8 +493,8 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                       {study.duration_seconds && ` · ${formatDuration(Math.round(study.duration_seconds / 60))}`}
                     </p>
                   )}
-                  {study.current_stage === "draft" && (
-                    <div className="pt-1">
+                  <div className="pt-1 flex items-center gap-2">
+                    {study.current_stage === "draft" && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -489,8 +504,41 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                         <Pencil className="h-3 w-3" />
                         Edit
                       </Button>
-                    </div>
-                  )}
+                    )}
+                    {confirmDeleteId === study.study_id ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-destructive">Delete study and all insights?</span>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-7 text-xs px-2"
+                          disabled={isDeleting}
+                          onClick={() => handleDelete(study.study_id)}
+                        >
+                          {isDeleting ? "Deleting…" : "Yes, delete"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs px-2"
+                          disabled={isDeleting}
+                          onClick={() => setConfirmDeleteId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => setConfirmDeleteId(study.study_id)}
+                        title="Delete study"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )
