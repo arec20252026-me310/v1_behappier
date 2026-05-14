@@ -275,7 +275,6 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
       const s = Math.max(0, Math.min(totalRef.current - len, start + shift))
       setViewStart(s)
       setViewEnd(s + len)
-      setActivePreset("")
     }
     el.addEventListener("wheel", onWheel, { passive: false })
     return () => el.removeEventListener("wheel", onWheel)
