@@ -250,6 +250,26 @@ export function TimeSeriesChart({ series, height = 280 }: TimeSeriesChartProps) 
 
   // Scrubber drag
   const scrubberRef = useRef<HTMLDivElement>(null)
+
+  // Scroll on scrubber → pan (horizontal swipe or vertical scroll, no ctrl needed)
+  useEffect(() => {
+    const el = scrubberRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const { start, end } = viewRef.current
+      const len = end - start
+      const raw = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+      const barWidth = el.getBoundingClientRect().width || 1
+      const shift = Math.round((raw / barWidth) * totalRef.current * 3)
+      const s = Math.max(0, Math.min(totalRef.current - len, start + shift))
+      setViewStart(s)
+      setViewEnd(s + len)
+      setActivePreset("")
+    }
+    el.addEventListener("wheel", onWheel, { passive: false })
+    return () => el.removeEventListener("wheel", onWheel)
+  }, [])
   const dragRef = useRef<{
     clientX: number
     mode: DragMode
