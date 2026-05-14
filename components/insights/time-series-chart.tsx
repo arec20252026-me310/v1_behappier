@@ -555,7 +555,17 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
                     legendType="none" connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
                 <Line key={s.title} type="monotone" dataKey={s.title}
-                  stroke={color} strokeWidth={2} dot={{ r: 5, fill: color, strokeWidth: 0 }} activeDot={{ r: 7 }} connectNulls hide={isHidden} isAnimationActive={animationActive} />,
+                  stroke={color} strokeWidth={2}
+                  dot={(props: Record<string, unknown>) => {
+                    const { cx, cy, index } = props as { cx: number; cy: number; index: number }
+                    const prev = visibleData[index - 1]?.[s.title]
+                    const next = visibleData[index + 1]?.[s.title]
+                    const isolated = (prev == null) && (next == null)
+                    return isolated
+                      ? <circle key={`dot-${s.title}-${index}`} cx={cx} cy={cy} r={5} fill={color} />
+                      : <g key={`dot-${s.title}-${index}`} />
+                  }}
+                  activeDot={{ r: 6 }} connectNulls hide={isHidden} isAnimationActive={animationActive} />,
               ]
             })}
           </ComposedChart>
