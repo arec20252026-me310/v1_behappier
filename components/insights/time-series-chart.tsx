@@ -70,6 +70,29 @@ function ChartTooltip({
   )
 }
 
+function XAxisTick({ x, y, payload, formatter }: { x?: number; y?: number; payload?: { value: number }; formatter?: (ms: number) => string }) {
+  if (!payload) return <g />
+  return (
+    <g transform={`translate(${x ?? 0},${y ?? 0})`}>
+      <text dy={14} textAnchor="middle" style={{ fill: "#e5e7eb", fontSize: 10, fontFamily: "inherit" }}>
+        {formatter ? formatter(payload.value) : msToTimeLabel(payload.value)}
+      </text>
+    </g>
+  )
+}
+
+function YAxisTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: number } }) {
+  if (!payload) return <g />
+  const v = payload.value
+  return (
+    <g transform={`translate(${x ?? 0},${y ?? 0})`}>
+      <text dx={-4} textAnchor="end" dominantBaseline="middle" style={{ fill: "#e5e7eb", fontSize: 10, fontFamily: "inherit" }}>
+        {Number.isInteger(v) ? String(v) : v.toFixed(2)}
+      </text>
+    </g>
+  )
+}
+
 export interface ChartSeries {
   title: string
   labels: string[]
@@ -96,13 +119,20 @@ function formatLabel(label: string): string {
 
 function msToTimeLabel(ms: number): string {
   if (ms < 86400000) {
+    // Relative offset (not a real timestamp) — format as HH:MM:SS
     const s = Math.floor(ms / 1000)
     const h = Math.floor(s / 3600)
     const m = Math.floor((s % 3600) / 60)
     const sec = s % 60
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
   }
-  return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  // Real Unix timestamp — format in Pacific Time to match detection log
+  return new Date(ms).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: "America/Los_Angeles",
+  })
 }
 
 function hasCIData(s: ChartSeries): boolean {
@@ -112,17 +142,39 @@ function hasCIData(s: ChartSeries): boolean {
   )
 }
 
+function extractTimeFromLabel(raw: string): string {
+  // "2026-05-14 15:13:52 PST" → "15:13:52"
+  const m = raw.match(/(\d{2}:\d{2}:\d{2})/)
+  return m ? m[1] : raw
+}
+
 function mergeSeriesData(series: ChartSeries[]): Record<string, unknown>[] {
   if (!series.length) return []
-  const base = series.reduce((a, b) => (b.labels.length > a.labels.length ? b : a))
-  return base.labels.map((label, i) => {
-    const ms = parseTimestamp(label)
-    const point: Record<string, unknown> = { name: formatLabel(label), _raw: label, _ms: ms ?? i * 1000 }
+
+  // Union of all labels across all series, sorted by parsed timestamp
+  const labelMs = new Map<string, number>()
+  series.forEach(s => {
+    s.labels.forEach((label, i) => {
+      if (!labelMs.has(label)) {
+        const ms = parseTimestamp(label)
+        labelMs.set(label, ms ?? i * 1000)
+      }
+    })
+  })
+
+  const allLabels = Array.from(new Set(series.flatMap(s => s.labels)))
+  allLabels.sort((a, b) => (labelMs.get(a) ?? 0) - (labelMs.get(b) ?? 0))
+
+  return allLabels.map(label => {
+    const ms = labelMs.get(label) ?? 0
+    const point: Record<string, unknown> = { name: formatLabel(label), _raw: label, _ms: ms, _timeLabel: extractTimeFromLabel(label) }
     series.forEach(s => {
-      point[s.title] = s.values[i] ?? null
+      const idx = s.labels.indexOf(label)
+      const value = idx >= 0 ? (s.values[idx] ?? null) : null
+      point[s.title] = value
       if (hasCIData(s)) {
-        const lo = s.lower![i] ?? null
-        const hi = s.upper![i] ?? null
+        const lo = idx >= 0 ? (s.lower![idx] ?? null) : null
+        const hi = idx >= 0 ? (s.upper![idx] ?? null) : null
         point[`${s.title}_ci_base`] = lo
         point[`${s.title}_ci_band`] = lo !== null && hi !== null ? Math.max(0, hi - lo) : null
       }
@@ -388,6 +440,13 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
     series.map((s, i) => [s.title, SERIES_COLORS[i % SERIES_COLORS.length]])
   )
 
+  const msToLabel = React.useMemo(() => {
+    const m = new Map<number, string>()
+    allData.forEach(d => m.set(d._ms as number, d._timeLabel as string))
+    return m
+  }, [allData])
+  const xTickFormatter = React.useCallback((ms: number) => msToLabel.get(ms) ?? msToTimeLabel(ms), [msToLabel])
+
   const thumbBg = dragMode === "pan" ? "oklch(0.60 0.1 200)" : "oklch(0.46 0.08 200)"
   const handleBg = dragMode === "left" || dragMode === "right"
     ? "oklch(0.68 0.12 200)"
@@ -476,10 +535,10 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
       {/* Chart */}
       <div ref={chartRef} style={{ height, userSelect: "none" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={visibleData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+          <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 24 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
-            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={msToTimeLabel} stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} />
-            <YAxis stroke="oklch(0.65 0 0)" fontSize={10} tickLine={false} axisLine={false} width={52} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} />
+            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tick={<XAxisTick formatter={xTickFormatter} />} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} />
+            <YAxis tick={<YAxisTick />} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} width={52} />
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
@@ -496,7 +555,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
                     legendType="none" connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
                 <Line key={s.title} type="monotone" dataKey={s.title}
-                  stroke={color} strokeWidth={2} dot={false} connectNulls hide={isHidden} isAnimationActive={animationActive} />,
+                  stroke={color} strokeWidth={2} dot={{ r: 5, fill: color, strokeWidth: 0 }} activeDot={{ r: 7 }} connectNulls hide={isHidden} isAnimationActive={animationActive} />,
               ]
             })}
           </ComposedChart>
