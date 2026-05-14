@@ -8,7 +8,7 @@ import { formatDistanceToNow } from "date-fns"
 import { DynamicChart } from "./dynamic-chart"
 import { TimeSeriesChart } from "./time-series-chart"
 import type { ChartSeries } from "./time-series-chart"
-import { SnapshotCell } from "./snapshot-cell"
+import { ReviewTable } from "./review-table"
 
 export interface DetectionRow {
   id: string
@@ -22,6 +22,7 @@ interface InsightsListProps {
   outputs: BEInsightOutput[]
   detectionsByStudy?: Record<string, DetectionRow[]>
   reviewMode?: boolean
+  studyDurations?: Record<string, number>
 }
 
 function toArray<T>(value: unknown): T[] {
@@ -45,7 +46,7 @@ function normalizeOutput(output: BEInsightOutput): NormalizedOutput {
   }
 }
 
-export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = false }: InsightsListProps) {
+export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = false, studyDurations = {} }: InsightsListProps) {
   const normalized = outputs.map(normalizeOutput)
   if (normalized.length === 0) {
     return (
@@ -167,7 +168,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                         Charts
                       </p>
                     </div>
-                    {lineSeries.length > 0 && <TimeSeriesChart series={lineSeries} height={240} />}
+                    {lineSeries.length > 0 && <TimeSeriesChart series={lineSeries} height={240} studyDurationMs={studyDurations[output.study_id]} />}
                     {otherCharts.map((chart, i) => (
                       <DynamicChart
                         key={(chart as Record<string, unknown>).chart_id as string ?? i}
@@ -195,6 +196,19 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                     const rows = t.rows as string[][]
                     const title = t.title as string
                     const studyDetections = detectionsByStudy[output.study_id] ?? []
+
+                    if (reviewMode) {
+                      return (
+                        <ReviewTable
+                          key={t.table_id as string ?? i}
+                          columns={columns}
+                          rows={rows}
+                          detections={studyDetections}
+                          title={title}
+                        />
+                      )
+                    }
+
                     return (
                       <div key={t.table_id as string ?? i} className="space-y-1.5">
                         {title && <p className="text-xs text-muted-foreground">{title}</p>}
@@ -202,11 +216,6 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="border-b border-border bg-muted/40">
-                                {reviewMode && (
-                                  <th className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap w-14">
-                                    Snapshot
-                                  </th>
-                                )}
                                 {columns.map((col, ci) => (
                                   <th key={ci} className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                                     {col}
@@ -217,11 +226,6 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                             <tbody>
                               {rows.map((row, ri) => (
                                 <tr key={ri} className="border-b border-border last:border-0 hover:bg-muted/20">
-                                  {reviewMode && (
-                                    <td className="px-2 py-1">
-                                      <SnapshotCell imageId={studyDetections[ri]?.image_id} />
-                                    </td>
-                                  )}
                                   {row.map((cell, ci) => (
                                     <td key={ci} className="px-2 py-1.5 text-foreground/80">
                                       {cell ?? "—"}

@@ -4,7 +4,7 @@ import { InsightsList } from "@/components/insights/insights-list"
 import type { DetectionRow } from "@/components/insights/insights-list"
 import { getDemoScenario } from "@/lib/demo-mode"
 import { isReviewMode } from "@/lib/review-mode"
-import { BE_INSIGHT_OUTPUT } from "@/lib/demo-seeds"
+import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE } from "@/lib/demo-seeds"
 
 export default async function InsightsPage() {
   const scenario = await getDemoScenario()
@@ -20,6 +20,19 @@ export default async function InsightsPage() {
         .order("created_at", { ascending: false })
 
   const studyIds = (outputs ?? []).map((o: { study_id: string }) => o.study_id).filter(Boolean)
+
+  let studyDurations: Record<string, number> = {}
+  if (demo) {
+    studyDurations = { [BE_STUDY_COMPLETE.study_id]: BE_STUDY_COMPLETE.duration_seconds * 1000 }
+  } else if (studyIds.length > 0) {
+    const { data: studies } = await supabase
+      .from("BE_studies")
+      .select("study_id, duration_seconds")
+      .in("study_id", studyIds)
+    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null }[]) {
+      if (s.duration_seconds) studyDurations[s.study_id] = s.duration_seconds * 1000
+    }
+  }
 
   let detectionsByStudy: Record<string, DetectionRow[]> = {}
   if (review && studyIds.length > 0) {
@@ -43,7 +56,7 @@ export default async function InsightsPage() {
       />
 
       <div className="flex-1 p-6 overflow-auto">
-        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} />
+        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} studyDurations={studyDurations} />
       </div>
     </div>
   )
