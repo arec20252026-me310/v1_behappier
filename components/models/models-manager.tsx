@@ -585,7 +585,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4 min-h-full">
 
       {/* ── Top: combined data sources ── */}
       <Card>
@@ -740,10 +740,10 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
       </Card>
 
       {/* ── Middle: chart (wide) | model builder ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch flex-1 min-h-0">
 
         {/* Chart — spans 2 cols */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 flex flex-col">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <BarChart2 className="h-4 w-4" />
@@ -790,7 +790,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
         </Card>
 
         {/* Model builder */}
-        <Card>
+        <Card className="flex flex-col overflow-y-auto">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Sliders className="h-4 w-4" />
