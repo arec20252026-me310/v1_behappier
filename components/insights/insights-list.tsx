@@ -168,7 +168,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                         Charts
                       </p>
                     </div>
-                    {lineSeries.length > 0 && <TimeSeriesChart series={lineSeries} height={240} studyDurationMs={studyDurations[output.study_id]} />}
+                    {lineSeries.length > 0 && <TimeSeriesChart series={lineSeries} height={240} studyDurationMs={studyDurations[output.study_id]} xAxisLabel="Timestamp" yAxisLabel={lineSeries.length === 1 ? lineSeries[0].title : undefined} />}
                     {otherCharts.map((chart, i) => (
                       <DynamicChart
                         key={(chart as Record<string, unknown>).chart_id as string ?? i}

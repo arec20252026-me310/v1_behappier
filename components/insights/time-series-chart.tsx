@@ -70,28 +70,6 @@ function ChartTooltip({
   )
 }
 
-function XAxisTick({ x, y, payload, formatter }: { x?: number; y?: number; payload?: { value: number }; formatter?: (ms: number) => string }) {
-  if (!payload) return <g />
-  return (
-    <g transform={`translate(${x ?? 0},${y ?? 0})`}>
-      <text dy={14} textAnchor="middle" style={{ fill: "#e5e7eb", fontSize: 10, fontFamily: "inherit" }}>
-        {formatter ? formatter(payload.value) : msToTimeLabel(payload.value)}
-      </text>
-    </g>
-  )
-}
-
-function YAxisTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: number } }) {
-  if (!payload) return <g />
-  const v = payload.value
-  return (
-    <g transform={`translate(${x ?? 0},${y ?? 0})`}>
-      <text dx={-4} textAnchor="end" dominantBaseline="middle" style={{ fill: "#e5e7eb", fontSize: 10, fontFamily: "inherit" }}>
-        {Number.isInteger(v) ? String(v) : v.toFixed(2)}
-      </text>
-    </g>
-  )
-}
 
 export interface ChartSeries {
   title: string
@@ -105,6 +83,8 @@ interface TimeSeriesChartProps {
   series: ChartSeries[]
   height?: number
   studyDurationMs?: number
+  xAxisLabel?: string
+  yAxisLabel?: string
 }
 
 function formatLabel(label: string): string {
@@ -242,7 +222,7 @@ const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
 
-export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeSeriesChartProps) {
+export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel }: TimeSeriesChartProps) {
   const allData = mergeSeriesData(series)
   const total = allData.length
 
@@ -535,10 +515,10 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs }: TimeS
       {/* Chart */}
       <div ref={chartRef} style={{ height, userSelect: "none" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 24 }}>
+          <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
-            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tick={<XAxisTick formatter={xTickFormatter} />} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} />
-            <YAxis tick={<YAxisTick />} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} width={52} />
+            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "#9ca3af", fontSize: 11 } : undefined} />
+            <YAxis tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} width={52} label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: "center", fill: "#9ca3af", fontSize: 11 } : undefined} />
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]

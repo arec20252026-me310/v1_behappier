@@ -61,7 +61,7 @@ export function OccupancyChart({ latestOutput, studyDurationMs }: OccupancyChart
         </Link>
       </CardHeader>
       <CardContent>
-        <TimeSeriesChart series={series} height={350} studyDurationMs={studyDurationMs} />
+        <TimeSeriesChart series={series} height={350} studyDurationMs={studyDurationMs} xAxisLabel="Timestamp" yAxisLabel={series.length === 1 ? series[0].title : undefined} />
       </CardContent>
     </Card>
   )
