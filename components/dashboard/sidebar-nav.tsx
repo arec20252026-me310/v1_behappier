@@ -9,6 +9,7 @@ import {
   BarChart3,
   FlaskConical,
   Lightbulb,
+  BrainCircuit,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -42,6 +43,11 @@ const navItems = [
     title: "Insights",
     href: "/dashboard/insights",
     icon: Lightbulb,
+  },
+  {
+    title: "Models",
+    href: "/dashboard/models",
+    icon: BrainCircuit,
   },
 ]
 
