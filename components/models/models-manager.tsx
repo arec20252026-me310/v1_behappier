@@ -73,9 +73,7 @@ const NN_MODEL_TYPES: ModelType[] = ["mlp", "cnn", "rnn", "lstm"]
 
 type ModelSelectValue =
   | "linear"
-  | "polynomial_2"
-  | "polynomial_3"
-  | "polynomial_4"
+  | "polynomial"
   | "exponential"
   | "moving_average"
   | "mlp"
@@ -85,9 +83,7 @@ type ModelSelectValue =
 
 const MODEL_OPTIONS: { value: ModelSelectValue; label: string }[] = [
   { value: "linear", label: "Linear Regression" },
-  { value: "polynomial_2", label: "Polynomial (deg 2)" },
-  { value: "polynomial_3", label: "Polynomial (deg 3)" },
-  { value: "polynomial_4", label: "Polynomial (deg 4)" },
+  { value: "polynomial", label: "Polynomial" },
   { value: "exponential", label: "Exponential" },
   { value: "moving_average", label: "Moving Average" },
   { value: "mlp", label: "MLP" },
@@ -95,18 +91,6 @@ const MODEL_OPTIONS: { value: ModelSelectValue; label: string }[] = [
   { value: "rnn", label: "RNN" },
   { value: "lstm", label: "LSTM" },
 ]
-
-function selectValueToModelType(v: ModelSelectValue): ModelType {
-  if (v.startsWith("polynomial")) return "polynomial"
-  return v as ModelType
-}
-
-function selectValueToPolyDegree(v: ModelSelectValue): number {
-  if (v === "polynomial_2") return 2
-  if (v === "polynomial_3") return 3
-  if (v === "polynomial_4") return 4
-  return 2
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -222,7 +206,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   const [xColumn, setXColumn] = useState<string>("")
   const [yColumn, setYColumn] = useState<string>("")
   const [modelSelectValue, setModelSelectValue] = useState<ModelSelectValue>("linear")
-  const modelType: ModelType = selectValueToModelType(modelSelectValue)
+  const modelType: ModelType = modelSelectValue as ModelType
   const [polyDegree, setPolyDegree] = useState<number>(2)
   const [maWindow, setMaWindow] = useState<number>(5)
 
@@ -452,7 +436,8 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
         }
       }
 
-      const label = MODEL_OPTIONS.find((m) => m.value === modelSelectValue)?.label ?? modelSelectValue
+      const baseLabel = MODEL_OPTIONS.find((m) => m.value === modelSelectValue)?.label ?? modelSelectValue
+      const label = modelType === "polynomial" ? `Polynomial (deg ${polyDegree})` : baseLabel
       const newEntry: FitEntry = {
         id: crypto.randomUUID(),
         label,
