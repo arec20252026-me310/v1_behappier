@@ -5,7 +5,7 @@ import Papa from "papaparse"
 import * as XLSX from "xlsx"
 import { createClient } from "@/lib/supabase/client"
 import { DatasetUploader, type ParsedDataset } from "./dataset-uploader"
-import { ModelChart } from "./model-chart"
+import { ModelChart, FitEntry, FIT_COLORS } from "./model-chart"
 import { ParametersPanel } from "./parameters-panel"
 import {
   fitLinear,
@@ -180,9 +180,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   const [trainingLoss, setTrainingLoss] = useState<number[]>([])
 
   // Results state
-  const [fitResult, setFitResult] = useState<FitResult | null>(null)
-  const [xValues, setXValues] = useState<number[]>([])
-  const [yValues, setYValues] = useState<number[]>([])
+  const [fitEntries, setFitEntries] = useState<FitEntry[]>([])
   const [isFitting, setIsFitting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isSavingDataset, setIsSavingDataset] = useState(false)
@@ -249,9 +247,6 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
       setActiveDataset(parsed)
       setSavedDatasetId(null)
       setDatasetName(parsed.filename)
-      setFitResult(null)
-      setXValues([])
-      setYValues([])
       setXColumn("timestamp")
       setYColumn(seriesNames[0] ?? "")
       setStatusMsg(`Loaded ${rows.length} rows from study behavior data.`)
@@ -267,9 +262,6 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
 
   const handleDataParsed = useCallback((dataset: ParsedDataset) => {
     setActiveDataset(dataset)
-    setFitResult(null)
-    setXValues([])
-    setYValues([])
     setSavedDatasetId(null)
     setDatasetName(dataset.filename.replace(/\.[^.]+$/, ""))
     // Auto-select first two columns
@@ -288,9 +280,6 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     setActiveDataset(parsed)
     setSavedDatasetId(ds.id)
     setDatasetName(ds.name)
-    setFitResult(null)
-    setXValues([])
-    setYValues([])
     if (ds.columns.length >= 1) setXColumn(ds.columns[0])
     if (ds.columns.length >= 2) setYColumn(ds.columns[1])
     if (ds.study_id) setSelectedStudyId(ds.study_id)
@@ -303,7 +292,6 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   async function handleFitModel() {
     if (!activeDataset || !xColumn || !yColumn) return
     setIsFitting(true)
-    setFitResult(null)
     setTrainingLoss([])
     setTrainingProgress(null)
 
@@ -311,7 +299,6 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
       const rawX = extractNumericColumn(activeDataset.rows, xColumn)
       const rawY = extractNumericColumn(activeDataset.rows, yColumn)
 
-      // Filter valid pairs
       const validPairs = rawX
         .map((x, i) => ({ x, y: rawY[i] }))
         .filter((p) => isFinite(p.x) && isFinite(p.y))
@@ -341,7 +328,6 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
         )
         setTrainingLoss(nnResult.trainingLoss)
         setTrainingProgress(null)
-        // Adapt NNFitResult → FitResult shape
         result = {
           modelType: nnResult.modelType,
           parameters: {
@@ -374,9 +360,17 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
         }
       }
 
-      setXValues(xVals)
-      setYValues(yVals)
-      setFitResult(result)
+      const label = MODEL_OPTIONS.find((m) => m.value === modelSelectValue)?.label ?? modelSelectValue
+      const newEntry: FitEntry = {
+        id: crypto.randomUUID(),
+        label,
+        color: FIT_COLORS[fitEntries.length % FIT_COLORS.length],
+        visible: true,
+        xValues: xVals,
+        yValues: yVals,
+        fitResult: result,
+      }
+      setFitEntries((prev) => [...prev, newEntry])
       setStatusMsg(null)
     } catch (err) {
       setStatusMsg(err instanceof Error ? err.message : "Fitting failed")
@@ -422,7 +416,8 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   // ── Save model fit ──────────────────────────────────────────────────────────
 
   async function handleSaveModelFit() {
-    if (!fitResult || !savedDatasetId) {
+    const lastEntry = fitEntries[fitEntries.length - 1]
+    if (!lastEntry || !savedDatasetId) {
       setStatusMsg("Please save the dataset first before saving a model fit.")
       return
     }
@@ -434,11 +429,11 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     const { error } = await saveModelFit(
       savedDatasetId,
       selectedStudyId === "none" ? null : selectedStudyId,
-      `${MODEL_OPTIONS.find((m) => m.value === modelType)?.label} fit`,
-      modelType,
+      lastEntry.label,
+      lastEntry.fitResult.modelType,
       config,
-      fitResult.parameters as Record<string, unknown>,
-      fitResult.metrics as Record<string, unknown>
+      lastEntry.fitResult.parameters as Record<string, unknown>,
+      lastEntry.fitResult.metrics as Record<string, unknown>
     )
     setIsSaving(false)
     if (error) {
@@ -452,7 +447,9 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   // ── Export JSON ─────────────────────────────────────────────────────────────
 
   function handleExportJson() {
-    if (!fitResult) return
+    const lastEntry = fitEntries[fitEntries.length - 1]
+    if (!lastEntry) return
+    const { fitResult } = lastEntry
     const isNN = NN_MODEL_TYPES.includes(fitResult.modelType)
     const content = isNN
       ? JSON.stringify(
@@ -512,9 +509,25 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     }
   }
 
+  // ── Toggle / remove fit entries ──────────────────────────────────────────────
+
+  function handleToggleEntry(id: string) {
+    setFitEntries((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, visible: !e.visible } : e))
+    )
+  }
+
+  function handleRemoveEntry(id: string) {
+    setFitEntries((prev) => prev.filter((e) => e.id !== id))
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   const columns = activeDataset?.columns ?? []
+  const lastEntry = fitEntries[fitEntries.length - 1] ?? null
+  // Scatter source: use the last entry's raw values, or the active dataset columns
+  const chartXValues = lastEntry?.xValues ?? []
+  const chartYValues = lastEntry?.yValues ?? []
 
   return (
     <div className="space-y-6">
@@ -816,28 +829,38 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
         <div className="space-y-4">
           {/* Chart */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <CardTitle className="text-base">Chart</CardTitle>
+              {fitEntries.length > 0 && (
+                <button
+                  onClick={() => setFitEntries([])}
+                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  Clear all
+                </button>
+              )}
             </CardHeader>
             <CardContent>
               <ModelChart
-                xValues={xValues}
-                yValues={yValues}
-                fitResult={fitResult}
+                xValues={chartXValues}
+                yValues={chartYValues}
+                fitEntries={fitEntries}
+                onToggle={handleToggleEntry}
+                onRemove={handleRemoveEntry}
                 xLabel={xColumn || undefined}
                 yLabel={yColumn || undefined}
               />
             </CardContent>
           </Card>
 
-          {/* Parameters */}
+          {/* Parameters — shows most recent fit */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Parameters &amp; Metrics</CardTitle>
             </CardHeader>
             <CardContent>
               <ParametersPanel
-                fitResult={fitResult}
+                fitResult={lastEntry?.fitResult ?? null}
                 onSave={handleSaveModelFit}
                 onExportJson={handleExportJson}
                 isSaving={isSaving}
