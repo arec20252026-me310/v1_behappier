@@ -29,6 +29,7 @@ interface ModelChartProps {
   fitEntries: FitEntry[]
   onToggle: (id: string) => void
   onRemove: (id: string) => void
+  xIsTime?: boolean
   xLabel?: string
   yLabel?: string
 }
@@ -72,6 +73,7 @@ export function ModelChart({
   fitEntries,
   onToggle,
   onRemove,
+  xIsTime = false,
   xLabel,
   yLabel,
 }: ModelChartProps) {
@@ -85,7 +87,9 @@ export function ModelChart({
 
   const xMin = Math.min(...xValues)
   const xMax = Math.max(...xValues)
-  const xTickFormatter = (v: number) => formatSeconds(v - xMin)
+  const xTickFormatter = xIsTime
+    ? (v: number) => formatSeconds(v - xMin)
+    : (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))
 
   const scatterData = xValues.map((x, i) => ({ x, raw: yValues[i] }))
 
@@ -157,7 +161,9 @@ export function ModelChart({
                 return (
                   <div style={TOOLTIP_STYLE}>
                     <p style={{ color: "#9ca3af", marginBottom: 4 }}>
-                      T+{formatSeconds((x ?? 0) - xMin)}
+                      {xIsTime
+                        ? `T+${formatSeconds((x ?? 0) - xMin)}`
+                        : `${xLabel ?? "X"}: ${Number.isInteger(x) ? x : (x ?? 0).toFixed(2)}`}
                     </p>
                     {point.raw !== undefined && (
                       <p style={{ color: DATA_COLOR }}>Data: {point.raw.toFixed(4)}</p>

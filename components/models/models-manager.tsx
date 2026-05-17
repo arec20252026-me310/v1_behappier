@@ -593,6 +593,15 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   const chartXValues = lastEntry?.xValues ?? []
   const chartYValues = lastEntry?.yValues ?? []
 
+  // Detect whether X column contains timestamps (HH:MM:SS or full datetime strings)
+  const xIsTime = (() => {
+    if (!activeDataset || !xColumn) return false
+    const firstVal = activeDataset.rows[0]?.[xColumn]
+    if (typeof firstVal !== "string") return false
+    return /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.test(firstVal) ||
+           /^\d{4}-\d{2}-\d{2}/.test(firstVal)
+  })()
+
   // Show save button for derived datasets (merged, or behavior-only from study)
   const showSaveDataset = !!(mergedDataset || (behaviorDataset && !sensorDataset))
 
@@ -956,6 +965,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
                 fitEntries={fitEntries}
                 onToggle={handleToggleEntry}
                 onRemove={handleRemoveEntry}
+                xIsTime={xIsTime}
                 xLabel={xColumn || undefined}
                 yLabel={yColumn || undefined}
               />
