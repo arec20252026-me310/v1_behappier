@@ -17,7 +17,7 @@ export interface NNFitResult {
     weights: number[][]
     weightShapes: number[][]
     config: NNConfig
-    normalization: { xMin: number; xMax: number; yMin: number; yMax: number }
+    normalization: { xMins: number[]; xMaxs: number[]; yMin: number; yMax: number }
   }
   metrics: { r2: number; rmse: number; mse: number }
   predictedY: number[]
@@ -26,7 +26,7 @@ export interface NNFitResult {
 
 // ── Normalization helpers ─────────────────────────────────────────────────────
 
-function normalize(arr: number[], min: number, max: number): number[] {
+function normalizeFeature(arr: number[], min: number, max: number): number[] {
   const range = max - min
   if (range === 0) return arr.map(() => 0.5)
   return arr.map((v) => (v - min) / range)
@@ -35,6 +35,20 @@ function normalize(arr: number[], min: number, max: number): number[] {
 function denormalize(arr: number[], min: number, max: number): number[] {
   const range = max - min
   return arr.map((v) => v * range + min)
+}
+
+// Normalize each column (feature) independently; returns [n_samples, n_features]
+function normalizeMatrix(
+  xs: number[][],
+  xMins: number[],
+  xMaxs: number[]
+): number[][] {
+  return xs.map((row) =>
+    row.map((v, f) => {
+      const range = xMaxs[f] - xMins[f]
+      return range === 0 ? 0.5 : (v - xMins[f]) / range
+    })
+  )
 }
 
 function computeMetrics(
@@ -57,63 +71,56 @@ function computeMetrics(
 }
 
 // ── Windowed input builder (for CNN / RNN / LSTM) ────────────────────────────
+// xsNorm: [n_samples, n_features] → returns [n_samples, windowSize, n_features]
 
-function buildWindowedInputs(xNorm: number[], windowSize: number): number[][][] {
-  return xNorm.map((_, i) => {
+function buildWindowedInputs(xsNorm: number[][], windowSize: number): number[][][] {
+  const n = xsNorm.length
+  return Array.from({ length: n }, (_, i) => {
     const window: number[][] = []
     for (let j = windowSize - 1; j >= 0; j--) {
-      const idx = Math.max(0, i - j)
-      window.push([xNorm[idx]])
+      window.push(xsNorm[Math.max(0, i - j)])
     }
-    return window // shape [windowSize, 1]
+    return window
   })
 }
 
 // ── Main fit function ─────────────────────────────────────────────────────────
+// xs: [n_samples, n_features] — pass a single-column matrix for single-input models
 
 export async function fitNeuralNetwork(
   modelType: NNModelType,
-  x: number[],
+  xs: number[][],
   y: number[],
   config: NNConfig,
   onProgress: (epoch: number, loss: number) => void
 ): Promise<NNFitResult> {
   const tf = await import('@tensorflow/tfjs')
 
-  const n = x.length
-  const xMin = Math.min(...x)
-  const xMax = Math.max(...x)
+  const n = xs.length
+  const numFeatures = xs[0]?.length ?? 1
+
+  const xMins = Array.from({ length: numFeatures }, (_, f) => Math.min(...xs.map((r) => r[f])))
+  const xMaxs = Array.from({ length: numFeatures }, (_, f) => Math.max(...xs.map((r) => r[f])))
   const yMin = Math.min(...y)
   const yMax = Math.max(...y)
 
-  const xNorm = normalize(x, xMin, xMax)
-  const yNorm = normalize(y, yMin, yMax)
+  const xsNorm = normalizeMatrix(xs, xMins, xMaxs)
+  const yNorm = normalizeFeature(y, yMin, yMax)
 
   const trainingLoss: number[] = []
-
   const model = tf.sequential()
 
   if (modelType === 'mlp') {
     // ── MLP ──────────────────────────────────────────────────────────────────
     const numLayers = Math.min(3, Math.max(1, config.numLayers))
-    model.add(
-      tf.layers.dense({
-        units: config.hiddenUnits,
-        activation: 'relu',
-        inputShape: [1],
-      })
-    )
+    model.add(tf.layers.dense({ units: config.hiddenUnits, activation: 'relu', inputShape: [numFeatures] }))
     for (let i = 1; i < numLayers; i++) {
       model.add(tf.layers.dense({ units: config.hiddenUnits, activation: 'relu' }))
     }
     model.add(tf.layers.dense({ units: 1 }))
+    model.compile({ optimizer: tf.train.adam(config.learningRate), loss: 'meanSquaredError' })
 
-    model.compile({
-      optimizer: tf.train.adam(config.learningRate),
-      loss: 'meanSquaredError',
-    })
-
-    const xsTensor = tf.tensor2d(xNorm, [n, 1])
+    const xsTensor = tf.tensor2d(xsNorm)
     const ysTensor = tf.tensor2d(yNorm, [n, 1])
 
     await model.fit(xsTensor, ysTensor, {
@@ -127,7 +134,6 @@ export async function fitNeuralNetwork(
       },
     })
 
-    // Predict
     const predTensor = model.predict(xsTensor) as ReturnType<typeof tf.tensor2d>
     const predNorm = Array.from(predTensor.dataSync())
     const predictedY = denormalize(predNorm, yMin, yMax)
@@ -142,17 +148,11 @@ export async function fitNeuralNetwork(
     model.dispose()
 
     const numLayersDesc = numLayers
-    const architecture = `MLP: Input(1) → ${Array.from({ length: numLayersDesc }, () => `Dense(${config.hiddenUnits}, ReLU)`).join(' → ')} → Dense(1)`
+    const architecture = `MLP: Input(${numFeatures}) → ${Array.from({ length: numLayersDesc }, () => `Dense(${config.hiddenUnits}, ReLU)`).join(' → ')} → Dense(1)`
 
     return {
       modelType,
-      parameters: {
-        architecture,
-        weights: weightArrays,
-        weightShapes,
-        config,
-        normalization: { xMin, xMax, yMin, yMax },
-      },
+      parameters: { architecture, weights: weightArrays, weightShapes, config, normalization: { xMins, xMaxs, yMin, yMax } },
       metrics: computeMetrics(y, predictedY),
       predictedY,
       trainingLoss,
@@ -160,62 +160,37 @@ export async function fitNeuralNetwork(
   } else {
     // ── CNN / RNN / LSTM — windowed inputs ───────────────────────────────────
     const W = config.windowSize
-    const windowedInputs = buildWindowedInputs(xNorm, W) // [n, W, 1]
+    const windowedInputs = buildWindowedInputs(xsNorm, W)  // [n, W, numFeatures]
 
     if (modelType === 'cnn') {
-      model.add(
-        tf.layers.conv1d({
-          filters: config.hiddenUnits,
-          kernelSize: 3,
-          activation: 'relu',
-          padding: 'same',
-          inputShape: [W, 1],
-        })
-      )
-      model.add(
-        tf.layers.conv1d({
-          filters: Math.max(1, Math.floor(config.hiddenUnits / 2)),
-          kernelSize: 3,
-          activation: 'relu',
-          padding: 'same',
-        })
-      )
+      model.add(tf.layers.conv1d({
+        filters: config.hiddenUnits, kernelSize: 3, activation: 'relu',
+        padding: 'same', inputShape: [W, numFeatures],
+      }))
+      model.add(tf.layers.conv1d({
+        filters: Math.max(1, Math.floor(config.hiddenUnits / 2)),
+        kernelSize: 3, activation: 'relu', padding: 'same',
+      }))
       model.add(tf.layers.globalAveragePooling1d())
       model.add(tf.layers.dense({ units: config.hiddenUnits, activation: 'relu' }))
       model.add(tf.layers.dense({ units: 1 }))
     } else if (modelType === 'rnn') {
-      model.add(
-        tf.layers.simpleRNN({
-          units: config.hiddenUnits,
-          returnSequences: false,
-          inputShape: [W, 1],
-        })
-      )
-      model.add(
-        tf.layers.dense({ units: Math.max(1, Math.floor(config.hiddenUnits / 2)), activation: 'relu' })
-      )
+      model.add(tf.layers.simpleRNN({
+        units: config.hiddenUnits, returnSequences: false, inputShape: [W, numFeatures],
+      }))
+      model.add(tf.layers.dense({ units: Math.max(1, Math.floor(config.hiddenUnits / 2)), activation: 'relu' }))
       model.add(tf.layers.dense({ units: 1 }))
     } else {
-      // lstm
-      model.add(
-        tf.layers.lstm({
-          units: config.hiddenUnits,
-          returnSequences: false,
-          inputShape: [W, 1],
-        })
-      )
-      model.add(
-        tf.layers.dense({ units: Math.max(1, Math.floor(config.hiddenUnits / 2)), activation: 'relu' })
-      )
+      model.add(tf.layers.lstm({
+        units: config.hiddenUnits, returnSequences: false, inputShape: [W, numFeatures],
+      }))
+      model.add(tf.layers.dense({ units: Math.max(1, Math.floor(config.hiddenUnits / 2)), activation: 'relu' }))
       model.add(tf.layers.dense({ units: 1 }))
     }
 
-    model.compile({
-      optimizer: tf.train.adam(config.learningRate),
-      loss: 'meanSquaredError',
-    })
+    model.compile({ optimizer: tf.train.adam(config.learningRate), loss: 'meanSquaredError' })
 
-    const xsTensor = tf.tensor3d(windowedInputs) // [n, W, 1]
+    const xsTensor = tf.tensor3d(windowedInputs)
     const ysTensor = tf.tensor2d(yNorm, [n, 1])
 
     await model.fit(xsTensor, ysTensor, {
@@ -244,20 +219,14 @@ export async function fitNeuralNetwork(
 
     const archMap: Record<NNModelType, string> = {
       mlp: '',
-      cnn: `CNN: Input([${W},1]) → Conv1D(${config.hiddenUnits}, k=3, ReLU) → Conv1D(${Math.floor(config.hiddenUnits / 2)}, k=3, ReLU) → GlobalAvgPool → Dense(${config.hiddenUnits}, ReLU) → Dense(1)`,
-      rnn: `RNN: Input([${W},1]) → SimpleRNN(${config.hiddenUnits}) → Dense(${Math.floor(config.hiddenUnits / 2)}, ReLU) → Dense(1)`,
-      lstm: `LSTM: Input([${W},1]) → LSTM(${config.hiddenUnits}) → Dense(${Math.floor(config.hiddenUnits / 2)}, ReLU) → Dense(1)`,
+      cnn:  `CNN:  Input([${W},${numFeatures}]) → Conv1D(${config.hiddenUnits}, k=3) → Conv1D(${Math.floor(config.hiddenUnits / 2)}, k=3) → GlobalAvgPool → Dense(${config.hiddenUnits}) → Dense(1)`,
+      rnn:  `RNN:  Input([${W},${numFeatures}]) → SimpleRNN(${config.hiddenUnits}) → Dense(${Math.floor(config.hiddenUnits / 2)}) → Dense(1)`,
+      lstm: `LSTM: Input([${W},${numFeatures}]) → LSTM(${config.hiddenUnits}) → Dense(${Math.floor(config.hiddenUnits / 2)}) → Dense(1)`,
     }
 
     return {
       modelType,
-      parameters: {
-        architecture: archMap[modelType],
-        weights: weightArrays,
-        weightShapes,
-        config,
-        normalization: { xMin, xMax, yMin, yMax },
-      },
+      parameters: { architecture: archMap[modelType], weights: weightArrays, weightShapes, config, normalization: { xMins, xMaxs, yMin, yMax } },
       metrics: computeMetrics(y, predictedY),
       predictedY,
       trainingLoss,
@@ -272,84 +241,54 @@ export async function predictFromNNWeights(
   config: NNConfig,
   weights: number[][],
   weightShapes: number[][],
-  xNorm: number[]
+  xsNorm: number[][]   // [n_samples, n_features] — already normalized
 ): Promise<number[]> {
   const tf = await import('@tensorflow/tfjs')
 
-  const n = xNorm.length
+  const n = xsNorm.length
+  const numFeatures = xsNorm[0]?.length ?? 1
   const W = config.windowSize
-
   const model = tf.sequential()
 
   if (modelType === 'mlp') {
     const numLayers = Math.min(3, Math.max(1, config.numLayers))
-    model.add(
-      tf.layers.dense({
-        units: config.hiddenUnits,
-        activation: 'relu',
-        inputShape: [1],
-      })
-    )
+    model.add(tf.layers.dense({ units: config.hiddenUnits, activation: 'relu', inputShape: [numFeatures] }))
     for (let i = 1; i < numLayers; i++) {
       model.add(tf.layers.dense({ units: config.hiddenUnits, activation: 'relu' }))
     }
     model.add(tf.layers.dense({ units: 1 }))
   } else if (modelType === 'cnn') {
-    model.add(
-      tf.layers.conv1d({
-        filters: config.hiddenUnits,
-        kernelSize: 3,
-        activation: 'relu',
-        padding: 'same',
-        inputShape: [W, 1],
-      })
-    )
-    model.add(
-      tf.layers.conv1d({
-        filters: Math.max(1, Math.floor(config.hiddenUnits / 2)),
-        kernelSize: 3,
-        activation: 'relu',
-        padding: 'same',
-      })
-    )
+    model.add(tf.layers.conv1d({
+      filters: config.hiddenUnits, kernelSize: 3, activation: 'relu',
+      padding: 'same', inputShape: [W, numFeatures],
+    }))
+    model.add(tf.layers.conv1d({
+      filters: Math.max(1, Math.floor(config.hiddenUnits / 2)),
+      kernelSize: 3, activation: 'relu', padding: 'same',
+    }))
     model.add(tf.layers.globalAveragePooling1d())
     model.add(tf.layers.dense({ units: config.hiddenUnits, activation: 'relu' }))
     model.add(tf.layers.dense({ units: 1 }))
   } else if (modelType === 'rnn') {
-    model.add(
-      tf.layers.simpleRNN({
-        units: config.hiddenUnits,
-        returnSequences: false,
-        inputShape: [W, 1],
-      })
-    )
-    model.add(
-      tf.layers.dense({ units: Math.max(1, Math.floor(config.hiddenUnits / 2)), activation: 'relu' })
-    )
+    model.add(tf.layers.simpleRNN({
+      units: config.hiddenUnits, returnSequences: false, inputShape: [W, numFeatures],
+    }))
+    model.add(tf.layers.dense({ units: Math.max(1, Math.floor(config.hiddenUnits / 2)), activation: 'relu' }))
     model.add(tf.layers.dense({ units: 1 }))
   } else {
-    // lstm
-    model.add(
-      tf.layers.lstm({
-        units: config.hiddenUnits,
-        returnSequences: false,
-        inputShape: [W, 1],
-      })
-    )
-    model.add(
-      tf.layers.dense({ units: Math.max(1, Math.floor(config.hiddenUnits / 2)), activation: 'relu' })
-    )
+    model.add(tf.layers.lstm({
+      units: config.hiddenUnits, returnSequences: false, inputShape: [W, numFeatures],
+    }))
+    model.add(tf.layers.dense({ units: Math.max(1, Math.floor(config.hiddenUnits / 2)), activation: 'relu' }))
     model.add(tf.layers.dense({ units: 1 }))
   }
 
-  // Build the model by running a dummy prediction (needed before setWeights)
-  const dummyShape = modelType === 'mlp' ? [1, 1] : [1, W, 1]
+  const dummyShape = modelType === 'mlp' ? [1, numFeatures] : [1, W, numFeatures]
   const dummy = tf.zeros(dummyShape)
   const dummyOut = model.predict(dummy) as ReturnType<typeof tf.tensor2d>
   dummyOut.dispose()
   dummy.dispose()
 
-  // Load serialized weights
   const weightTensors = weights.map((arr, i) =>
     tf.tensor(arr, weightShapes[i] as [number, ...number[]])
   )
@@ -358,9 +297,9 @@ export async function predictFromNNWeights(
 
   let inputTensor: ReturnType<typeof tf.tensor2d> | ReturnType<typeof tf.tensor3d>
   if (modelType === 'mlp') {
-    inputTensor = tf.tensor2d(xNorm, [n, 1])
+    inputTensor = tf.tensor2d(xsNorm)
   } else {
-    const windowedInputs = buildWindowedInputs(xNorm, W)
+    const windowedInputs = buildWindowedInputs(xsNorm, W)
     inputTensor = tf.tensor3d(windowedInputs)
   }
 

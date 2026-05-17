@@ -9,9 +9,9 @@ import { ModelChart, FitEntry, FIT_COLORS } from "./model-chart"
 import { ParametersPanel } from "./parameters-panel"
 import {
   fitLinear,
+  fitMultipleLinear,
   fitPolynomial,
   fitExponential,
-  fitMovingAverage,
   type ModelType,
   type FitResult,
 } from "@/lib/model-fitting"
@@ -20,6 +20,7 @@ import { saveDataset, saveModelFit, deleteDataset } from "@/app/actions/models"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
@@ -36,11 +37,12 @@ import {
   FileDown,
   Trash2,
   FolderOpen,
-  TrendingUp,
   Database,
   Download,
   Merge,
   CheckCircle2,
+  BarChart2,
+  Sliders,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -70,12 +72,12 @@ interface ModelsManagerProps {
 }
 
 const NN_MODEL_TYPES: ModelType[] = ["mlp", "cnn", "rnn", "lstm"]
+const SINGLE_INPUT_ONLY: ModelType[] = ["polynomial", "exponential"]
 
 type ModelSelectValue =
   | "linear"
   | "polynomial"
   | "exponential"
-  | "moving_average"
   | "mlp"
   | "cnn"
   | "rnn"
@@ -85,7 +87,6 @@ const MODEL_OPTIONS: { value: ModelSelectValue; label: string }[] = [
   { value: "linear", label: "Linear Regression" },
   { value: "polynomial", label: "Polynomial" },
   { value: "exponential", label: "Exponential" },
-  { value: "moving_average", label: "Moving Average" },
   { value: "mlp", label: "MLP" },
   { value: "cnn", label: "CNN" },
   { value: "rnn", label: "RNN" },
@@ -97,7 +98,6 @@ const MODEL_OPTIONS: { value: ModelSelectValue; label: string }[] = [
 function parseToNumber(val: unknown): number {
   if (typeof val === "number") return val
   if (typeof val === "string") {
-    // HH:MM:SS or HH:MM → seconds since midnight
     const timeMatch = val.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
     if (timeMatch) {
       const h = parseInt(timeMatch[1])
@@ -105,10 +105,13 @@ function parseToNumber(val: unknown): number {
       const s = timeMatch[3] ? parseInt(timeMatch[3]) : 0
       return h * 3600 + m * 60 + s
     }
-    const d = new Date(val)
-    if (!isNaN(d.getTime())) return d.getTime()
     const n = Number(val)
     if (!isNaN(n)) return n
+    const d = new Date(val)
+    if (!isNaN(d.getTime())) {
+      // Normalize to seconds-since-midnight so all timestamp formats share the same scale
+      return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()
+    }
   }
   return NaN
 }
@@ -118,24 +121,24 @@ function extractNumericColumn(rows: Record<string, string | number>[], col: stri
 }
 
 function toRelativeSeconds(xs: number[]): number[] {
-  const valid = xs.filter((v) => isFinite(v))
-  if (valid.length === 0) return xs
-  const t0 = Math.min(...valid)
-  if (t0 > 1e12) return xs.map((x) => (x - t0) / 1000)
   return xs
+}
+
+function isTimestampColumn(rows: Record<string, string | number>[], col: string): boolean {
+  const firstVal = rows[0]?.[col]
+  if (typeof firstVal !== "string") return false
+  return /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.test(firstVal) ||
+         /^\d{4}-\d{2}-\d{2}/.test(firstVal)
 }
 
 function downloadBlob(content: string, filename: string, mime: string) {
   const blob = new Blob([content], { type: mime })
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  a.click()
+  a.href = url; a.download = filename; a.click()
   URL.revokeObjectURL(url)
 }
 
-// Align sensor rows to nearest behavior row by timestamp; drop if > toleranceSec apart
 function mergeByTimestamp(
   sensorRows: Record<string, string | number>[],
   behaviorRows: Record<string, string | number>[],
@@ -149,24 +152,20 @@ function mergeByTimestamp(
   for (const sensorRow of sensorRows) {
     const sTs = parseToNumber(sensorRow[sensorTsCol])
     if (!isFinite(sTs)) continue
-
-    let bestIdx = -1
-    let bestDiff = Infinity
+    let bestIdx = -1, bestDiff = Infinity
     for (let i = 0; i < behaviorTimes.length; i++) {
       const diff = Math.abs(behaviorTimes[i] - sTs)
       if (diff < bestDiff) { bestDiff = diff; bestIdx = i }
     }
-
     if (bestIdx >= 0 && bestDiff <= toleranceSec) {
       const mergedRow: Record<string, string | number> = { ...sensorRow }
       for (const [key, val] of Object.entries(behaviorRows[bestIdx])) {
-        if (key === behaviorTsCol) continue  // skip duplicate timestamp column
+        if (key === behaviorTsCol) continue
         mergedRow[key] = val as string | number
       }
       merged.push(mergedRow)
     }
   }
-
   return merged
 }
 
@@ -175,54 +174,40 @@ function mergeByTimestamp(
 export function ModelsManager({ studies, datasets: initialDatasets }: ModelsManagerProps) {
   const [savedDatasets, setSavedDatasets] = useState<SavedDataset[]>(initialDatasets)
 
-  // Two independent data sources
+  // Data sources
   const [sensorDataset, setSensorDataset] = useState<ParsedDataset | null>(null)
   const [behaviorDataset, setBehaviorDataset] = useState<ParsedDataset | null>(null)
   const [mergedDataset, setMergedDataset] = useState<ParsedDataset | null>(null)
   const [toleranceSec, setToleranceSec] = useState(30)
   const [isMerging, setIsMerging] = useState(false)
-
-  // The dataset used for fitting: merged > sensor-only > behavior-only
-  const activeDataset = mergedDataset ?? sensorDataset ?? behaviorDataset
-
-  const canMerge = !!(sensorDataset && behaviorDataset)
-
-  // Column pools for X/Y selectors
-  const sensorDataCols = sensorDataset?.columns.slice(1) ?? []       // sensor cols excluding timestamp
-  const behaviorDataCols = behaviorDataset?.columns.slice(1) ?? []   // behavior cols excluding timestamp
-  // In merged mode show the right pool for each axis; otherwise show all active columns
-  const xColumnOptions = mergedDataset
-    ? sensorDataCols
-    : activeDataset?.columns ?? []
-  const yColumnOptions = mergedDataset
-    ? behaviorDataCols
-    : activeDataset?.columns ?? []
-
   const [savedDatasetId, setSavedDatasetId] = useState<string | null>(null)
   const [datasetName, setDatasetName] = useState("")
+  const [selectedStudyId, setSelectedStudyId] = useState("none")
+  const [isLoadingStudy, setIsLoadingStudy] = useState(false)
 
-  // Config state
-  const [selectedStudyId, setSelectedStudyId] = useState<string>("none")
-  const [xColumn, setXColumn] = useState<string>("")
-  const [yColumn, setYColumn] = useState<string>("")
+  const activeDataset = mergedDataset ?? sensorDataset ?? behaviorDataset
+  const canMerge = !!(sensorDataset && behaviorDataset)
+
+  // Available columns (exclude timestamp cols from model inputs)
+  const allCols = activeDataset?.columns ?? []
+  const numericCols = activeDataset
+    ? allCols.filter((c) => !isTimestampColumn(activeDataset.rows, c))
+    : []
+
+  // Chart axis selectors
+  const [chartXCol, setChartXCol] = useState("")
+  const [chartYCol, setChartYCol] = useState("")
+
+  // Model builder
+  const [modelInputCols, setModelInputCols] = useState<string[]>([])
+  const [modelOutputCol, setModelOutputCol] = useState("")
   const [modelSelectValue, setModelSelectValue] = useState<ModelSelectValue>("linear")
   const modelType: ModelType = modelSelectValue as ModelType
-  const [polyDegree, setPolyDegree] = useState<number>(2)
-  const [maWindow, setMaWindow] = useState<number>(5)
-
-  // Neural network config
+  const [polyDegree, setPolyDegree] = useState(2)
   const [nnConfig, setNNConfig] = useState<NNConfig>({
-    epochs: 100,
-    learningRate: 0.01,
-    windowSize: 8,
-    hiddenUnits: 32,
-    numLayers: 2,
+    epochs: 100, learningRate: 0.01, windowSize: 8, hiddenUnits: 32, numLayers: 2,
   })
-  const [trainingProgress, setTrainingProgress] = useState<{
-    epoch: number
-    totalEpochs: number
-    loss: number
-  } | null>(null)
+  const [trainingProgress, setTrainingProgress] = useState<{ epoch: number; totalEpochs: number; loss: number } | null>(null)
   const [trainingLoss, setTrainingLoss] = useState<number[]>([])
 
   // Results
@@ -231,26 +216,23 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   const [isSaving, setIsSaving] = useState(false)
   const [isSavingDataset, setIsSavingDataset] = useState(false)
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
-  const [isLoadingStudy, setIsLoadingStudy] = useState(false)
 
-  // ── Load sensor data from file ────────────────────────────────────────────────
+  // When new data loads, reset column selections
+  function resetColumnSelections(cols: string[], rows: Record<string, string | number>[]) {
+    const numCols = cols.filter((c) => !isTimestampColumn(rows, c))
+    const tsCols = cols.filter((c) => isTimestampColumn(rows, c))
+    setChartXCol(tsCols[0] ?? numCols[0] ?? "")
+    setChartYCol(numCols[0] ?? "")
+    setModelInputCols(numCols.slice(0, 1))
+    setModelOutputCol(numCols[numCols.length - 1] ?? "")
+  }
 
-  const handleDataParsed = useCallback((dataset: ParsedDataset) => {
-    setSensorDataset(dataset)
-    setMergedDataset(null)
-    setSavedDatasetId(null)
-    // Auto-select: first col as X, second as Y (single-source defaults)
-    if (dataset.columns.length >= 1) setXColumn(dataset.columns[0])
-    if (dataset.columns.length >= 2) setYColumn(dataset.columns[1])
-  }, [])
-
-  // ── Load behavior data from microstudy ───────────────────────────────────────
+  // ── Load behavior data ────────────────────────────────────────────────────────
 
   async function handleLoadFromStudy() {
     if (selectedStudyId === "none") return
     setIsLoadingStudy(true)
     setStatusMsg("Loading behavior data…")
-
     try {
       const supabase = createClient()
       const { data: outputs, error } = await supabase
@@ -296,14 +278,8 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
       setBehaviorDataset(parsed)
       setMergedDataset(null)
       setSavedDatasetId(null)
-
-      // If no sensor data, use behavior alone and set column defaults
-      if (!sensorDataset) {
-        setXColumn("timestamp")
-        setYColumn(seriesNames[0] ?? "")
-      }
-
-      setStatusMsg(`Loaded ${rows.length} behavior rows. ${sensorDataset ? "Ready to merge." : ""}`)
+      if (!sensorDataset) resetColumnSelections(parsed.columns, parsed.rows)
+      setStatusMsg(`Loaded ${rows.length} behavior rows.${sensorDataset ? " Ready to merge." : ""}`)
       setTimeout(() => setStatusMsg(null), 3000)
     } catch (err) {
       setStatusMsg(err instanceof Error ? err.message : "Failed to load study data.")
@@ -312,22 +288,27 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     }
   }
 
-  // ── Merge sensor + behavior by nearest timestamp ──────────────────────────────
+  // ── Load sensor data from file ────────────────────────────────────────────────
+
+  const handleDataParsed = useCallback((dataset: ParsedDataset) => {
+    setSensorDataset(dataset)
+    setMergedDataset(null)
+    setSavedDatasetId(null)
+    if (!behaviorDataset) resetColumnSelections(dataset.columns, dataset.rows)
+  }, [behaviorDataset]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Merge ─────────────────────────────────────────────────────────────────────
 
   function handleMerge() {
     if (!sensorDataset || !behaviorDataset) return
     setIsMerging(true)
-
     const sensorTsCol = sensorDataset.columns[0]
     const behaviorTsCol = behaviorDataset.columns[0]
     const behaviorNonTsCols = behaviorDataset.columns.filter((c) => c !== behaviorTsCol)
 
     const merged = mergeByTimestamp(
-      sensorDataset.rows,
-      behaviorDataset.rows,
-      sensorTsCol,
-      behaviorTsCol,
-      toleranceSec
+      sensorDataset.rows, behaviorDataset.rows,
+      sensorTsCol, behaviorTsCol, toleranceSec
     )
 
     if (merged.length === 0) {
@@ -346,12 +327,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     setMergedDataset(mergedParsed)
     setSavedDatasetId(null)
     setDatasetName(mergedParsed.filename)
-
-    // Auto-select: X = first sensor data col, Y = first behavior col
-    const sensorDataCols = sensorDataset.columns.slice(1)
-    if (sensorDataCols.length > 0) setXColumn(sensorDataCols[0])
-    if (behaviorNonTsCols.length > 0) setYColumn(behaviorNonTsCols[0])
-
+    resetColumnSelections(mergedColumns, merged)
     setStatusMsg(`Merged: ${merged.length} of ${sensorDataset.rows.length} sensor readings matched.`)
     setTimeout(() => setStatusMsg(null), 4000)
     setIsMerging(false)
@@ -370,45 +346,67 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     setMergedDataset(null)
     setSavedDatasetId(ds.id)
     setDatasetName(ds.name)
-    if (ds.columns.length >= 1) setXColumn(ds.columns[0])
-    if (ds.columns.length >= 2) setYColumn(ds.columns[1])
+    resetColumnSelections(ds.columns, parsed.rows)
     if (ds.study_id) setSelectedStudyId(ds.study_id)
     setStatusMsg("Dataset loaded.")
     setTimeout(() => setStatusMsg(null), 2500)
   }
 
+  // ── Toggle model input column ─────────────────────────────────────────────────
+
+  function toggleInputCol(col: string) {
+    const isSingleInputModel = SINGLE_INPUT_ONLY.includes(modelType)
+    if (isSingleInputModel) {
+      setModelInputCols([col])
+      return
+    }
+    setModelInputCols((prev) =>
+      prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col]
+    )
+  }
+
   // ── Fit model ─────────────────────────────────────────────────────────────────
 
   async function handleFitModel() {
-    if (!activeDataset || !xColumn || !yColumn) return
+    if (!activeDataset || modelInputCols.length === 0 || !modelOutputCol) return
     setIsFitting(true)
     setTrainingLoss([])
     setTrainingProgress(null)
 
     try {
-      const rawX = extractNumericColumn(activeDataset.rows, xColumn)
-      const rawY = extractNumericColumn(activeDataset.rows, yColumn)
+      const rawY = extractNumericColumn(activeDataset.rows, modelOutputCol)
+      const rawXs = modelInputCols.map((col) => extractNumericColumn(activeDataset.rows, col))
 
-      const validPairs = rawX
-        .map((x, i) => ({ x, y: rawY[i] }))
-        .filter((p) => isFinite(p.x) && isFinite(p.y))
+      // Filter to rows where all inputs and output are finite
+      const validIdx = rawY
+        .map((y, i) => ({ i, y, xs: rawXs.map((col) => col[i]) }))
+        .filter((p) => isFinite(p.y) && p.xs.every(isFinite))
 
-      if (validPairs.length < 2) {
-        setStatusMsg("Not enough valid numeric data points to fit a model.")
+      if (validIdx.length < 2) {
+        setStatusMsg("Not enough valid data points.")
         setIsFitting(false)
         return
       }
 
-      const xVals = toRelativeSeconds(validPairs.map((p) => p.x))
-      const yVals = validPairs.map((p) => p.y)
+      const yVals = validIdx.map((p) => p.y)
+      // Convert each X column to relative seconds if it looks like time
+      const xValsCols = rawXs.map((col, ci) => {
+        const vals = validIdx.map((p) => p.xs[ci])
+        return toRelativeSeconds(vals)
+      })
 
       let result: FitResult
 
+      const isSingleInput = SINGLE_INPUT_ONLY.includes(modelType) || xValsCols.length === 1
+      const xVals = xValsCols[0]  // primary input (used for single-input models)
+
       if (NN_MODEL_TYPES.includes(modelType)) {
         const { fitNeuralNetwork } = await import("@/lib/tf-fitting")
+        // Build feature matrix [n_samples, n_features]
+        const xsMatrix = validIdx.map((p) => p.xs)
         setTrainingProgress({ epoch: 0, totalEpochs: nnConfig.epochs, loss: 0 })
         const nnResult = await fitNeuralNetwork(
-          modelType as NNModelType, xVals, yVals, nnConfig,
+          modelType as NNModelType, xsMatrix, yVals, nnConfig,
           (epoch, loss) => setTrainingProgress({ epoch, totalEpochs: nnConfig.epochs, loss })
         )
         setTrainingLoss(nnResult.trainingLoss)
@@ -426,28 +424,43 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
           predictedY: nnResult.predictedY,
           trainingLoss: nnResult.trainingLoss,
         }
+      } else if (modelType === "linear" && !isSingleInput) {
+        // Multiple linear regression
+        const Xs = validIdx.map((p) => xValsCols.map((col) => col[validIdx.indexOf(p)]))
+        result = fitMultipleLinear(Xs, yVals, modelInputCols)
       } else {
         switch (modelType) {
           case "linear":    result = fitLinear(xVals, yVals); break
           case "polynomial": result = fitPolynomial(xVals, yVals, polyDegree); break
           case "exponential": result = fitExponential(xVals, yVals); break
-          case "moving_average": result = fitMovingAverage(xVals, yVals, maWindow); break
           default: result = fitLinear(xVals, yVals)
         }
       }
 
       const baseLabel = MODEL_OPTIONS.find((m) => m.value === modelSelectValue)?.label ?? modelSelectValue
-      const label = modelType === "polynomial" ? `Polynomial (deg ${polyDegree})` : baseLabel
-      const newEntry: FitEntry = {
+      const modelDesc = modelType === "polynomial" ? `Polynomial (deg ${polyDegree})` : baseLabel
+      const ioLabel = `${modelInputCols.join(", ")} → ${modelOutputCol}`
+      const label = `${modelDesc}: ${ioLabel}`
+
+      // Store each input column's values at valid indices so the chart can project onto any axis
+      const inputValues: Record<string, number[]> = {}
+      modelInputCols.forEach((col, ci) => {
+        inputValues[col] = xValsCols[ci]
+      })
+
+      setFitEntries((prev) => [...prev, {
         id: crypto.randomUUID(),
         label,
-        color: FIT_COLORS[fitEntries.length % FIT_COLORS.length],
+        color: FIT_COLORS[prev.length % FIT_COLORS.length],
         visible: true,
         xValues: xVals,
         yValues: yVals,
         fitResult: result,
-      }
-      setFitEntries((prev) => [...prev, newEntry])
+        inputCount: modelInputCols.length,
+        inputCols: [...modelInputCols],
+        outputCol: modelOutputCol,
+        inputValues,
+      }])
       setStatusMsg(null)
     } catch (err) {
       setStatusMsg(err instanceof Error ? err.message : "Fitting failed")
@@ -457,7 +470,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     }
   }
 
-  // ── Save merged dataset to Supabase ──────────────────────────────────────────
+  // ── Save merged/behavior dataset ──────────────────────────────────────────────
 
   async function handleSaveDataset() {
     const ds = mergedDataset ?? behaviorDataset
@@ -476,18 +489,14 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
       setStatusMsg(`Error: ${error}`)
     } else {
       setSavedDatasetId(id ?? null)
-      setSavedDatasets((prev) => [
-        {
-          id: id!,
-          name,
-          study_id: selectedStudyId === "none" ? null : selectedStudyId,
-          columns: ds.columns,
-          data: ds.rows as Record<string, unknown>[],
-          metadata: { rowCount: ds.rows.length, merged: !!mergedDataset },
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ])
+      setSavedDatasets((prev) => [{
+        id: id!, name,
+        study_id: selectedStudyId === "none" ? null : selectedStudyId,
+        columns: ds.columns,
+        data: ds.rows as Record<string, unknown>[],
+        metadata: { rowCount: ds.rows.length, merged: !!mergedDataset },
+        created_at: new Date().toISOString(),
+      }, ...prev])
       setStatusMsg("Dataset saved.")
       setTimeout(() => setStatusMsg(null), 2500)
     }
@@ -498,33 +507,27 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   async function handleSaveModelFit() {
     const lastEntry = fitEntries[fitEntries.length - 1]
     if (!lastEntry || !savedDatasetId) {
-      setStatusMsg("Please save the dataset first before saving a model fit.")
+      setStatusMsg("Save the dataset first before saving a model fit.")
       return
     }
     setIsSaving(true)
-    const config: Record<string, unknown> = { xColumn, yColumn }
+    const config: Record<string, unknown> = { inputs: modelInputCols, output: modelOutputCol }
     if (modelType === "polynomial") config.degree = polyDegree
-    if (modelType === "moving_average") config.window = maWindow
 
     const { error } = await saveModelFit(
       savedDatasetId,
       selectedStudyId === "none" ? null : selectedStudyId,
-      lastEntry.label,
-      lastEntry.fitResult.modelType,
+      lastEntry.label, lastEntry.fitResult.modelType,
       config,
       lastEntry.fitResult.parameters as Record<string, unknown>,
       lastEntry.fitResult.metrics as Record<string, unknown>
     )
     setIsSaving(false)
-    if (error) {
-      setStatusMsg(`Error: ${error}`)
-    } else {
-      setStatusMsg("Model fit saved.")
-      setTimeout(() => setStatusMsg(null), 2500)
-    }
+    if (error) setStatusMsg(`Error: ${error}`)
+    else { setStatusMsg("Model fit saved."); setTimeout(() => setStatusMsg(null), 2500) }
   }
 
-  // ── Export JSON ───────────────────────────────────────────────────────────────
+  // ── Export ────────────────────────────────────────────────────────────────────
 
   function handleExportJson() {
     const lastEntry = fitEntries[fitEntries.length - 1]
@@ -537,8 +540,6 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     downloadBlob(content, `model-fit-${fitResult.modelType}.json`, "application/json")
   }
 
-  // ── Export saved dataset ──────────────────────────────────────────────────────
-
   function handleExportCsv(ds: SavedDataset) {
     downloadBlob(Papa.unparse(ds.data as object[]), `${ds.name}.csv`, "text/csv")
   }
@@ -550,75 +551,62 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     XLSX.writeFile(wb, `${ds.name}.xlsx`)
   }
 
-  // ── Delete saved dataset ──────────────────────────────────────────────────────
-
   async function handleDeleteDataset(id: string) {
     const { error } = await deleteDataset(id)
-    if (error) {
-      setStatusMsg(`Error: ${error}`)
-    } else {
+    if (error) setStatusMsg(`Error: ${error}`)
+    else {
       setSavedDatasets((prev) => prev.filter((d) => d.id !== id))
       if (savedDatasetId === id) setSavedDatasetId(null)
     }
   }
 
-  // ── Toggle / remove fit entries ───────────────────────────────────────────────
-
   function handleToggleEntry(id: string) {
     setFitEntries((prev) => prev.map((e) => (e.id === id ? { ...e, visible: !e.visible } : e)))
   }
-
   function handleRemoveEntry(id: string) {
     setFitEntries((prev) => prev.filter((e) => e.id !== id))
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────────
 
   const lastEntry = fitEntries[fitEntries.length - 1] ?? null
-  const chartXValues = lastEntry?.xValues ?? []
-  const chartYValues = lastEntry?.yValues ?? []
-
-  // Detect whether X column contains timestamps (HH:MM:SS or full datetime strings)
-  const xIsTime = (() => {
-    if (!activeDataset || !xColumn) return false
-    const firstVal = activeDataset.rows[0]?.[xColumn]
-    if (typeof firstVal !== "string") return false
-    return /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.test(firstVal) ||
-           /^\d{4}-\d{2}-\d{2}/.test(firstVal)
-  })()
-
-  // Show save button for derived datasets (merged, or behavior-only from study)
+  const chartXValues = activeDataset && chartXCol
+    ? extractNumericColumn(activeDataset.rows, chartXCol)
+    : []
+  const chartYValues = activeDataset && chartYCol
+    ? extractNumericColumn(activeDataset.rows, chartYCol)
+    : []
+  const xIsTime = activeDataset && chartXCol
+    ? isTimestampColumn(activeDataset.rows, chartXCol)
+    : false
   const showSaveDataset = !!(mergedDataset || (behaviorDataset && !sensorDataset))
+  const isSingleInputModel = SINGLE_INPUT_ONLY.includes(modelType)
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
-      {statusMsg && (
-        <div className="bg-primary/10 border border-primary/30 rounded-md px-4 py-2 text-sm text-primary">
-          {statusMsg}
-        </div>
-      )}
+    <div className="space-y-4">
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* ── Left column ── */}
-        <div className="space-y-4">
+      {/* ── Top: combined data sources ── */}
+      <Card>
+        <CardHeader className="pt-2 pb-0 px-4">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Data Sources
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 px-4 pb-0 -mt-3">
+          <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border">
 
-          {/* Configure */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Configure
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-
-              {/* Behavior data source */}
+            {/* Behavior data */}
+            <div className="space-y-2 pb-1 lg:pb-0 lg:pr-4">
+              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wide">
+                Behavior Data {behaviorDataset && <CheckCircle2 className="h-3 w-3 text-green-500" />}
+              </p>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Behavior Data (Y source)</Label>
+                <Label className="text-xs text-muted-foreground">Micro-Study</Label>
                 <Select value={selectedStudyId} onValueChange={setSelectedStudyId}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select micro-study (optional)" />
-                  </SelectTrigger>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select study…" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— None —</SelectItem>
                     {studies.map((s) => {
@@ -626,352 +614,309 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
                       return (
                         <SelectItem key={s.study_id} value={s.study_id}>
                           <span className="truncate max-w-[240px]">
-                            {title.length > 40 ? title.slice(0, 40) + "…" : title}
+                            {title.length > 45 ? title.slice(0, 45) + "…" : title}
                           </span>
                         </SelectItem>
                       )
                     })}
                   </SelectContent>
                 </Select>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={handleLoadFromStudy}
-                    disabled={selectedStudyId === "none" || isLoadingStudy}
-                  >
-                    {isLoadingStudy ? <Spinner className="h-4 w-4 mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-                    Load behavior data
-                  </Button>
-                  {behaviorDataset && (
-                    <span className="flex items-center gap-1 text-xs text-green-500 shrink-0">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      {behaviorDataset.rows.length} rows
-                    </span>
-                  )}
-                </div>
               </div>
-
-              <div className="border-t border-border" />
-
-              {/* Column selects */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    X-Axis {mergedDataset ? "(sensor)" : "(time / index)"}
-                  </Label>
-                  <Select value={xColumn} onValueChange={setXColumn} disabled={xColumnOptions.length === 0}>
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue placeholder="Select column" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {xColumnOptions.map((col) => (
-                        <SelectItem key={col} value={col}>{col}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">
-                    Y-Axis {mergedDataset ? "(behavior)" : "(value)"}
-                  </Label>
-                  <Select value={yColumn} onValueChange={setYColumn} disabled={yColumnOptions.length === 0}>
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue placeholder="Select column" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {yColumnOptions.map((col) => (
-                        <SelectItem key={col} value={col}>{col}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Model type */}
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Model Type</Label>
-                <Select value={modelSelectValue} onValueChange={(v) => setModelSelectValue(v as ModelSelectValue)}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {MODEL_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Polynomial degree */}
-              {modelType === "polynomial" && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Polynomial Degree</Label>
-                  <Select value={String(polyDegree)} onValueChange={(v) => setPolyDegree(Number(v))}>
-                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {[2, 3, 4].map((d) => (
-                        <SelectItem key={d} value={String(d)}>Degree {d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Moving average window */}
-              {modelType === "moving_average" && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Window Size</Label>
-                  <Input
-                    type="number" min={2} max={200} value={maWindow}
-                    onChange={(e) => setMaWindow(Math.max(2, Number(e.target.value)))}
-                    className="h-8 text-sm"
-                  />
-                </div>
-              )}
-
-              {/* NN config */}
-              {NN_MODEL_TYPES.includes(modelType) && (
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: "Epochs", key: "epochs" as const, min: 10, max: 1000 },
-                    { label: "Hidden Units", key: "hiddenUnits" as const, min: 4, max: 256 },
-                    { label: "Window Size", key: "windowSize" as const, min: 2, max: 64 },
-                    { label: "Layers (MLP)", key: "numLayers" as const, min: 1, max: 3 },
-                  ].map(({ label, key, min, max }) => (
-                    <div key={key} className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">{label}</Label>
-                      <Input
-                        type="number" min={min} max={max} value={nnConfig[key]}
-                        onChange={(e) => setNNConfig((c) => ({ ...c, [key]: Number(e.target.value) }))}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Training progress */}
-              {trainingProgress && (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Epoch {trainingProgress.epoch} / {trainingProgress.totalEpochs}</span>
-                    <span>Loss: {trainingProgress.loss.toExponential(3)}</span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all"
-                      style={{ width: `${(trainingProgress.epoch / trainingProgress.totalEpochs) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Fit button */}
-              <Button
-                className="w-full"
-                onClick={handleFitModel}
-                disabled={!activeDataset || !xColumn || !yColumn || isFitting}
-              >
-                {isFitting ? <Spinner className="h-4 w-4 mr-2" /> : <BrainCircuit className="h-4 w-4 mr-2" />}
-                Fit Model
+              <Button variant="outline" size="sm" className="w-full" onClick={handleLoadFromStudy}
+                disabled={selectedStudyId === "none" || isLoadingStudy}>
+                {isLoadingStudy ? <Spinner className="h-4 w-4 mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+                Load behavior data
               </Button>
-            </CardContent>
-          </Card>
-
-          {/* Dataset */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                Sensor Data (X source)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <DatasetUploader onDataParsed={handleDataParsed} />
-
-              {sensorDataset && (
-                <div className="flex items-center gap-2 text-xs text-green-500">
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{sensorDataset.filename}</span>
-                  <span className="shrink-0 text-muted-foreground">· {sensorDataset.rows.length} rows</span>
+              {behaviorDataset && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {behaviorDataset.columns.map((col) => (
+                      <span key={col} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground border border-border">{col}</span>
+                    ))}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="text-xs w-full border-collapse">
+                      <thead>
+                        <tr>
+                          {behaviorDataset.columns.slice(0, 6).map((col) => (
+                            <th key={col} className="text-left px-2 py-1 border-b border-border text-muted-foreground font-medium whitespace-nowrap">{col}</th>
+                          ))}
+                          {behaviorDataset.columns.length > 6 && <th className="text-left px-2 py-1 border-b border-border text-muted-foreground font-medium">+{behaviorDataset.columns.length - 6} more</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {behaviorDataset.rows.slice(0, 3).map((row, i) => (
+                          <tr key={i} className="border-b border-border/50 last:border-0">
+                            {behaviorDataset.columns.slice(0, 6).map((col) => (
+                              <td key={col} className="px-2 py-1 text-foreground/80 whitespace-nowrap max-w-[120px] truncate">{String(row[col] ?? "")}</td>
+                            ))}
+                            {behaviorDataset.columns.length > 6 && <td className="px-2 py-1 text-muted-foreground">…</td>}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {behaviorDataset.rows.length > 3 && (
+                      <p className="text-xs text-muted-foreground mt-1 px-2">Showing 3 of {behaviorDataset.rows.length.toLocaleString()} rows</p>
+                    )}
+                  </div>
                 </div>
               )}
+            </div>
 
-              {/* Merge section — shown when both sources are loaded */}
+            {/* Sensor data */}
+            <div className="space-y-2 pb-1 lg:pb-0 lg:px-4">
+              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wide">
+                Sensor Data {sensorDataset && <CheckCircle2 className="h-3 w-3 text-green-500" />}
+              </p>
+              <DatasetUploader onDataParsed={handleDataParsed} />
+              {sensorDataset && (
+                <p className="text-xs text-muted-foreground">
+                  <span className="text-green-500 font-medium">{sensorDataset.rows.length} rows</span>
+                  {" · "}{sensorDataset.columns.slice(1).join(", ")}
+                </p>
+              )}
               {canMerge && (
-                <div className="space-y-3 pt-2 border-t border-border">
-                  <p className="text-xs text-muted-foreground">
-                    Both sources loaded. Merge by nearest timestamp to pair sensor readings with behavior observations.
-                  </p>
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground">Merge by nearest timestamp to pair readings with observations.</p>
                   <div className="flex items-center gap-2">
                     <Label className="text-xs text-muted-foreground shrink-0">Tolerance (s)</Label>
-                    <Input
-                      type="number" min={1} max={300} value={toleranceSec}
+                    <Input type="number" min={1} max={300} value={toleranceSec}
                       onChange={(e) => setToleranceSec(Math.max(1, Number(e.target.value)))}
-                      className="h-8 text-sm w-20"
-                    />
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      onClick={handleMerge}
-                      disabled={isMerging}
-                    >
+                      className="h-8 text-sm w-20" />
+                    <Button size="sm" className="flex-1" onClick={handleMerge} disabled={isMerging}>
                       {isMerging ? <Spinner className="h-4 w-4 mr-2" /> : <Merge className="h-4 w-4 mr-2" />}
                       Merge
                     </Button>
                   </div>
-
-                  {mergedDataset && (
-                    <div className="space-y-2 pt-1">
-                      <div className="flex items-center gap-2 text-xs text-green-500">
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                        <span>{mergedDataset.rows.length} matched pairs</span>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">Dataset Name</Label>
-                        <Input
-                          value={datasetName}
-                          onChange={(e) => setDatasetName(e.target.value)}
-                          placeholder="Name this dataset…"
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <Button
-                        variant="outline" size="sm" className="w-full"
-                        onClick={handleSaveDataset}
-                        disabled={isSavingDataset}
-                      >
-                        {isSavingDataset ? <Spinner className="h-4 w-4 mr-2" /> : <Database className="h-4 w-4 mr-2" />}
-                        {savedDatasetId ? "Dataset Saved" : "Save Merged Dataset"}
-                      </Button>
-                    </div>
-                  )}
                 </div>
               )}
+            </div>
 
-              {/* Behavior-only save (no sensor data) */}
-              {showSaveDataset && !canMerge && (
-                <div className="space-y-2 pt-2 border-t border-border">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Dataset Name</Label>
-                    <Input
-                      value={datasetName}
-                      onChange={(e) => setDatasetName(e.target.value)}
-                      placeholder="Name this dataset…"
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <Button
-                    variant="outline" size="sm" className="w-full"
-                    onClick={handleSaveDataset}
-                    disabled={isSavingDataset}
-                  >
+            {/* Saved datasets */}
+            <div className="space-y-2 pb-1 lg:pb-0 lg:pl-4">
+              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wide">
+                Saved Datasets
+                {savedDatasets.length > 0 && <Badge variant="secondary" className="text-xs">{savedDatasets.length}</Badge>}
+              </p>
+              {showSaveDataset && (
+                <div className="space-y-2 pb-2 border-b border-border">
+                  <Input value={datasetName} onChange={(e) => setDatasetName(e.target.value)}
+                    placeholder="Dataset name…" className="h-8 text-sm" />
+                  <Button variant="outline" size="sm" className="w-full" onClick={handleSaveDataset} disabled={isSavingDataset}>
                     {isSavingDataset ? <Spinner className="h-4 w-4 mr-2" /> : <Database className="h-4 w-4 mr-2" />}
-                    {savedDatasetId ? "Dataset Saved" : "Save Dataset"}
+                    {savedDatasetId ? "Saved" : "Save Dataset"}
                   </Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Saved datasets */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FolderOpen className="h-4 w-4" />
-                Saved Datasets
-                {savedDatasets.length > 0 && (
-                  <Badge variant="secondary" className="ml-auto text-xs">{savedDatasets.length}</Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
               {savedDatasets.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No datasets saved yet.</p>
               ) : (
-                <ScrollArea className="max-h-64">
+                <ScrollArea className="max-h-56">
                   <div className="space-y-2">
                     {savedDatasets.map((ds) => (
-                      <div
-                        key={ds.id}
-                        className={cn(
-                          "flex items-start gap-2 p-2.5 rounded-md border border-border bg-card hover:bg-muted/30 transition-colors",
-                          savedDatasetId === ds.id && "border-primary/40 bg-primary/5"
-                        )}
-                      >
+                      <div key={ds.id} className={cn(
+                        "flex items-start gap-2 p-2.5 rounded-md border border-border bg-card hover:bg-muted/30 transition-colors",
+                        savedDatasetId === ds.id && "border-primary/40 bg-primary/5"
+                      )}>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{ds.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {ds.columns.length} cols · {(ds.data as unknown[]).length.toLocaleString()} rows
-                          </p>
+                          <p className="text-sm font-medium truncate">{ds.name}</p>
+                          <p className="text-xs text-muted-foreground">{ds.columns.length} cols · {(ds.data as unknown[]).length.toLocaleString()} rows</p>
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Load" onClick={() => loadSavedDataset(ds)}>
-                            <FolderOpen className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Export CSV" onClick={() => handleExportCsv(ds)}>
-                            <FileDown className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Export Excel" onClick={() => handleExportExcel(ds)}>
-                            <FileDown className="h-3.5 w-3.5 text-green-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" title="Delete" onClick={() => handleDeleteDataset(ds.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Load" onClick={() => loadSavedDataset(ds)}><FolderOpen className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="CSV" onClick={() => handleExportCsv(ds)}><FileDown className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Excel" onClick={() => handleExportExcel(ds)}><FileDown className="h-3.5 w-3.5 text-green-500" /></Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" title="Delete" onClick={() => handleDeleteDataset(ds.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
               )}
-            </CardContent>
-          </Card>
-        </div>
+            </div>
 
-        {/* ── Right column ── */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Chart</CardTitle>
-              {fitEntries.length > 0 && (
-                <button
-                  onClick={() => setFitEntries([])}
-                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  Clear all
-                </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Middle: chart (wide) | model builder ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+        {/* Chart — spans 2 cols */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart2 className="h-4 w-4" />
+              Chart
+            </CardTitle>
+            {fitEntries.length > 0 && (
+              <button onClick={() => setFitEntries([])} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
+                Clear all
+              </button>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">X axis</Label>
+                <Select value={chartXCol} onValueChange={setChartXCol} disabled={allCols.length === 0}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectContent>
+                    {allCols.map((col) => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Y axis</Label>
+                <Select value={chartYCol} onValueChange={setChartYCol} disabled={allCols.length === 0}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectContent>
+                    {allCols.map((col) => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <ModelChart
+              xValues={chartXValues}
+              yValues={chartYValues}
+              fitEntries={fitEntries}
+              onToggle={handleToggleEntry}
+              onRemove={handleRemoveEntry}
+              xIsTime={xIsTime}
+              xLabel={chartXCol || undefined}
+              yLabel={chartYCol || undefined}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Model builder */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sliders className="h-4 w-4" />
+              Model Builder
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Inputs (X){isSingleInputModel && numericCols.length > 1 && (
+                  <span className="ml-1 text-muted-foreground/60">· single input only</span>
+                )}
+              </Label>
+              {numericCols.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">Load data to see columns.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border p-2.5 bg-muted/10">
+                  {numericCols.map((col) => (
+                    <label key={col} className={cn(
+                      "flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-muted/30 transition-colors",
+                      modelInputCols.includes(col) ? "text-foreground" : "text-muted-foreground"
+                    )}>
+                      <Checkbox checked={modelInputCols.includes(col)} onCheckedChange={() => toggleInputCol(col)} />
+                      <span className="truncate">{col}</span>
+                    </label>
+                  ))}
+                </div>
               )}
-            </CardHeader>
-            <CardContent>
-              <ModelChart
-                xValues={chartXValues}
-                yValues={chartYValues}
-                fitEntries={fitEntries}
-                onToggle={handleToggleEntry}
-                onRemove={handleRemoveEntry}
-                xIsTime={xIsTime}
-                xLabel={xColumn || undefined}
-                yLabel={yColumn || undefined}
-              />
-            </CardContent>
-          </Card>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Output (Y)</Label>
+              <Select value={modelOutputCol} onValueChange={setModelOutputCol} disabled={numericCols.length === 0}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select output column…" /></SelectTrigger>
+                <SelectContent>
+                  {numericCols.map((col) => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="border-t border-border" />
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Model Type</Label>
+              <Select value={modelSelectValue} onValueChange={(v) => {
+                const newModel = v as ModelSelectValue
+                setModelSelectValue(newModel)
+                if (SINGLE_INPUT_ONLY.includes(newModel as ModelType) && modelInputCols.length > 1) {
+                  setModelInputCols([modelInputCols[0]])
+                }
+              }}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {MODEL_OPTIONS.map((opt) => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {modelType === "polynomial" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Degree</Label>
+                <Select value={String(polyDegree)} onValueChange={(v) => setPolyDegree(Number(v))}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[2, 3, 4, 5, 6].map((d) => <SelectItem key={d} value={String(d)}>Degree {d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {NN_MODEL_TYPES.includes(modelType) && (
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { label: "Epochs", key: "epochs" as const, min: 10, max: 1000 },
+                  { label: "Learning Rate", key: "learningRate" as const, min: 0.0001, max: 0.1, step: 0.0001 },
+                  { label: "Hidden Units", key: "hiddenUnits" as const, min: 4, max: 256 },
+                  { label: "Window Size", key: "windowSize" as const, min: 2, max: 64 },
+                  ...(modelType === "mlp" ? [{ label: "Layers", key: "numLayers" as const, min: 1, max: 3 }] : []),
+                ] as { label: string; key: keyof NNConfig; min: number; max: number; step?: number }[]).map(({ label, key, min, max, step }) => (
+                  <div key={key} className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">{label}</Label>
+                    <Input type="number" min={min} max={max} step={step ?? 1} value={nnConfig[key]}
+                      onChange={(e) => setNNConfig((c) => ({ ...c, [key]: Number(e.target.value) }))}
+                      className="h-8 text-sm" />
+                  </div>
+                ))}
+              </div>
+            )}
+            {trainingProgress && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Epoch {trainingProgress.epoch} / {trainingProgress.totalEpochs}</span>
+                  <span>Loss: {trainingProgress.loss.toExponential(3)}</span>
+                </div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary transition-all"
+                    style={{ width: `${(trainingProgress.epoch / trainingProgress.totalEpochs) * 100}%` }} />
+                </div>
+              </div>
+            )}
+            <Button className="w-full" onClick={handleFitModel}
+              disabled={!activeDataset || modelInputCols.length === 0 || !modelOutputCol || isFitting}>
+              {isFitting ? <Spinner className="h-4 w-4 mr-2" /> : <BrainCircuit className="h-4 w-4 mr-2" />}
+              Fit Model
+            </Button>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Parameters &amp; Metrics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ParametersPanel
-                fitResult={lastEntry?.fitResult ?? null}
-                onSave={handleSaveModelFit}
-                onExportJson={handleExportJson}
-                isSaving={isSaving}
-              />
-            </CardContent>
-          </Card>
-        </div>
       </div>
+
+      {/* ── Bottom: Parameters & Metrics ── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Parameters &amp; Metrics</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ParametersPanel
+            fitResult={lastEntry?.fitResult ?? null}
+            onSave={handleSaveModelFit}
+            onExportJson={handleExportJson}
+            isSaving={isSaving}
+          />
+        </CardContent>
+      </Card>
+
+      {statusMsg && (
+        <div className="bg-primary/10 border border-primary/30 rounded-md px-4 py-2 text-sm text-primary">
+          {statusMsg}
+        </div>
+      )}
+
     </div>
   )
 }

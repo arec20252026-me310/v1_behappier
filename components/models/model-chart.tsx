@@ -21,6 +21,10 @@ export interface FitEntry {
   xValues: number[]
   yValues: number[]
   fitResult: FitResult
+  inputCount: number
+  inputCols: string[]
+  outputCol: string
+  inputValues: Record<string, number[]>  // col name → values at valid indices
 }
 
 interface ModelChartProps {
@@ -47,15 +51,13 @@ export const FIT_COLORS = [
   "#06b6d4",
 ]
 
-function formatSeconds(s: number): string {
+function secondsToTimestamp(s: number): string {
   if (!isFinite(s)) return ""
   const absS = Math.abs(s)
   const h = Math.floor(absS / 3600)
   const m = Math.floor((absS % 3600) / 60)
   const sec = Math.floor(absS % 60)
-  if (h > 0) return `${h}h${String(m).padStart(2, "0")}m`
-  if (m > 0) return `${m}m${String(sec).padStart(2, "0")}s`
-  return `${sec}s`
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
 }
 
 const TOOLTIP_STYLE: React.CSSProperties = {
@@ -88,14 +90,35 @@ export function ModelChart({
   const xMin = Math.min(...xValues)
   const xMax = Math.max(...xValues)
   const xTickFormatter = xIsTime
-    ? (v: number) => formatSeconds(v - xMin)
-    : (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))
+    ? (v: unknown) => secondsToTimestamp(Number(v))
+    : (v: unknown) => {
+        const n = Number(v)
+        if (!isFinite(n)) return ""
+        return Number.isInteger(n) ? String(n) : n.toFixed(1)
+      }
 
   const scatterData = xValues.map((x, i) => ({ x, raw: yValues[i] }))
 
-  // Build per-entry line data
+  // Multi-input fits: project onto chart X axis only if xLabel is one of the inputs
+  const entryScatters = fitEntries
+    .filter((e) => e.visible && e.inputCount > 1 && !!xLabel && e.inputCols.includes(xLabel) && !!yLabel && e.outputCol === yLabel && e.fitResult.predictedY.length > 0)
+    .map((entry) => {
+      const projX = (xLabel ? entry.inputValues[xLabel] : undefined) ?? entry.xValues
+      return {
+        entry,
+        pts: projX.map((x, i) => ({ x, [entry.id]: entry.fitResult.predictedY[i] })),
+      }
+    })
+
+  // Single-input fits: smooth line — only when both axes match the model's input/output
   const entryLines = fitEntries
-    .filter((e) => e.visible && e.fitResult.predictedY.length > 0)
+    .filter((e) =>
+      e.visible &&
+      e.inputCount === 1 &&
+      e.fitResult.predictedY.length > 0 &&
+      !!xLabel && e.inputCols[0] === xLabel &&
+      !!yLabel && e.outputCol === yLabel
+    )
     .map((entry) => {
       const step = Math.max(1, Math.floor(entry.xValues.length / 200))
       const pts: { x: number; [key: string]: number }[] = []
@@ -110,13 +133,33 @@ export function ModelChart({
       return { entry, pts }
     })
 
-  // Unified domain across all x values
-  const allX = [
+  // Domain derived only from what is actually rendered — autoscales when axis selection changes
+  const renderedX = [
     ...xValues,
-    ...fitEntries.flatMap((e) => e.xValues),
-  ]
-  const domainMin = Math.min(...allX)
-  const domainMax = Math.max(...allX)
+    ...entryLines.flatMap(({ pts }) => pts.map((p) => p.x)),
+    ...entryScatters.flatMap(({ pts }) => pts.map((p) => p.x)),
+  ].filter(isFinite)
+  const renderedY = [
+    ...yValues,
+    ...entryLines.flatMap(({ entry }) => entry.fitResult.predictedY),
+    ...entryScatters.flatMap(({ entry }) => entry.fitResult.predictedY),
+  ].filter(isFinite)
+
+  function paddedDomain(vals: number[]): [number, number] {
+    if (vals.length === 0) return [0, 1]
+    const lo = Math.min(...vals)
+    const hi = Math.max(...vals)
+    const pad = (hi - lo) * 0.05 || Math.abs(lo) * 0.05 || 1
+    return [lo - pad, hi + pad]
+  }
+
+  const [xDomainMin, xDomainMax] = paddedDomain(renderedX)
+  const [yDomainMin, yDomainMax] = paddedDomain(renderedY)
+
+  const TICK_COUNT = 6
+  const xTicks = Array.from({ length: TICK_COUNT }, (_, i) =>
+    xDomainMin + (i / (TICK_COUNT - 1)) * (xDomainMax - xDomainMin)
+  )
 
   return (
     <div className="space-y-3">
@@ -127,9 +170,9 @@ export function ModelChart({
             <XAxis
               dataKey="x"
               type="number"
-              domain={[domainMin, domainMax]}
+              domain={[xDomainMin, xDomainMax]}
               scale="linear"
-              tickCount={6}
+              ticks={xTicks}
               tickFormatter={xTickFormatter}
               tick={{ fill: "#9ca3af", fontSize: 10 }}
               axisLine={{ stroke: "#9ca3af" }}
@@ -142,6 +185,7 @@ export function ModelChart({
             />
             <YAxis
               type="number"
+              domain={[yDomainMin, yDomainMax]}
               tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))}
               tick={{ fill: "#9ca3af", fontSize: 10 }}
               axisLine={{ stroke: "#9ca3af" }}
@@ -162,13 +206,13 @@ export function ModelChart({
                   <div style={TOOLTIP_STYLE}>
                     <p style={{ color: "#9ca3af", marginBottom: 4 }}>
                       {xIsTime
-                        ? `T+${formatSeconds((x ?? 0) - xMin)}`
+                        ? secondsToTimestamp(x ?? 0)
                         : `${xLabel ?? "X"}: ${Number.isInteger(x) ? x : (x ?? 0).toFixed(2)}`}
                     </p>
                     {point.raw !== undefined && (
                       <p style={{ color: DATA_COLOR }}>Data: {point.raw.toFixed(4)}</p>
                     )}
-                    {entryLines.map(({ entry }) =>
+                    {[...entryLines, ...entryScatters].map(({ entry }) =>
                       point[entry.id] !== undefined ? (
                         <p key={entry.id} style={{ color: entry.color }}>
                           {entry.label}: {point[entry.id].toFixed(4)}
@@ -190,7 +234,7 @@ export function ModelChart({
               r={3}
             />
 
-            {/* One line per fit entry */}
+            {/* Single-input fits: smooth line */}
             {entryLines.map(({ entry, pts }) => (
               <Line
                 key={entry.id}
@@ -204,6 +248,21 @@ export function ModelChart({
                 isAnimationActive={false}
               />
             ))}
+
+            {/* Multi-input fits: projected scatter dots at chart-X positions */}
+            {entryScatters.map(({ entry, pts }) => (
+              <Scatter
+                key={entry.id}
+                name={entry.label}
+                data={pts}
+                dataKey={entry.id}
+                fill={entry.color}
+                opacity={0.7}
+                r={4}
+                isAnimationActive={false}
+              />
+            ))}
+
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -222,29 +281,43 @@ export function ModelChart({
 
           {fitEntries.map((entry) => {
             const r2 = entry.fitResult.metrics.r2
+            // Axis match is independent of visibility toggle
+            const axisMatches = entry.inputCount === 1
+              ? (!!xLabel && entry.inputCols[0] === xLabel && !!yLabel && entry.outputCol === yLabel)
+              : (!!xLabel && entry.inputCols.includes(xLabel) && !!yLabel && entry.outputCol === yLabel)
+            const axisMismatch = !axisMatches
+            const effectivelyVisible = entry.visible && axisMatches
+
             return (
-              <div key={entry.id} className="flex items-center gap-2 px-1">
+              <div
+                key={entry.id}
+                className="flex items-center gap-2 px-1"
+                title={axisMismatch ? "Not shown — select matching X and Y axes" : undefined}
+              >
                 <button
-                  onClick={() => onToggle(entry.id)}
-                  className="flex items-center gap-2 flex-1 min-w-0 text-left group"
+                  onClick={() => !axisMismatch && onToggle(entry.id)}
+                  disabled={axisMismatch}
+                  className="flex items-center gap-2 flex-1 min-w-0 text-left group disabled:cursor-not-allowed"
                 >
                   <span
                     className="inline-block w-3 h-3 rounded-sm shrink-0 transition-opacity"
                     style={{
                       background: entry.color,
-                      opacity: entry.visible ? 1 : 0.25,
-                      outline: entry.visible ? `2px solid ${entry.color}` : "2px solid transparent",
+                      opacity: effectivelyVisible ? 1 : 0.25,
+                      outline: effectivelyVisible ? `2px solid ${entry.color}` : "2px solid transparent",
                       outlineOffset: 1,
                     }}
                   />
                   <span
                     className="text-xs truncate transition-opacity"
-                    style={{ color: entry.visible ? entry.color : "#6b7280" }}
+                    style={{ color: effectivelyVisible ? entry.color : "#6b7280" }}
                   >
                     {entry.label}
                   </span>
-                  <span className="text-xs text-muted-foreground shrink-0 ml-auto pr-2">
-                    R²={isFinite(r2) ? r2.toFixed(3) : "—"}
+                  <span className="text-xs shrink-0 ml-auto pr-2" style={{ color: axisMismatch ? "#6b7280" : undefined }}>
+                    {axisMismatch
+                      ? "axis mismatch"
+                      : `R²=${isFinite(r2) ? r2.toFixed(3) : "—"}`}
                   </span>
                 </button>
                 <button

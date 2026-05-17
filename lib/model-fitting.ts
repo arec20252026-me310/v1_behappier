@@ -12,7 +12,7 @@ export type ModelType =
 
 export interface FitResult {
   modelType: ModelType
-  parameters: Record<string, number | number[] | string | number[][] | Record<string, number>>
+  parameters: Record<string, unknown>
   metrics: { r2: number; rmse: number; mse: number }
   predictedY: number[]
   trainingLoss?: number[]
@@ -191,6 +191,48 @@ export function fitMovingAverage(x: number[], y: number[], window: number): FitR
     modelType: 'moving_average',
     parameters: { window },
     metrics,
+    predictedY,
+  }
+}
+
+// ── Multiple linear regression (OLS normal equations) ────────────────────────
+
+export function fitMultipleLinear(
+  Xs: number[][],  // [n_samples][n_features]
+  y: number[],
+  inputNames: string[]
+): FitResult {
+  const n = y.length
+  const p = Xs[0].length + 1  // +1 for intercept column
+
+  // Augment with intercept column: Xa[i] = [1, ...Xs[i]]
+  const Xa = Xs.map(row => [1, ...row])
+
+  // Normal equations: (Xa^T Xa) beta = Xa^T y
+  const A: number[][] = Array.from({ length: p }, (_, i) =>
+    Array.from({ length: p }, (_, j) =>
+      Xa.reduce((s, row) => s + row[i] * row[j], 0)
+    )
+  )
+  const b: number[] = Array.from({ length: p }, (_, i) =>
+    Xa.reduce((s, row, k) => s + row[i] * y[k], 0)
+  )
+
+  const beta = gaussianElimination(A, b)
+  const intercept = beta[0]
+  const slopes = beta.slice(1)
+
+  const predictedY = Xs.map(row =>
+    intercept + row.reduce((s, x, j) => s + slopes[j] * x, 0)
+  )
+
+  const parameters: Record<string, number> = { intercept }
+  inputNames.forEach((name, j) => { parameters[`slope_${name}`] = slopes[j] })
+
+  return {
+    modelType: 'linear',
+    parameters,
+    metrics: computeMetrics(y, predictedY),
     predictedY,
   }
 }

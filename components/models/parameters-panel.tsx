@@ -1,5 +1,6 @@
 "use client"
 
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 import type { FitResult } from "@/lib/model-fitting"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,7 +18,10 @@ const MODEL_LABELS: Record<string, string> = {
   linear: "Linear Regression",
   polynomial: "Polynomial",
   exponential: "Exponential",
-  moving_average: "Moving Average",
+  mlp: "MLP",
+  cnn: "CNN",
+  rnn: "RNN",
+  lstm: "LSTM",
 }
 
 function formatSigFigs(value: number, sigFigs = 6): string {
@@ -29,9 +33,11 @@ function formatSigFigs(value: number, sigFigs = 6): string {
 function flattenParameters(params: Record<string, unknown>): { name: string; value: string }[] {
   const rows: { name: string; value: string }[] = []
   for (const [key, val] of Object.entries(params)) {
-    if (key === "weights" || key === "weightShapes" || key === "architecture" || key === "config" || key === "normalization") {
-      // Skip NN internals — too large to display in table
-      rows.push({ name: key, value: typeof val === "string" ? val : "[serialized]" })
+    if (key === "weights" || key === "weightShapes" || key === "config" || key === "normalization") {
+      continue // skip bulky NN internals entirely
+    }
+    if (key === "architecture") {
+      rows.push({ name: "architecture", value: typeof val === "string" ? val : "[serialized]" })
     } else if (Array.isArray(val)) {
       const arr = val as number[]
       if (arr.length <= 8) {
@@ -61,6 +67,8 @@ export function ParametersPanel({ fitResult, onSave, onExportJson, isSaving }: P
 
   const paramRows = flattenParameters(fitResult.parameters)
   const { r2, rmse, mse } = fitResult.metrics
+  const trainingLoss = fitResult.trainingLoss ?? []
+  const lossData = trainingLoss.map((loss, i) => ({ epoch: i + 1, loss }))
 
   return (
     <div className="space-y-4">
@@ -82,6 +90,59 @@ export function ParametersPanel({ fitResult, onSave, onExportJson, isSaving }: P
           </div>
         ))}
       </div>
+
+      {/* Training loss curve */}
+      {lossData.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">Training Loss</p>
+          <div style={{ height: 100 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={lossData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                <XAxis
+                  dataKey="epoch"
+                  tick={{ fill: "#6b7280", fontSize: 9 }}
+                  axisLine={{ stroke: "#374151" }}
+                  tickLine={false}
+                  tickCount={5}
+                  label={{ value: "Epoch", position: "insideBottom", offset: -2, fill: "#6b7280", fontSize: 9 }}
+                />
+                <YAxis
+                  tick={{ fill: "#6b7280", fontSize: 9 }}
+                  axisLine={{ stroke: "#374151" }}
+                  tickLine={false}
+                  width={40}
+                  tickFormatter={(v: number) => v.toExponential(1)}
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null
+                    const { epoch, loss } = payload[0].payload as { epoch: number; loss: number }
+                    return (
+                      <div style={{
+                        background: "oklch(0.17 0.01 260)",
+                        border: "1px solid oklch(0.28 0.01 260)",
+                        borderRadius: "0.375rem",
+                        padding: "4px 8px",
+                        fontSize: 10,
+                        color: "oklch(0.95 0 0)",
+                      }}>
+                        Epoch {epoch}: {loss.toExponential(3)}
+                      </div>
+                    )
+                  }}
+                />
+                <Line
+                  dataKey="loss"
+                  stroke="#8b5cf6"
+                  strokeWidth={1.5}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Parameters table */}
       <div className="border border-border rounded-md overflow-hidden">

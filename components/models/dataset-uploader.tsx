@@ -3,8 +3,7 @@
 import React, { useRef, useState } from "react"
 import Papa from "papaparse"
 import * as XLSX from "xlsx"
-import { Button } from "@/components/ui/button"
-import { Upload, FileSpreadsheet, X } from "lucide-react"
+import { Upload, FileSpreadsheet } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export interface ParsedDataset {
@@ -91,35 +90,47 @@ export function DatasetUploader({ onDataParsed }: DatasetUploaderProps) {
 
   return (
     <div className="space-y-3">
-      {/* Drop zone */}
-      <div
-        className={cn(
-          "relative border-2 border-dashed rounded-lg p-6 text-center transition-colors",
-          isDragging
-            ? "border-primary bg-primary/5"
-            : "border-border hover:border-muted-foreground/50"
-        )}
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          className="hidden"
-          onChange={handleInputChange}
-        />
-        <FileSpreadsheet className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-        <p className="text-sm text-muted-foreground mb-3">
-          Drag and drop a file here, or click to browse
-        </p>
-        <p className="text-xs text-muted-foreground mb-3">Supports .csv, .xlsx, .xls</p>
-        <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
-          <Upload className="h-4 w-4 mr-2" />
-          Choose File
-        </Button>
-      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv,.xlsx,.xls"
+        className="hidden"
+        onChange={handleInputChange}
+      />
+
+      {parsed ? (
+        /* Compact single row when file already loaded */
+        <div
+          className={cn(
+            "flex items-center gap-2 border border-dashed rounded-md px-3 py-1.5 cursor-pointer transition-colors",
+            isDragging ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"
+          )}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+        >
+          <FileSpreadsheet className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground flex-1 truncate">{parsed.filename}</span>
+          <Upload className="h-3 w-3 shrink-0 text-muted-foreground" />
+        </div>
+      ) : (
+        /* Taller drop zone when no file loaded */
+        <div
+          className={cn(
+            "flex flex-col items-center justify-center gap-1.5 border border-dashed rounded-md px-3 py-5 cursor-pointer transition-colors text-center",
+            isDragging ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"
+          )}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+        >
+          <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">Drop a file or click to browse</span>
+          <span className="text-xs text-muted-foreground/50">.csv, .xlsx, .xls</span>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -130,26 +141,10 @@ export function DatasetUploader({ onDataParsed }: DatasetUploaderProps) {
 
       {/* Preview */}
       {parsed && (
-        <div className="bg-card border border-border rounded-lg p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-sm font-medium text-foreground truncate">{parsed.filename}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {parsed.rows.length.toLocaleString()} rows · {parsed.columns.length} columns
-              </p>
-            </div>
-            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={clearDataset}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-
-          {/* Column pills */}
+        <div className="space-y-2">
           <div className="flex flex-wrap gap-1.5">
             {parsed.columns.map((col) => (
-              <span
-                key={col}
-                className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground border border-border"
-              >
+              <span key={col} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground border border-border">
                 {col}
               </span>
             ))}
@@ -177,7 +172,7 @@ export function DatasetUploader({ onDataParsed }: DatasetUploaderProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {parsed.rows.slice(0, 5).map((row, i) => (
+                  {parsed.rows.slice(0, 3).map((row, i) => (
                     <tr key={i} className="border-b border-border/50 last:border-0">
                       {parsed.columns.slice(0, 6).map((col) => (
                         <td key={col} className="px-2 py-1 text-foreground/80 whitespace-nowrap max-w-[120px] truncate">
@@ -189,9 +184,9 @@ export function DatasetUploader({ onDataParsed }: DatasetUploaderProps) {
                   ))}
                 </tbody>
               </table>
-              {parsed.rows.length > 5 && (
+              {parsed.rows.length > 3 && (
                 <p className="text-xs text-muted-foreground mt-1 px-2">
-                  Showing 5 of {parsed.rows.length.toLocaleString()} rows
+                  Showing 3 of {parsed.rows.length.toLocaleString()} rows
                 </p>
               )}
             </div>
@@ -201,3 +196,4 @@ export function DatasetUploader({ onDataParsed }: DatasetUploaderProps) {
     </div>
   )
 }
+
