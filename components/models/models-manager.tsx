@@ -162,6 +162,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   const [activeDataset, setActiveDataset] = useState<ParsedDataset | null>(null)
   const [savedDatasetId, setSavedDatasetId] = useState<string | null>(null)
   const [datasetName, setDatasetName] = useState("")
+  const [dataSource, setDataSource] = useState<"upload" | "study" | null>(null)
 
   // Config state
   const [selectedStudyId, setSelectedStudyId] = useState<string>("none")
@@ -254,6 +255,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
 
       setActiveDataset(parsed)
       setSavedDatasetId(null)
+      setDataSource("study")
       setDatasetName(parsed.filename)
       setXColumn("timestamp")
       setYColumn(seriesNames[0] ?? "")
@@ -271,8 +273,8 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   const handleDataParsed = useCallback((dataset: ParsedDataset) => {
     setActiveDataset(dataset)
     setSavedDatasetId(null)
+    setDataSource("upload")
     setDatasetName(dataset.filename.replace(/\.[^.]+$/, ""))
-    // Auto-select first two columns
     if (dataset.columns.length >= 1) setXColumn(dataset.columns[0])
     if (dataset.columns.length >= 2) setYColumn(dataset.columns[1])
   }, [])
@@ -547,49 +549,8 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* ── Left column: upload + config ── */}
+        {/* ── Left column: config + upload ── */}
         <div className="space-y-4">
-          {/* Upload */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                Dataset
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <DatasetUploader onDataParsed={handleDataParsed} />
-
-              {activeDataset && (
-                <div className="space-y-3 pt-1">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Dataset Name</Label>
-                    <Input
-                      value={datasetName}
-                      onChange={(e) => setDatasetName(e.target.value)}
-                      placeholder="Name this dataset…"
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={handleSaveDataset}
-                    disabled={isSavingDataset}
-                  >
-                    {isSavingDataset ? (
-                      <Spinner className="h-4 w-4 mr-2" />
-                    ) : (
-                      <Database className="h-4 w-4 mr-2" />
-                    )}
-                    {savedDatasetId ? "Dataset Saved" : "Save Dataset"}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Configure */}
           <Card>
             <CardHeader className="pb-3">
@@ -748,6 +709,47 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
                 )}
                 Fit Model
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Upload */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Dataset
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <DatasetUploader onDataParsed={handleDataParsed} />
+
+              {activeDataset && dataSource === "study" && (
+                <div className="space-y-3 pt-1">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Dataset Name</Label>
+                    <Input
+                      value={datasetName}
+                      onChange={(e) => setDatasetName(e.target.value)}
+                      placeholder="Name this dataset…"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleSaveDataset}
+                    disabled={isSavingDataset}
+                  >
+                    {isSavingDataset ? (
+                      <Spinner className="h-4 w-4 mr-2" />
+                    ) : (
+                      <Database className="h-4 w-4 mr-2" />
+                    )}
+                    {savedDatasetId ? "Dataset Saved" : "Save Dataset"}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
