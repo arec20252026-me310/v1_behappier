@@ -112,7 +112,15 @@ function selectValueToPolyDegree(v: ModelSelectValue): number {
 function parseToNumber(val: unknown): number {
   if (typeof val === "number") return val
   if (typeof val === "string") {
-    // Try ISO date string → ms offset
+    // HH:MM:SS or HH:MM → seconds since midnight
+    const timeMatch = val.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+    if (timeMatch) {
+      const h = parseInt(timeMatch[1])
+      const m = parseInt(timeMatch[2])
+      const s = timeMatch[3] ? parseInt(timeMatch[3]) : 0
+      return h * 3600 + m * 60 + s
+    }
+    // ISO date string → ms
     const d = new Date(val)
     if (!isNaN(d.getTime())) return d.getTime()
     const n = Number(val)
