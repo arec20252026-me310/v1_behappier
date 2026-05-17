@@ -1,12 +1,21 @@
 // Pure TypeScript model fitting — no external ML libraries
 
-export type ModelType = 'linear' | 'polynomial' | 'exponential' | 'moving_average'
+export type ModelType =
+  | 'linear'
+  | 'polynomial'
+  | 'exponential'
+  | 'moving_average'
+  | 'mlp'
+  | 'cnn'
+  | 'rnn'
+  | 'lstm'
 
 export interface FitResult {
   modelType: ModelType
-  parameters: Record<string, number | number[]>
+  parameters: Record<string, number | number[] | string | number[][] | Record<string, number>>
   metrics: { r2: number; rmse: number; mse: number }
   predictedY: number[]
+  trainingLoss?: number[]
 }
 
 // ── Math helpers ─────────────────────────────────────────────────────────────

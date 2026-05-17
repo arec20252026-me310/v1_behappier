@@ -40,6 +40,7 @@
     "@radix-ui/react-toggle-group": "1.1.11",
     "@radix-ui/react-tooltip": "1.2.8",
     "@supabase/ssr": "^0.10.2",
+    "@tensorflow/tfjs": "^4.22.0",
     "@vercel/analytics": "1.6.1",
     "@vercel/blob": "^2.3.3",
     "ai": "^6.0.158",

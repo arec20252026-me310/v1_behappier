@@ -26,15 +26,25 @@ function formatSigFigs(value: number, sigFigs = 6): string {
   return Number(value.toPrecision(sigFigs)).toString()
 }
 
-function flattenParameters(params: Record<string, number | number[]>): { name: string; value: string }[] {
+function flattenParameters(params: Record<string, unknown>): { name: string; value: string }[] {
   const rows: { name: string; value: string }[] = []
   for (const [key, val] of Object.entries(params)) {
-    if (Array.isArray(val)) {
-      val.forEach((v, i) => {
-        rows.push({ name: `${key}[${i}]`, value: formatSigFigs(v) })
-      })
-    } else {
+    if (key === "weights" || key === "weightShapes" || key === "architecture" || key === "config" || key === "normalization") {
+      // Skip NN internals — too large to display in table
+      rows.push({ name: key, value: typeof val === "string" ? val : "[serialized]" })
+    } else if (Array.isArray(val)) {
+      const arr = val as number[]
+      if (arr.length <= 8) {
+        arr.forEach((v, i) => {
+          rows.push({ name: `${key}[${i}]`, value: typeof v === "number" ? formatSigFigs(v) : String(v) })
+        })
+      } else {
+        rows.push({ name: key, value: `[${arr.length} values]` })
+      }
+    } else if (typeof val === "number") {
       rows.push({ name: key, value: formatSigFigs(val) })
+    } else {
+      rows.push({ name: key, value: String(val) })
     }
   }
   return rows

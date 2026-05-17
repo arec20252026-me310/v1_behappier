@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react"
 import Papa from "papaparse"
 import * as XLSX from "xlsx"
+import { createClient } from "@/lib/supabase/client"
 import { DatasetUploader, type ParsedDataset } from "./dataset-uploader"
 import { ModelChart } from "./model-chart"
 import { ParametersPanel } from "./parameters-panel"
@@ -14,6 +15,7 @@ import {
   type ModelType,
   type FitResult,
 } from "@/lib/model-fitting"
+import type { NNConfig, NNModelType } from "@/lib/tf-fitting"
 import { saveDataset, saveModelFit, deleteDataset } from "@/app/actions/models"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +38,7 @@ import {
   FolderOpen,
   TrendingUp,
   Database,
+  Download,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -46,6 +49,7 @@ interface BEStudy {
   study_goal: string
   status: string
   created_at: string
+  metadata: Record<string, unknown>
 }
 
 interface SavedDataset {
@@ -63,12 +67,45 @@ interface ModelsManagerProps {
   datasets: SavedDataset[]
 }
 
-const MODEL_OPTIONS: { value: ModelType; label: string }[] = [
+const NN_MODEL_TYPES: ModelType[] = ["mlp", "cnn", "rnn", "lstm"]
+
+// Select values for model type dropdown (includes poly-degree variants)
+type ModelSelectValue =
+  | "linear"
+  | "polynomial_2"
+  | "polynomial_3"
+  | "polynomial_4"
+  | "exponential"
+  | "moving_average"
+  | "mlp"
+  | "cnn"
+  | "rnn"
+  | "lstm"
+
+const MODEL_OPTIONS: { value: ModelSelectValue; label: string }[] = [
   { value: "linear", label: "Linear Regression" },
-  { value: "polynomial", label: "Polynomial" },
+  { value: "polynomial_2", label: "Polynomial (deg 2)" },
+  { value: "polynomial_3", label: "Polynomial (deg 3)" },
+  { value: "polynomial_4", label: "Polynomial (deg 4)" },
   { value: "exponential", label: "Exponential" },
   { value: "moving_average", label: "Moving Average" },
+  { value: "mlp", label: "MLP" },
+  { value: "cnn", label: "CNN" },
+  { value: "rnn", label: "RNN" },
+  { value: "lstm", label: "LSTM" },
 ]
+
+function selectValueToModelType(v: ModelSelectValue): ModelType {
+  if (v.startsWith("polynomial")) return "polynomial"
+  return v as ModelType
+}
+
+function selectValueToPolyDegree(v: ModelSelectValue): number {
+  if (v === "polynomial_2") return 2
+  if (v === "polynomial_3") return 3
+  if (v === "polynomial_4") return 4
+  return 2
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -122,9 +159,25 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   const [selectedStudyId, setSelectedStudyId] = useState<string>("none")
   const [xColumn, setXColumn] = useState<string>("")
   const [yColumn, setYColumn] = useState<string>("")
-  const [modelType, setModelType] = useState<ModelType>("linear")
+  const [modelSelectValue, setModelSelectValue] = useState<ModelSelectValue>("linear")
+  const modelType: ModelType = selectValueToModelType(modelSelectValue)
   const [polyDegree, setPolyDegree] = useState<number>(2)
   const [maWindow, setMaWindow] = useState<number>(5)
+
+  // Neural network config state
+  const [nnConfig, setNNConfig] = useState<NNConfig>({
+    epochs: 100,
+    learningRate: 0.01,
+    windowSize: 8,
+    hiddenUnits: 32,
+    numLayers: 2,
+  })
+  const [trainingProgress, setTrainingProgress] = useState<{
+    epoch: number
+    totalEpochs: number
+    loss: number
+  } | null>(null)
+  const [trainingLoss, setTrainingLoss] = useState<number[]>([])
 
   // Results state
   const [fitResult, setFitResult] = useState<FitResult | null>(null)
@@ -134,6 +187,81 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   const [isSaving, setIsSaving] = useState(false)
   const [isSavingDataset, setIsSavingDataset] = useState(false)
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
+
+  const [isLoadingStudy, setIsLoadingStudy] = useState(false)
+
+  // ── Load behavior data from a paired microstudy ──────────────────────────────
+
+  async function handleLoadFromStudy() {
+    if (selectedStudyId === "none") return
+    setIsLoadingStudy(true)
+    setStatusMsg("Loading behavior data…")
+
+    try {
+      const supabase = createClient()
+      const { data: outputs, error } = await supabase
+        .from("BE_insight_outputs")
+        .select("charts")
+        .eq("study_id", selectedStudyId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+
+      if (error || !outputs) throw new Error("No insight outputs found for this study.")
+
+      const charts = Array.isArray(outputs.charts) ? outputs.charts : []
+      const lineCharts = charts.filter(
+        (c: Record<string, unknown>) => c.chart_type === "line"
+      ) as Array<{
+        title: string
+        data: { labels: string[]; values: (number | null)[] }
+      }>
+
+      if (lineCharts.length === 0) throw new Error("No time series data found in study insights.")
+
+      // Build a merged dataset: timestamp + one column per series
+      const allLabels = Array.from(
+        new Set(lineCharts.flatMap((c) => c.data.labels))
+      ).sort()
+
+      const seriesNames = lineCharts.map((c) => c.title)
+      const rows: Record<string, string | number>[] = allLabels.map((label) => {
+        const row: Record<string, string | number> = { timestamp: label }
+        for (const chart of lineCharts) {
+          const idx = chart.data.labels.indexOf(label)
+          const val = idx >= 0 ? chart.data.values[idx] : null
+          row[chart.title] = val !== null && val !== undefined ? val : ""
+        }
+        return row
+      })
+
+      const studyName = studies.find((s) => s.study_id === selectedStudyId)
+      const title = studyName
+        ? ((studyName.metadata?.study_name as string) || studyName.study_goal).slice(0, 30)
+        : selectedStudyId.slice(0, 12)
+
+      const parsed: ParsedDataset = {
+        filename: `${title} (behavior)`,
+        columns: ["timestamp", ...seriesNames],
+        rows,
+      }
+
+      setActiveDataset(parsed)
+      setSavedDatasetId(null)
+      setDatasetName(parsed.filename)
+      setFitResult(null)
+      setXValues([])
+      setYValues([])
+      setXColumn("timestamp")
+      setYColumn(seriesNames[0] ?? "")
+      setStatusMsg(`Loaded ${rows.length} rows from study behavior data.`)
+      setTimeout(() => setStatusMsg(null), 3000)
+    } catch (err) {
+      setStatusMsg(err instanceof Error ? err.message : "Failed to load study data.")
+    } finally {
+      setIsLoadingStudy(false)
+    }
+  }
 
   // ── Dataset parsed ──────────────────────────────────────────────────────────
 
@@ -172,10 +300,12 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
 
   // ── Fit model ───────────────────────────────────────────────────────────────
 
-  function handleFitModel() {
+  async function handleFitModel() {
     if (!activeDataset || !xColumn || !yColumn) return
     setIsFitting(true)
     setFitResult(null)
+    setTrainingLoss([])
+    setTrainingProgress(null)
 
     try {
       const rawX = extractNumericColumn(activeDataset.rows, xColumn)
@@ -192,33 +322,65 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
         return
       }
 
-      const xs = toRelativeSeconds(validPairs.map((p) => p.x))
-      const ys = validPairs.map((p) => p.y)
+      const xVals = toRelativeSeconds(validPairs.map((p) => p.x))
+      const yVals = validPairs.map((p) => p.y)
 
       let result: FitResult
-      switch (modelType) {
-        case "linear":
-          result = fitLinear(xs, ys)
-          break
-        case "polynomial":
-          result = fitPolynomial(xs, ys, polyDegree)
-          break
-        case "exponential":
-          result = fitExponential(xs, ys)
-          break
-        case "moving_average":
-          result = fitMovingAverage(xs, ys, maWindow)
-          break
-        default:
-          result = fitLinear(xs, ys)
+
+      if (NN_MODEL_TYPES.includes(modelType)) {
+        const { fitNeuralNetwork } = await import("@/lib/tf-fitting")
+        setTrainingProgress({ epoch: 0, totalEpochs: nnConfig.epochs, loss: 0 })
+        const nnResult = await fitNeuralNetwork(
+          modelType as NNModelType,
+          xVals,
+          yVals,
+          nnConfig,
+          (epoch, loss) => {
+            setTrainingProgress({ epoch, totalEpochs: nnConfig.epochs, loss })
+          }
+        )
+        setTrainingLoss(nnResult.trainingLoss)
+        setTrainingProgress(null)
+        // Adapt NNFitResult → FitResult shape
+        result = {
+          modelType: nnResult.modelType,
+          parameters: {
+            architecture: nnResult.parameters.architecture,
+            weights: nnResult.parameters.weights as unknown as number[],
+            weightShapes: nnResult.parameters.weightShapes as unknown as number[],
+            normalization: nnResult.parameters.normalization,
+            config: nnResult.parameters.config as unknown as number,
+          },
+          metrics: nnResult.metrics,
+          predictedY: nnResult.predictedY,
+          trainingLoss: nnResult.trainingLoss,
+        }
+      } else {
+        switch (modelType) {
+          case "linear":
+            result = fitLinear(xVals, yVals)
+            break
+          case "polynomial":
+            result = fitPolynomial(xVals, yVals, polyDegree)
+            break
+          case "exponential":
+            result = fitExponential(xVals, yVals)
+            break
+          case "moving_average":
+            result = fitMovingAverage(xVals, yVals, maWindow)
+            break
+          default:
+            result = fitLinear(xVals, yVals)
+        }
       }
 
-      setXValues(xs)
-      setYValues(ys)
+      setXValues(xVals)
+      setYValues(yVals)
       setFitResult(result)
       setStatusMsg(null)
     } catch (err) {
       setStatusMsg(err instanceof Error ? err.message : "Fitting failed")
+      setTrainingProgress(null)
     } finally {
       setIsFitting(false)
     }
@@ -291,16 +453,32 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
 
   function handleExportJson() {
     if (!fitResult) return
-    const content = JSON.stringify(
-      {
-        modelType: fitResult.modelType,
-        parameters: fitResult.parameters,
-        metrics: fitResult.metrics,
-        exportedAt: new Date().toISOString(),
-      },
-      null,
-      2
-    )
+    const isNN = NN_MODEL_TYPES.includes(fitResult.modelType)
+    const content = isNN
+      ? JSON.stringify(
+          {
+            modelType: fitResult.modelType,
+            architecture: fitResult.parameters.architecture,
+            config: fitResult.parameters.config,
+            weights: fitResult.parameters.weights,
+            weightShapes: fitResult.parameters.weightShapes,
+            normalization: fitResult.parameters.normalization,
+            metrics: fitResult.metrics,
+            exportedAt: new Date().toISOString(),
+          },
+          null,
+          2
+        )
+      : JSON.stringify(
+          {
+            modelType: fitResult.modelType,
+            parameters: fitResult.parameters,
+            metrics: fitResult.metrics,
+            exportedAt: new Date().toISOString(),
+          },
+          null,
+          2
+        )
     downloadBlob(content, `model-fit-${fitResult.modelType}.json`, "application/json")
   }
 
@@ -409,17 +587,34 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— None —</SelectItem>
-                    {studies.map((s) => (
-                      <SelectItem key={s.study_id} value={s.study_id}>
-                        <span className="truncate max-w-[240px]">
-                          {s.study_goal.length > 40
-                            ? s.study_goal.slice(0, 40) + "…"
-                            : s.study_goal}
-                        </span>
-                      </SelectItem>
-                    ))}
+                    {studies.map((s) => {
+                      const title = (s.metadata?.study_name as string) || s.study_goal
+                      return (
+                        <SelectItem key={s.study_id} value={s.study_id}>
+                          <span className="truncate max-w-[240px]">
+                            {title.length > 40 ? title.slice(0, 40) + "…" : title}
+                          </span>
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
+                {selectedStudyId !== "none" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-1"
+                    onClick={handleLoadFromStudy}
+                    disabled={isLoadingStudy}
+                  >
+                    {isLoadingStudy ? (
+                      <Spinner className="h-4 w-4 mr-2" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Load behavior data from study
+                  </Button>
+                )}
               </div>
 
               {/* Column selects */}
@@ -468,7 +663,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
               {/* Model type */}
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Model Type</Label>
-                <Select value={modelType} onValueChange={(v) => setModelType(v as ModelType)}>
+                <Select value={modelSelectValue} onValueChange={(v) => setModelSelectValue(v as ModelSelectValue)}>
                   <SelectTrigger className="h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>

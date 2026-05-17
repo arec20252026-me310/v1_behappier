@@ -7,7 +7,7 @@ export default async function ModelsPage() {
 
   const { data: studies } = await supabase
     .from("BE_studies")
-    .select("study_id, study_goal, status, created_at")
+    .select("study_id, study_goal, status, created_at, metadata")
     .order("created_at", { ascending: false })
     .limit(20)
 
