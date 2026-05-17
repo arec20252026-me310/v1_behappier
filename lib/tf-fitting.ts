@@ -139,7 +139,6 @@ export async function fitNeuralNetwork(
     const weights = model.getWeights()
     const weightArrays = weights.map((w) => Array.from(w.dataSync()))
     const weightShapes = weights.map((w) => [...w.shape])
-    weights.forEach((w) => w.dispose())
     model.dispose()
 
     const numLayersDesc = numLayers
@@ -241,7 +240,6 @@ export async function fitNeuralNetwork(
     const weights = model.getWeights()
     const weightArrays = weights.map((w) => Array.from(w.dataSync()))
     const weightShapes = weights.map((w) => [...w.shape])
-    weights.forEach((w) => w.dispose())
     model.dispose()
 
     const archMap: Record<NNModelType, string> = {
