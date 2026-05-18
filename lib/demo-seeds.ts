@@ -95,9 +95,9 @@ const BE_STUDY_BASE = {
 
 export const BE_STUDY_IN_PROGRESS = {
   ...BE_STUDY_BASE,
-  status: "active",
+  status: "running",
   current_stage: "monitoring_running" as const,
-  live_preview_status: "Monitoring active — 17 snapshots analyzed",
+  live_preview_status: "Monitoring running — 17 snapshots analyzed",
 }
 
 export const BE_STUDY_COMPLETE = {
@@ -110,8 +110,8 @@ export const BE_STUDY_COMPLETE = {
 export const BE_LIVE_METRICS = {
   id: SEED_LIVE_ID,
   study_id: STUDY_ID,
-  status: "active",
-  label: "Monitoring active — 17 snapshots analyzed",
+  status: "running",
+  label: "Monitoring running — 17 snapshots analyzed",
   updated_at: "2026-05-05T22:15:03.000Z",
   metrics: {
     zone_metrics: {
