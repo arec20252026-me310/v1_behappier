@@ -13,7 +13,7 @@ export default async function InsightsPage() {
   const supabase = await createClient()
 
   const { data: outputs } = demo
-    ? { data: scenario === "study-complete" ? [BE_INSIGHT_OUTPUT] : [] }
+    ? { data: (scenario === "study-complete" || scenario === "model-created") ? [BE_INSIGHT_OUTPUT] : [] }
     : await supabase
         .from("BE_insight_outputs")
         .select("*")
@@ -22,7 +22,7 @@ export default async function InsightsPage() {
   const studyIds = (outputs ?? []).map((o: { study_id: string }) => o.study_id).filter(Boolean)
 
   let studyDurations: Record<string, number> = {}
-  if (demo) {
+  if (demo && (scenario === "study-complete" || scenario === "model-created")) {
     studyDurations = { [BE_STUDY_COMPLETE.study_id]: BE_STUDY_COMPLETE.duration_seconds * 1000 }
   } else if (studyIds.length > 0) {
     const { data: studies } = await supabase

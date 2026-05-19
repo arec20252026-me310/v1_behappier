@@ -28,7 +28,7 @@ export default async function StudiesPage() {
 
   const beStudies = demo
     ? (scenario === "study-in-progress" ? [BE_STUDY_IN_PROGRESS]
-       : scenario === "study-complete"  ? [BE_STUDY_COMPLETE]
+       : (scenario === "study-complete" || scenario === "model-created") ? [BE_STUDY_COMPLETE]
        : [])
     : ((await supabase
         .from("BE_studies")
@@ -39,7 +39,7 @@ export default async function StudiesPage() {
     ? (hasSpace ? ZONES : [])
     : ((await supabase.from("zones").select("*")).data ?? [])
 
-  const hasStudy = demo && (scenario === "study-in-progress" || scenario === "study-complete")
+  const hasStudy = demo && (scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created")
   const metrics = demo
     ? (hasStudy ? DEMO_METRICS.filter(m => m.is_active) : [])
     : ((await supabase

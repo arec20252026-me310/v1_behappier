@@ -11,7 +11,7 @@ export default async function MetricsPage() {
   const supabase = await createClient()
 
   const hasSpace  = demo && scenario !== "blank"
-  const hasStudy  = demo && (scenario === "study-in-progress" || scenario === "study-complete")
+  const hasStudy  = demo && (scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created")
   const space = demo
     ? (hasSpace ? DEMO_SPACE : null)
     : (await supabase.from('spaces').select('*').limit(1).single()).data

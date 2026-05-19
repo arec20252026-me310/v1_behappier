@@ -98,14 +98,14 @@ type ModelSelectValue =
   | "rnn"
   | "lstm"
 
-const MODEL_OPTIONS: { value: ModelSelectValue; label: string }[] = [
-  { value: "linear", label: "Linear Regression" },
-  { value: "polynomial", label: "Polynomial" },
-  { value: "exponential", label: "Exponential" },
-  { value: "mlp", label: "MLP" },
-  { value: "cnn", label: "CNN" },
-  { value: "rnn", label: "RNN" },
-  { value: "lstm", label: "LSTM" },
+const MODEL_OPTIONS: { value: ModelSelectValue; label: string; tooltip: string }[] = [
+  { value: "linear",      label: "Linear Regression", tooltip: "Fits a straight line (y = mx + b) between input and output. Best for data with a clear linear trend." },
+  { value: "polynomial",  label: "Polynomial",        tooltip: "Fits a curved line (y = ax² + bx + c + …) to capture non-linear relationships. Higher degrees fit more complex curves." },
+  { value: "exponential", label: "Exponential",       tooltip: "Fits a growth or decay curve (y = ae^(bx)). Useful when the output grows or shrinks at an increasing rate." },
+  { value: "mlp",         label: "MLP",               tooltip: "Multi-Layer Perceptron — a feedforward neural network with fully-connected layers. Good for general non-linear relationships without temporal structure." },
+  { value: "cnn",         label: "CNN",               tooltip: "Convolutional Neural Network — applies sliding filter windows to detect local patterns across the input sequence." },
+  { value: "rnn",         label: "RNN",               tooltip: "Recurrent Neural Network — processes data step-by-step, retaining a hidden state to capture short-range temporal dependencies." },
+  { value: "lstm",        label: "LSTM",              tooltip: "Long Short-Term Memory — an advanced RNN that uses memory cells and gating to capture both short and long-range patterns in time-series data." },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -861,7 +861,19 @@ export function ModelsManager({
             </div>
             <div className="border-t border-border" />
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Model Type</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Model Type</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                      <Info className="h-3 w-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[220px]">
+                    {MODEL_OPTIONS.find((o) => o.value === modelSelectValue)?.tooltip}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <Select value={modelSelectValue} onValueChange={(v) => {
                 const newModel = v as ModelSelectValue
                 setModelSelectValue(newModel)
