@@ -492,8 +492,8 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                       <LiveDetectionFeed
                         studyId={study.study_id}
                         status={study.status}
-                        limit={4}
-                        demoDetections={demoDetectionsByStudy?.[study.study_id]}
+                        limit={1}
+                        demoDetections={demoDetectionsByStudy?.[study.study_id]?.slice(-1)}
                       />
                     </div>
                   )}
