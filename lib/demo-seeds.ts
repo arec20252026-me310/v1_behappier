@@ -5,6 +5,9 @@
  * the heatmap can highlight the correct zone without any schema changes.
  */
 
+import type { FitEntry } from "@/components/models/model-chart"
+import type { FitResult } from "@/lib/model-fitting"
+
 // ── Fixed IDs (real Supabase rows) ──────────────────────────────────────────
 export const SPACE_ID   = "e8d9c195-0ae8-41ed-b03f-034ce91dd3c4"
 export const HA_MAP_ID  = "bf7ba38c-9bb5-43c9-b099-f3b293285efc"
@@ -189,3 +192,75 @@ export const BE_INSIGHT_OUTPUT = {
     "Consider optimizing the workspace layout to accommodate peak utilization and foot traffic times. " +
     "Implement scheduling or booking systems to manage space usage effectively during high-demand periods.",
 }
+
+// ── Models demo (model-created scenario) ─────────────────────────────────────
+
+export const SEED_MODEL_DATASET_ID = "00000000-0000-0000-0000-000000000010"
+
+const _CO2  = [420, 435, 451, 468, 487, 509, 533, 559, 586, 614, 642, 670, 697, 723, 748, 771, 793, 813, 831, 847, 861, 873, 882, 889, 893, 889, 879, 861, 835, 802]
+const _OCC  = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 1]
+const _TEMP = [21.2, 21.3, 21.4, 21.5, 21.6, 21.8, 22.0, 22.2, 22.3, 22.5, 22.6, 22.7, 22.8, 23.0, 23.1, 23.2, 23.2, 23.3, 23.3, 23.3, 23.3, 23.2, 23.1, 23.0, 22.9, 22.8, 22.7, 22.5, 22.3, 22.1]
+const _TS   = Array.from({ length: 30 }, (_, i) => `10:${String(i).padStart(2, "0")}:00`)
+
+export const DEMO_MODEL_DATASET = {
+  id: SEED_MODEL_DATASET_ID,
+  name: "demo_co2_data × behavior",
+  study_id: STUDY_ID,
+  columns: ["Timestamp", "CO2 (ppm)", "Temperature (°C)", "Occupancy (count)"],
+  data: _CO2.map((co2, i) => ({
+    "Timestamp": _TS[i],
+    "CO2 (ppm)": co2,
+    "Temperature (°C)": _TEMP[i],
+    "Occupancy (count)": _OCC[i],
+  })),
+  metadata: { rowCount: 30, merged: true },
+  created_at: "2026-05-05T22:00:00Z",
+}
+
+const _LINEAR_PRED = _CO2.map(x => parseFloat((0.00824 * x - 3.448).toFixed(4)))
+
+const _LSTM_PRED = [0.22, 0.38, 0.52, 0.68, 1.15, 1.35, 0.82, 1.72, 2.28, 1.88, 2.18, 2.62, 3.15, 2.72, 3.28, 2.72, 3.55, 4.18, 3.72, 4.22, 3.62, 4.12, 3.35, 2.72, 3.08, 3.15, 2.38, 2.18, 1.72, 1.28]
+
+const _LSTM_LOSS = Array.from({ length: 100 }, (_, i) =>
+  parseFloat((0.72 * Math.exp(-i / 18) + 0.07).toFixed(4))
+)
+
+export const DEMO_FIT_ENTRIES: FitEntry[] = [
+  {
+    id: "demo-linear",
+    label: "Linear: CO2 (ppm) → Occupancy (count)",
+    color: "#f59e0b",
+    visible: true,
+    xValues: _CO2,
+    yValues: _OCC,
+    fitResult: {
+      modelType: "linear",
+      parameters: { slope: 0.00824, intercept: -3.448 },
+      metrics: { r2: 0.539, rmse: 0.847, mse: 0.717 },
+      predictedY: _LINEAR_PRED,
+    } as FitResult,
+    inputCount: 1,
+    inputCols: ["CO2 (ppm)"],
+    outputCol: "Occupancy (count)",
+    inputValues: { "CO2 (ppm)": _CO2 },
+  },
+  {
+    id: "demo-lstm",
+    label: "LSTM: CO2 (ppm) → Occupancy (count)",
+    color: "#8b5cf6",
+    visible: true,
+    xValues: _CO2,
+    yValues: _OCC,
+    fitResult: {
+      modelType: "lstm",
+      parameters: { architecture: "LSTM: Input([8,1]) → LSTM(32) → Dense(16) → Dense(1)" },
+      metrics: { r2: 0.948, rmse: 0.285, mse: 0.081 },
+      predictedY: _LSTM_PRED,
+      trainingLoss: _LSTM_LOSS,
+    } as FitResult,
+    inputCount: 1,
+    inputCols: ["CO2 (ppm)"],
+    outputCol: "Occupancy (count)",
+    inputValues: { "CO2 (ppm)": _CO2 },
+  },
+]

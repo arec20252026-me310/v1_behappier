@@ -17,7 +17,7 @@ export async function disableDemoMode() {
   redirect("/dashboard")
 }
 
-const DEMO_ORDER: DemoScenario[] = ["blank", "space-ready", "study-in-progress", "study-complete"]
+const DEMO_ORDER: DemoScenario[] = ["blank", "space-ready", "study-in-progress", "study-complete", "model-created"]
 
 export async function advanceDemoScenario(current: DemoScenario) {
   const next = DEMO_ORDER[DEMO_ORDER.indexOf(current) + 1]

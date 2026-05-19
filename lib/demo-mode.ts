@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 
-export type DemoScenario = "blank" | "space-ready" | "study-in-progress" | "study-complete"
+export type DemoScenario = "blank" | "space-ready" | "study-in-progress" | "study-complete" | "model-created"
 
 export async function getDemoScenario(): Promise<DemoScenario | null> {
   const cookieStore = await cookies()

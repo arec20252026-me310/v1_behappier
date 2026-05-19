@@ -9,12 +9,14 @@ const SCENARIO_LABELS: Record<DemoScenario, string> = {
   "space-ready": "Space Configured",
   "study-in-progress": "Study Running",
   "study-complete": "Study Complete",
+  "model-created": "Model Created",
 }
 
 const NEXT_LABELS: Partial<Record<DemoScenario, string>> = {
   blank: "Space Configured",
   "space-ready": "Study Running",
   "study-in-progress": "Study Complete",
+  "study-complete": "Model Created",
 }
 
 interface DemoBannerProps {

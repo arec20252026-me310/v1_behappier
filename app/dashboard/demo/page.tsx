@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DashboardHeader } from "@/components/dashboard/header"
-import { MapPin, Activity, CheckCircle2, Eraser, ArrowRight, Loader2, EyeOff, Eye } from "lucide-react"
+import { MapPin, Activity, CheckCircle2, Eraser, ArrowRight, Loader2, EyeOff, Eye, ChartSpline } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { enableDemoMode, disableDemoMode } from "@/app/actions/demo"
 import type { DemoScenario } from "@/lib/demo-mode"
@@ -77,6 +77,20 @@ const SCENARIOS: {
       "Kitchen zone glows yellow on heatmap",
       "Click zone to read insight summary",
       "Full report available in Insights tab",
+    ],
+  },
+  {
+    id: "model-created",
+    title: "Model Created",
+    badge: "Models Tab",
+    badgeColor: "bg-purple-500/20 text-purple-400",
+    icon: ChartSpline,
+    iconColor: "text-purple-400",
+    description: "Pre-loaded Models tab: merged CO₂ + occupancy dataset, chart with CO₂ on X and occupancy on Y, linear regression and LSTM fits.",
+    visible: [
+      "Saved dataset pre-loaded in Data Sources",
+      "Chart: CO₂ (ppm) vs Occupancy (count)",
+      "Linear fit (R²=0.54) and LSTM fit (R²=0.95)",
     ],
   },
 ]
@@ -201,9 +215,9 @@ export default function DemoPage() {
                         size="sm"
                         variant="outline"
                         className="gap-1"
-                        onClick={() => router.push("/dashboard")}
+                        onClick={() => router.push(s.id === "model-created" ? "/dashboard/models" : "/dashboard")}
                       >
-                        Go to Dashboard
+                        {s.id === "model-created" ? "Go to Models" : "Go to Dashboard"}
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Button>
                     )}

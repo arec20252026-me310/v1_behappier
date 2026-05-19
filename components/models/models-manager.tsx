@@ -59,7 +59,7 @@ interface BEStudy {
   metadata: Record<string, unknown>
 }
 
-interface SavedDataset {
+export interface SavedDataset {
   id: string
   name: string
   study_id: string | null
@@ -72,6 +72,16 @@ interface SavedDataset {
 interface ModelsManagerProps {
   studies: BEStudy[]
   datasets: SavedDataset[]
+  // Optional demo pre-seed
+  demoActiveDataset?: ParsedDataset
+  demoFitEntries?: FitEntry[]
+  demoChartX?: string
+  demoChartY?: string
+  demoSavedDatasetId?: string
+  demoDatasetName?: string
+  demoModelInputCols?: string[]
+  demoModelOutputCol?: string
+  demoSelectedStudyId?: string
 }
 
 const NN_MODEL_TYPES: ModelType[] = ["mlp", "cnn", "rnn", "lstm"]
@@ -174,18 +184,30 @@ function mergeByTimestamp(
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function ModelsManager({ studies, datasets: initialDatasets }: ModelsManagerProps) {
+export function ModelsManager({
+  studies,
+  datasets: initialDatasets,
+  demoActiveDataset,
+  demoFitEntries,
+  demoChartX,
+  demoChartY,
+  demoSavedDatasetId,
+  demoDatasetName,
+  demoModelInputCols,
+  demoModelOutputCol,
+  demoSelectedStudyId,
+}: ModelsManagerProps) {
   const [savedDatasets, setSavedDatasets] = useState<SavedDataset[]>(initialDatasets)
 
   // Data sources
-  const [sensorDataset, setSensorDataset] = useState<ParsedDataset | null>(null)
+  const [sensorDataset, setSensorDataset] = useState<ParsedDataset | null>(() => demoActiveDataset ?? null)
   const [behaviorDataset, setBehaviorDataset] = useState<ParsedDataset | null>(null)
   const [mergedDataset, setMergedDataset] = useState<ParsedDataset | null>(null)
   const [toleranceSec, setToleranceSec] = useState(30)
   const [isMerging, setIsMerging] = useState(false)
-  const [savedDatasetId, setSavedDatasetId] = useState<string | null>(null)
-  const [datasetName, setDatasetName] = useState("")
-  const [selectedStudyId, setSelectedStudyId] = useState("none")
+  const [savedDatasetId, setSavedDatasetId] = useState<string | null>(() => demoSavedDatasetId ?? null)
+  const [datasetName, setDatasetName] = useState(() => demoDatasetName ?? "")
+  const [selectedStudyId, setSelectedStudyId] = useState(() => demoSelectedStudyId ?? "none")
   const [isLoadingStudy, setIsLoadingStudy] = useState(false)
 
   const activeDataset = mergedDataset ?? sensorDataset ?? behaviorDataset
@@ -198,12 +220,12 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     : []
 
   // Chart axis selectors
-  const [chartXCol, setChartXCol] = useState("")
-  const [chartYCol, setChartYCol] = useState("")
+  const [chartXCol, setChartXCol] = useState(() => demoChartX ?? "")
+  const [chartYCol, setChartYCol] = useState(() => demoChartY ?? "")
 
   // Model builder
-  const [modelInputCols, setModelInputCols] = useState<string[]>([])
-  const [modelOutputCol, setModelOutputCol] = useState("")
+  const [modelInputCols, setModelInputCols] = useState<string[]>(() => demoModelInputCols ?? [])
+  const [modelOutputCol, setModelOutputCol] = useState(() => demoModelOutputCol ?? "")
   const [modelSelectValue, setModelSelectValue] = useState<ModelSelectValue>("linear")
   const modelType: ModelType = modelSelectValue as ModelType
   const [polyDegree, setPolyDegree] = useState(2)
@@ -215,7 +237,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
   const [trainingLoss, setTrainingLoss] = useState<number[]>([])
 
   // Results
-  const [fitEntries, setFitEntries] = useState<FitEntry[]>([])
+  const [fitEntries, setFitEntries] = useState<FitEntry[]>(() => demoFitEntries ?? [])
   const [isFitting, setIsFitting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isSavingDataset, setIsSavingDataset] = useState(false)
