@@ -197,9 +197,10 @@ export const BE_INSIGHT_OUTPUT = {
 
 export const SEED_MODEL_DATASET_ID = "00000000-0000-0000-0000-000000000010"
 
-// Noisy but positively-correlated CO2 vs occupancy — avoids the clean arc that makes LSTM predictions oscillate
+// CO2 is randomly scattered (noisy). Occupancy is a realistic step function over time
+// (people arrive and stay; CO2 lags behind, so the scatter plot looks naturally noisy).
 const _CO2  = [418, 452, 431, 598, 512, 743, 489, 681, 775, 534, 862, 647, 791, 710, 923, 688, 847, 952, 731, 875, 814, 968, 743, 891, 812, 654, 738, 571, 623, 487]
-const _OCC  = [0, 1, 0, 2, 1, 3, 1, 2, 3, 1, 4, 2, 3, 2, 4, 2, 3, 4, 2, 4, 3, 4, 2, 4, 3, 2, 3, 1, 2, 1]
+const _OCC  = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 3, 3, 2, 1, 0]
 const _TEMP = [21.1, 21.4, 21.2, 22.3, 21.8, 22.9, 21.7, 22.5, 23.1, 22.0, 23.4, 22.6, 23.0, 22.8, 23.6, 22.7, 23.2, 23.7, 22.9, 23.3, 23.1, 23.8, 22.9, 23.4, 23.1, 22.5, 22.8, 22.2, 22.4, 21.8]
 const _TS   = Array.from({ length: 30 }, (_, i) => `10:${String(i).padStart(2, "0")}:00`)
 
@@ -242,9 +243,11 @@ export const DEMO_MODEL_DATASET = {
   created_at: "2026-05-05T22:00:00Z",
 }
 
-const _LINEAR_PRED = _CO2.map(x => parseFloat((0.00824 * x - 3.448).toFixed(4)))
+// OLS fit for step-function OCC vs scattered CO2: slope=0.00666, intercept=-2.687 (R²≈0.59)
+const _LINEAR_PRED = _CO2.map(x => parseFloat((0.00666 * x - 2.687).toFixed(4)))
 
-const _LSTM_PRED = [0.22, 0.38, 0.52, 0.68, 1.15, 1.35, 0.82, 1.72, 2.28, 1.88, 2.18, 2.62, 3.15, 2.72, 3.28, 2.72, 3.55, 4.18, 3.72, 4.22, 3.62, 4.12, 3.35, 2.72, 3.08, 3.15, 2.38, 2.18, 1.72, 1.28]
+// LSTM predictions: tracks the step-function OCC closely using temporal context (R²≈0.997)
+const _LSTM_PRED = [0.05, 0.02, 0.08, 0.15, 0.10, 0.92, 0.95, 1.05, 0.88, 1.02, 1.85, 2.10, 1.95, 2.05, 1.90, 2.95, 3.05, 2.92, 3.08, 3.02, 3.88, 4.05, 3.92, 4.08, 3.95, 2.95, 3.05, 1.92, 0.95, 0.08]
 
 const _LSTM_LOSS = Array.from({ length: 100 }, (_, i) =>
   parseFloat((0.72 * Math.exp(-i / 18) + 0.07).toFixed(4))
@@ -260,8 +263,8 @@ export const DEMO_FIT_ENTRIES: FitEntry[] = [
     yValues: _OCC,
     fitResult: {
       modelType: "linear",
-      parameters: { slope: 0.00824, intercept: -3.448 },
-      metrics: { r2: 0.539, rmse: 0.847, mse: 0.717 },
+      parameters: { slope: 0.00666, intercept: -2.687 },
+      metrics: { r2: 0.585, rmse: 0.888, mse: 0.789 },
       predictedY: _LINEAR_PRED,
     } as FitResult,
     inputCount: 1,
@@ -279,7 +282,7 @@ export const DEMO_FIT_ENTRIES: FitEntry[] = [
     fitResult: {
       modelType: "lstm",
       parameters: { architecture: "LSTM: Input([8,1]) → LSTM(32) → Dense(16) → Dense(1)" },
-      metrics: { r2: 0.948, rmse: 0.285, mse: 0.081 },
+      metrics: { r2: 0.997, rmse: 0.079, mse: 0.006 },
       predictedY: _LSTM_PRED,
       trainingLoss: _LSTM_LOSS,
     } as FitResult,

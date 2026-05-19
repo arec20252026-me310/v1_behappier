@@ -861,12 +861,24 @@ export function ModelsManager({
             </div>
             <div className="border-t border-border" />
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
-                <Label className="text-xs text-muted-foreground">Model Type</Label>
+              <Label className="text-xs text-muted-foreground">Model Type</Label>
+              <div className="flex items-center gap-1.5">
+                <Select value={modelSelectValue} onValueChange={(v) => {
+                  const newModel = v as ModelSelectValue
+                  setModelSelectValue(newModel)
+                  if (SINGLE_INPUT_ONLY.includes(newModel as ModelType) && modelInputCols.length > 1) {
+                    setModelInputCols([modelInputCols[0]])
+                  }
+                }}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {MODEL_OPTIONS.map((opt) => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-                      <Info className="h-3 w-3" />
+                    <button type="button" className="shrink-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                      <Info className="h-3.5 w-3.5" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-[220px]">
@@ -874,18 +886,6 @@ export function ModelsManager({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <Select value={modelSelectValue} onValueChange={(v) => {
-                const newModel = v as ModelSelectValue
-                setModelSelectValue(newModel)
-                if (SINGLE_INPUT_ONLY.includes(newModel as ModelType) && modelInputCols.length > 1) {
-                  setModelInputCols([modelInputCols[0]])
-                }
-              }}>
-                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {MODEL_OPTIONS.map((opt) => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
             </div>
             {modelType === "polynomial" && (
               <div className="space-y-1.5">
