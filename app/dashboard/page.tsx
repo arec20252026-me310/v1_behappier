@@ -52,8 +52,13 @@ export default async function DashboardPage() {
       0
     )
 
+    function withCitation(description: string, ref: string | null): string {
+      if (!ref) return description
+      const cited = ref.replace(/^(.*?\(\d{4}\)\.) (.+)$/, '$1 "$2"')
+      return `${description} — ${cited}`
+    }
     const demoMetricDescriptions: Record<string, string> = Object.fromEntries(
-      DEMO_METRICS.map(m => [m.name, m.literature_reference ? `${m.description} — ${m.literature_reference}` : m.description])
+      DEMO_METRICS.map(m => [m.name, withCitation(m.description, m.literature_reference)])
     )
 
     return (
@@ -178,9 +183,14 @@ export default async function DashboardPage() {
     0
   )
 
+  function withCitation(description: string, ref: string | null): string {
+    if (!ref) return description
+    const cited = ref.replace(/^(.*?\(\d{4}\)\.) (.+)$/, '$1 "$2"')
+    return `${description} — ${cited}`
+  }
   const metricDescriptions: Record<string, string> = Object.fromEntries(
     (metrics as { name: string; description: string; literature_reference: string | null }[])
-      .map(m => [m.name, m.literature_reference ? `${m.description} — ${m.literature_reference}` : m.description])
+      .map(m => [m.name, withCitation(m.description, m.literature_reference)])
   )
 
   return (

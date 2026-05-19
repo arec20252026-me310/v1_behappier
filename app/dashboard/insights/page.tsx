@@ -35,15 +35,22 @@ export default async function InsightsPage() {
   }
 
   // Build name → description+citation map for legend info buttons
+  // Quotes the title portion of the citation: "Author (YYYY). Title" → Author (YYYY). "Title"
+  function withCitation(description: string, ref: string | null): string {
+    if (!ref) return description
+    const cited = ref.replace(/^(.*?\(\d{4}\)\.) (.+)$/, '$1 "$2"')
+    return `${description} — ${cited}`
+  }
+
   let metricDescriptions: Record<string, string> = {}
   if (demo) {
     metricDescriptions = Object.fromEntries(
-      DEMO_METRICS.map(m => [m.name, m.literature_reference ? `${m.description} — ${m.literature_reference}` : m.description])
+      DEMO_METRICS.map(m => [m.name, withCitation(m.description, m.literature_reference)])
     )
   } else {
     const { data: metrics } = await supabase.from("metrics").select("name, description, literature_reference")
     for (const m of (metrics ?? []) as { name: string; description: string; literature_reference: string | null }[]) {
-      metricDescriptions[m.name] = m.literature_reference ? `${m.description} — ${m.literature_reference}` : m.description
+      metricDescriptions[m.name] = withCitation(m.description, m.literature_reference)
     }
   }
 
