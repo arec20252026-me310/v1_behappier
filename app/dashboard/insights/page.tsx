@@ -4,7 +4,7 @@ import { InsightsList } from "@/components/insights/insights-list"
 import type { DetectionRow } from "@/components/insights/insights-list"
 import { getDemoScenario } from "@/lib/demo-mode"
 import { isReviewMode } from "@/lib/review-mode"
-import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE } from "@/lib/demo-seeds"
+import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS } from "@/lib/demo-seeds"
 
 export default async function InsightsPage() {
   const scenario = await getDemoScenario()
@@ -34,6 +34,19 @@ export default async function InsightsPage() {
     }
   }
 
+  // Build name → description+citation map for legend info buttons
+  let metricDescriptions: Record<string, string> = {}
+  if (demo) {
+    metricDescriptions = Object.fromEntries(
+      DEMO_METRICS.map(m => [m.name, m.literature_reference ? `${m.description} — ${m.literature_reference}` : m.description])
+    )
+  } else {
+    const { data: metrics } = await supabase.from("metrics").select("name, description, literature_reference")
+    for (const m of (metrics ?? []) as { name: string; description: string; literature_reference: string | null }[]) {
+      metricDescriptions[m.name] = m.literature_reference ? `${m.description} — ${m.literature_reference}` : m.description
+    }
+  }
+
   let detectionsByStudy: Record<string, DetectionRow[]> = {}
   if (review && studyIds.length > 0) {
     const { data: detections } = await supabase
@@ -56,7 +69,7 @@ export default async function InsightsPage() {
       />
 
       <div className="flex-1 p-6 overflow-auto">
-        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} studyDurations={studyDurations} />
+        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} studyDurations={studyDurations} metricDescriptions={metricDescriptions} />
       </div>
     </div>
   )

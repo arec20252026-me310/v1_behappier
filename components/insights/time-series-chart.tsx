@@ -2,6 +2,8 @@
 
 import React, { useRef, useState, useEffect } from "react"
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { Tooltip as UITooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { Info } from "lucide-react"
 
 const SERIES_COLORS = [
   "oklch(0.7 0.15 200)",
@@ -85,6 +87,16 @@ interface TimeSeriesChartProps {
   studyDurationMs?: number
   xAxisLabel?: string
   yAxisLabel?: string
+  seriesDescriptions?: Record<string, string>
+}
+
+function lookupDescription(title: string, descriptions: Record<string, string>): string | undefined {
+  if (descriptions[title]) return descriptions[title]
+  const lower = title.toLowerCase()
+  for (const [key, desc] of Object.entries(descriptions)) {
+    if (lower.includes(key.toLowerCase())) return desc
+  }
+  return undefined
 }
 
 function formatLabel(label: string): string {
@@ -222,7 +234,7 @@ const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
 
-export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel }: TimeSeriesChartProps) {
+export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions }: TimeSeriesChartProps) {
   const allData = mergeSeriesData(series)
   const total = allData.length
 
@@ -448,26 +460,41 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
       {/* Series toggle checkboxes */}
       {series.length > 1 && (
         <div className="flex flex-wrap gap-3 px-1">
-          {series.map((s, i) => (
-            <label key={s.title} className="flex items-center gap-1.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={!hidden.has(s.title)}
-                onChange={() => toggleSeries(s.title)}
-                className="sr-only"
-              />
-              <span
-                className="w-3 h-3 rounded-sm flex-shrink-0 border"
-                style={{
-                  background: hidden.has(s.title) ? "transparent" : SERIES_COLORS[i % SERIES_COLORS.length],
-                  borderColor: SERIES_COLORS[i % SERIES_COLORS.length],
-                }}
-              />
-              <span className="text-xs" style={{ color: hidden.has(s.title) ? "oklch(0.5 0 0)" : "oklch(0.75 0 0)" }}>
-                {s.title}
-              </span>
-            </label>
-          ))}
+          {series.map((s, i) => {
+            const desc = seriesDescriptions ? lookupDescription(s.title, seriesDescriptions) : undefined
+            return (
+              <div key={s.title} className="flex items-center gap-1">
+                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={!hidden.has(s.title)}
+                    onChange={() => toggleSeries(s.title)}
+                    className="sr-only"
+                  />
+                  <span
+                    className="w-3 h-3 rounded-sm flex-shrink-0 border"
+                    style={{
+                      background: hidden.has(s.title) ? "transparent" : SERIES_COLORS[i % SERIES_COLORS.length],
+                      borderColor: SERIES_COLORS[i % SERIES_COLORS.length],
+                    }}
+                  />
+                  <span className="text-xs" style={{ color: hidden.has(s.title) ? "oklch(0.5 0 0)" : "oklch(0.75 0 0)" }}>
+                    {s.title}
+                  </span>
+                </label>
+                {desc && (
+                  <UITooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" style={{ display: "flex", alignItems: "center", color: "oklch(0.45 0 0)", lineHeight: 0 }}>
+                        <Info style={{ width: 11, height: 11 }} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[240px]">{desc}</TooltipContent>
+                  </UITooltip>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 

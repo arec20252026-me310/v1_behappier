@@ -52,6 +52,10 @@ export default async function DashboardPage() {
       0
     )
 
+    const demoMetricDescriptions: Record<string, string> = Object.fromEntries(
+      DEMO_METRICS.map(m => [m.name, m.literature_reference ? `${m.description} — ${m.literature_reference}` : m.description])
+    )
+
     return (
       <div className="flex flex-col h-full">
         <DashboardHeader
@@ -75,7 +79,7 @@ export default async function DashboardPage() {
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
             />
-            <OccupancyChart latestOutput={latestOutput} studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000} />
+            <OccupancyChart latestOutput={latestOutput} studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000} metricDescriptions={demoMetricDescriptions} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ZoneOverview zones={demoZones} />
@@ -174,6 +178,11 @@ export default async function DashboardPage() {
     0
   )
 
+  const metricDescriptions: Record<string, string> = Object.fromEntries(
+    (metrics as { name: string; description: string; literature_reference: string | null }[])
+      .map(m => [m.name, m.literature_reference ? `${m.description} — ${m.literature_reference}` : m.description])
+  )
+
   return (
     <div className="flex flex-col h-full">
       <DashboardHeader
@@ -201,6 +210,7 @@ export default async function DashboardPage() {
           />
           <OccupancyChart
             latestOutput={latestOutput}
+            metricDescriptions={metricDescriptions}
             studyDurationMs={(() => {
               const s = allFetchedStudies.find(s => s.study_id === latestOutput?.study_id)
               return s?.duration_seconds ? s.duration_seconds * 1000 : undefined

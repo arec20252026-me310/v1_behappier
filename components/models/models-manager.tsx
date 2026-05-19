@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { formatDistanceToNow } from "date-fns"
 import Papa from "papaparse"
 import * as XLSX from "xlsx"
 import { createClient } from "@/lib/supabase/client"
@@ -641,10 +642,14 @@ export function ModelsManager({
                     <SelectItem value="none">— None —</SelectItem>
                     {studies.map((s) => {
                       const title = (s.metadata?.study_name as string) || s.study_goal
+                      const shortTitle = title.length > 38 ? title.slice(0, 38) + "…" : title
+                      let timeAgo = ""
+                      try { timeAgo = formatDistanceToNow(new Date(s.created_at), { addSuffix: true }) } catch {}
                       return (
                         <SelectItem key={s.study_id} value={s.study_id}>
-                          <span className="truncate max-w-[240px]">
-                            {title.length > 45 ? title.slice(0, 45) + "…" : title}
+                          <span className="flex items-baseline gap-1.5">
+                            <span className="truncate">{shortTitle}</span>
+                            {timeAgo && <span className="text-xs text-muted-foreground shrink-0">{timeAgo}</span>}
                           </span>
                         </SelectItem>
                       )

@@ -3,16 +3,18 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { ModelsManager } from "@/components/models/models-manager"
 import { getDemoScenario } from "@/lib/demo-mode"
 import {
-  DEMO_MODEL_DATASET, DEMO_FIT_ENTRIES, STUDY_ID, BE_STUDY_COMPLETE,
+  DEMO_MODEL_DATASET, DEMO_FIT_ENTRIES, STUDY_ID,
   DEMO_BEHAVIOR_DATASET, DEMO_SENSOR_DATASET, DEMO_MERGED_DATASET,
 } from "@/lib/demo-seeds"
 
-const DEMO_STUDY = {
-  study_id: STUDY_ID,
-  study_goal: "There is not much entry and exit in the loft. Track the number of occupants over time.",
-  status: "complete",
-  created_at: BE_STUDY_COMPLETE.created_at,
-  metadata: { study_name: "ME310 Loft Occupancy Study" },
+function makeDemoStudy() {
+  return {
+    study_id: STUDY_ID,
+    study_goal: "There is not much entry and exit in the loft. Track the number of occupants over time.",
+    status: "complete",
+    created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    metadata: { study_name: "ME310 Loft Occupancy Study" },
+  }
 }
 
 export default async function ModelsPage() {
@@ -25,7 +27,7 @@ export default async function ModelsPage() {
   // blank / space-ready / study-in-progress: none
   // study-complete / model-created: one demo study
   const studies = isDemo
-    ? (scenario === "study-complete" || scenario === "model-created" ? [DEMO_STUDY] : [])
+    ? (scenario === "study-complete" || scenario === "model-created" ? [makeDemoStudy()] : [])
     : ((await supabase
         .from("BE_studies")
         .select("study_id, study_goal, status, created_at, metadata")

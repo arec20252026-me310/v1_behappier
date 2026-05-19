@@ -23,6 +23,7 @@ interface InsightsListProps {
   detectionsByStudy?: Record<string, DetectionRow[]>
   reviewMode?: boolean
   studyDurations?: Record<string, number>
+  metricDescriptions?: Record<string, string>
 }
 
 function toArray<T>(value: unknown): T[] {
@@ -46,7 +47,7 @@ function normalizeOutput(output: BEInsightOutput): NormalizedOutput {
   }
 }
 
-export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = false, studyDurations = {} }: InsightsListProps) {
+export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = false, studyDurations = {}, metricDescriptions }: InsightsListProps) {
   const normalized = outputs.map(normalizeOutput)
   if (normalized.length === 0) {
     return (
@@ -168,7 +169,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                         Charts
                       </p>
                     </div>
-                    {lineSeries.length > 0 && <TimeSeriesChart series={lineSeries} height={240} studyDurationMs={studyDurations[output.study_id]} xAxisLabel="Timestamp" yAxisLabel={lineSeries.length === 1 ? lineSeries[0].title : undefined} />}
+                    {lineSeries.length > 0 && <TimeSeriesChart series={lineSeries} height={240} studyDurationMs={studyDurations[output.study_id]} xAxisLabel="Timestamp" yAxisLabel={lineSeries.length === 1 ? lineSeries[0].title : undefined} seriesDescriptions={metricDescriptions} />}
                     {otherCharts.map((chart, i) => (
                       <DynamicChart
                         key={(chart as Record<string, unknown>).chart_id as string ?? i}
