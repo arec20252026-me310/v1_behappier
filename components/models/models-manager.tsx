@@ -861,17 +861,17 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
               </div>
             )}
             {NN_MODEL_TYPES.includes(modelType) && (
-              <div className="border border-border rounded-md overflow-hidden">
+              <div className="space-y-3">
                 <button
                   type="button"
                   onClick={() => setAdvancedOpen((o) => !o)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:bg-muted/30 transition-colors"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground border border-border rounded px-2 py-1 hover:bg-muted/30 transition-colors"
                 >
-                  <span className="font-medium">Advanced Settings</span>
-                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", advancedOpen && "rotate-180")} />
+                  <ChevronDown className={cn("h-3 w-3 transition-transform", advancedOpen && "rotate-180")} />
+                  Advanced Settings
                 </button>
                 {advancedOpen && (
-                  <div className="grid grid-cols-2 gap-3 px-3 pb-3 pt-2 border-t border-border">
+                  <div className="grid grid-cols-2 gap-3">
                     {([
                       { label: "Epochs", key: "epochs" as const, min: 10, max: 1000, tooltip: "Number of full passes through the training data. More epochs can improve accuracy but take longer." },
                       { label: "Learning Rate", key: "learningRate" as const, min: 0.0001, max: 0.1, step: 0.0001, tooltip: "How large each weight update step is. Lower values train more slowly but more stably; higher values train faster but may overshoot." },
