@@ -14,11 +14,12 @@ export interface ParsedDataset {
 
 interface DatasetUploaderProps {
   onDataParsed: (dataset: ParsedDataset) => void
+  initialDataset?: ParsedDataset
 }
 
-export function DatasetUploader({ onDataParsed }: DatasetUploaderProps) {
+export function DatasetUploader({ onDataParsed, initialDataset }: DatasetUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [parsed, setParsed] = useState<ParsedDataset | null>(null)
+  const [parsed, setParsed] = useState<ParsedDataset | null>(() => initialDataset ?? null)
   const [error, setError] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 

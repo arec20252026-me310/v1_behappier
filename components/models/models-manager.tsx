@@ -73,7 +73,9 @@ interface ModelsManagerProps {
   studies: BEStudy[]
   datasets: SavedDataset[]
   // Optional demo pre-seed
-  demoActiveDataset?: ParsedDataset
+  demoBehaviorDataset?: ParsedDataset
+  demoSensorDataset?: ParsedDataset
+  demoMergedDataset?: ParsedDataset
   demoFitEntries?: FitEntry[]
   demoChartX?: string
   demoChartY?: string
@@ -187,7 +189,9 @@ function mergeByTimestamp(
 export function ModelsManager({
   studies,
   datasets: initialDatasets,
-  demoActiveDataset,
+  demoBehaviorDataset,
+  demoSensorDataset,
+  demoMergedDataset,
   demoFitEntries,
   demoChartX,
   demoChartY,
@@ -200,9 +204,9 @@ export function ModelsManager({
   const [savedDatasets, setSavedDatasets] = useState<SavedDataset[]>(initialDatasets)
 
   // Data sources
-  const [sensorDataset, setSensorDataset] = useState<ParsedDataset | null>(() => demoActiveDataset ?? null)
-  const [behaviorDataset, setBehaviorDataset] = useState<ParsedDataset | null>(null)
-  const [mergedDataset, setMergedDataset] = useState<ParsedDataset | null>(null)
+  const [sensorDataset, setSensorDataset] = useState<ParsedDataset | null>(() => demoSensorDataset ?? null)
+  const [behaviorDataset, setBehaviorDataset] = useState<ParsedDataset | null>(() => demoBehaviorDataset ?? null)
+  const [mergedDataset, setMergedDataset] = useState<ParsedDataset | null>(() => demoMergedDataset ?? null)
   const [toleranceSec, setToleranceSec] = useState(30)
   const [isMerging, setIsMerging] = useState(false)
   const [savedDatasetId, setSavedDatasetId] = useState<string | null>(() => demoSavedDatasetId ?? null)
@@ -694,7 +698,7 @@ export function ModelsManager({
               <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wide">
                 Sensor Data {sensorDataset && <CheckCircle2 className="h-3 w-3 text-green-500" />}
               </p>
-              <DatasetUploader onDataParsed={handleDataParsed} />
+              <DatasetUploader onDataParsed={handleDataParsed} initialDataset={demoSensorDataset} />
               {sensorDataset && (
                 <p className="text-xs text-muted-foreground">
                   <span className="text-green-500 font-medium">{sensorDataset.rows.length} rows</span>

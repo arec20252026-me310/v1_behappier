@@ -202,6 +202,30 @@ const _OCC  = [0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4,
 const _TEMP = [21.2, 21.3, 21.4, 21.5, 21.6, 21.8, 22.0, 22.2, 22.3, 22.5, 22.6, 22.7, 22.8, 23.0, 23.1, 23.2, 23.2, 23.3, 23.3, 23.3, 23.3, 23.2, 23.1, 23.0, 22.9, 22.8, 22.7, 22.5, 22.3, 22.1]
 const _TS   = Array.from({ length: 30 }, (_, i) => `10:${String(i).padStart(2, "0")}:00`)
 
+// Split views for showing individual table previews in the demo
+export const DEMO_BEHAVIOR_DATASET = {
+  filename: "behavior_data.csv",
+  columns: ["Timestamp", "Occupancy (count)"],
+  rows: _OCC.map((occ, i) => ({ "Timestamp": _TS[i], "Occupancy (count)": occ })),
+}
+
+export const DEMO_SENSOR_DATASET = {
+  filename: "demo_co2_data.xlsx",
+  columns: ["Timestamp", "CO2 (ppm)", "Temperature (°C)"],
+  rows: _CO2.map((co2, i) => ({ "Timestamp": _TS[i], "CO2 (ppm)": co2, "Temperature (°C)": _TEMP[i] })),
+}
+
+export const DEMO_MERGED_DATASET = {
+  filename: "demo_co2_data × behavior",
+  columns: ["Timestamp", "CO2 (ppm)", "Temperature (°C)", "Occupancy (count)"],
+  rows: _CO2.map((co2, i) => ({
+    "Timestamp": _TS[i],
+    "CO2 (ppm)": co2,
+    "Temperature (°C)": _TEMP[i],
+    "Occupancy (count)": _OCC[i],
+  })),
+}
+
 export const DEMO_MODEL_DATASET = {
   id: SEED_MODEL_DATASET_ID,
   name: "demo_co2_data × behavior",

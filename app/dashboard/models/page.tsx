@@ -2,8 +2,10 @@ import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { ModelsManager } from "@/components/models/models-manager"
 import { getDemoScenario } from "@/lib/demo-mode"
-import { DEMO_MODEL_DATASET, DEMO_FIT_ENTRIES, STUDY_ID, BE_STUDY_COMPLETE } from "@/lib/demo-seeds"
-import type { ParsedDataset } from "@/components/models/dataset-uploader"
+import {
+  DEMO_MODEL_DATASET, DEMO_FIT_ENTRIES, STUDY_ID, BE_STUDY_COMPLETE,
+  DEMO_BEHAVIOR_DATASET, DEMO_SENSOR_DATASET, DEMO_MERGED_DATASET,
+} from "@/lib/demo-seeds"
 
 const DEMO_STUDY = {
   study_id: STUDY_ID,
@@ -19,9 +21,9 @@ export default async function ModelsPage() {
 
   const supabase = await createClient()
 
-  // ── Studies dropdown ──────────────────────────────────────────────────────
-  // blank / space-ready / study-in-progress: no studies
-  // study-complete / model-created: show the one demo study
+  // Studies dropdown
+  // blank / space-ready / study-in-progress: none
+  // study-complete / model-created: one demo study
   const studies = isDemo
     ? (scenario === "study-complete" || scenario === "model-created" ? [DEMO_STUDY] : [])
     : ((await supabase
@@ -30,8 +32,7 @@ export default async function ModelsPage() {
         .order("created_at", { ascending: false })
         .limit(20)).data ?? [])
 
-  // ── Saved datasets ────────────────────────────────────────────────────────
-  // Only model-created has a pre-saved dataset; all other demo modes show empty
+  // Saved datasets — only model-created shows a pre-saved entry
   const datasets = isDemo
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ? (scenario === "model-created" ? [DEMO_MODEL_DATASET as any] : [])
@@ -39,15 +40,6 @@ export default async function ModelsPage() {
         .from("sensor_datasets")
         .select("*")
         .order("created_at", { ascending: false })).data ?? [])
-
-  // ── Pre-seeded active dataset + fit entries (model-created only) ──────────
-  const demoActiveDataset: ParsedDataset | undefined = scenario === "model-created"
-    ? {
-        filename: DEMO_MODEL_DATASET.name,
-        columns: DEMO_MODEL_DATASET.columns,
-        rows: DEMO_MODEL_DATASET.data as Record<string, string | number>[],
-      }
-    : undefined
 
   return (
     <div className="flex flex-col h-full">
@@ -59,7 +51,10 @@ export default async function ModelsPage() {
         <ModelsManager
           studies={studies}
           datasets={datasets}
-          demoActiveDataset={demoActiveDataset}
+          // model-created: pre-load behavior + sensor + merged, axes, and fits
+          demoBehaviorDataset={scenario === "model-created" ? DEMO_BEHAVIOR_DATASET : undefined}
+          demoSensorDataset={scenario === "model-created" ? DEMO_SENSOR_DATASET : undefined}
+          demoMergedDataset={scenario === "model-created" ? DEMO_MERGED_DATASET : undefined}
           demoFitEntries={scenario === "model-created" ? DEMO_FIT_ENTRIES : undefined}
           demoChartX={scenario === "model-created" ? "CO2 (ppm)" : undefined}
           demoChartY={scenario === "model-created" ? "Occupancy (count)" : undefined}
