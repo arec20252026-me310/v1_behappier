@@ -4,7 +4,7 @@ import { StudiesManager } from "@/components/studies/studies-manager"
 import { getDemoScenario } from "@/lib/demo-mode"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
-  BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
+  BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE, DEMO_DETECTIONS, STUDY_ID,
 } from "@/lib/demo-seeds"
 
 export default async function StudiesPage() {
@@ -63,6 +63,11 @@ export default async function StudiesPage() {
           zones={zones}
           metrics={metrics}
           cameras={cameras}
+          demoDetectionsByStudy={
+            demo && scenario === "study-in-progress"
+              ? { [STUDY_ID]: DEMO_DETECTIONS }
+              : undefined
+          }
         />
       </div>
     </div>

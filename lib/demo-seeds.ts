@@ -127,6 +127,30 @@ export const BE_LIVE_METRICS = {
   },
 }
 
+// ── BE_behavior_detections (demo) ────────────────────────────────────────────
+export const DEMO_DETECTIONS = [
+  {
+    timestamp_pt: "2026-05-05 22:12:36 PDT",
+    detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }],
+    notes: "Two people seated at laptops, working quietly.",
+  },
+  {
+    timestamp_pt: "2026-05-05 22:13:08 PDT",
+    detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }],
+    notes: "Both occupants still present, one has stood up briefly.",
+  },
+  {
+    timestamp_pt: "2026-05-05 22:13:49 PDT",
+    detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }],
+    notes: "A third person has entered and joined the group around the table.",
+  },
+  {
+    timestamp_pt: "2026-05-05 22:14:35 PDT",
+    detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }],
+    notes: "Three people engaged in conversation, gesturing at a shared screen.",
+  },
+]
+
 // ── BE_insight_outputs ────────────────────────────────────────────────────────
 // Real data from study_1778019133385 (Supabase id: 9ecd5e0f-83bc-4e73-8f4e-55d55dbc6be3).
 export const BE_INSIGHT_OUTPUT = {

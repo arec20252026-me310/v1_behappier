@@ -10,7 +10,7 @@ import { getDemoScenario } from "@/lib/demo-mode"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
-  BE_LIVE_METRICS, BE_INSIGHT_OUTPUT,
+  BE_LIVE_METRICS, BE_INSIGHT_OUTPUT, DEMO_DETECTIONS,
 } from "@/lib/demo-seeds"
 
 const ACTIVE_STATUSES = ["running", "analyzing"]
@@ -83,6 +83,9 @@ export default async function DashboardPage() {
               livePreviewMetrics={demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
+              activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
+              activeStudyStatus={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined}
+              demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
             />
             <OccupancyChart latestOutput={latestOutput} studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000} metricDescriptions={demoMetricDescriptions} />
           </div>
@@ -217,6 +220,8 @@ export default async function DashboardPage() {
             livePreviewMetrics={livePreviewMetrics}
             completedStudy={completedStudy}
             completedStudyInsights={completedStudyInsights}
+            activeStudyId={beStudies.find(s => s.status === "running")?.study_id}
+            activeStudyStatus="running"
           />
           <OccupancyChart
             latestOutput={latestOutput}

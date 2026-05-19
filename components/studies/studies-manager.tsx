@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { FlaskConical, Send, RefreshCw, Bot, AlertCircle, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react"
 import type { Space, Zone, Metric, BEStudy, Camera } from "@/lib/types"
+import { LiveDetectionFeed, type DetectionRow } from "./live-detection-feed"
 import { useRouter } from "next/navigation"
 import { deleteStudy } from "@/app/actions/study"
 import { Spinner } from "@/components/ui/spinner"
@@ -51,6 +52,7 @@ interface StudiesManagerProps {
   zones: Zone[]
   metrics: Metric[]
   cameras?: Camera[]
+  demoDetectionsByStudy?: Record<string, DetectionRow[]>
 }
 
 interface N8nResponse {
@@ -110,7 +112,7 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
     .join("\n")
 }
 
-export function StudiesManager({ space, initialStudies, zones, metrics, cameras = [] }: StudiesManagerProps) {
+export function StudiesManager({ space, initialStudies, zones, metrics, cameras = [], demoDetectionsByStudy }: StudiesManagerProps) {
   const router = useRouter()
   const sessionId = useRef<string>(crypto.randomUUID())
   const studies = initialStudies
@@ -485,10 +487,15 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                     </span>
                     <span>{formatDistanceToNow(new Date(study.created_at), { addSuffix: true })}</span>
                   </div>
-                  {study.live_preview_status && (
-                    <p className="text-xs text-muted-foreground">
-                      Preview: {study.live_preview_status}
-                    </p>
+                  {study.status === "running" && (
+                    <div className="pt-1 border-t border-border/50">
+                      <LiveDetectionFeed
+                        studyId={study.study_id}
+                        status={study.status}
+                        limit={4}
+                        demoDetections={demoDetectionsByStudy?.[study.study_id]}
+                      />
+                    </div>
                   )}
                   {study.started_at && (
                     <p className="text-xs text-muted-foreground">

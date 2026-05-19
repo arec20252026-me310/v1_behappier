@@ -16,6 +16,7 @@ import { CameraMapIcon } from "@/components/space/camera-map-icon"
 import Link from "next/link"
 import type { Zone, Insight, Space, Study, CameraPlacement, BELivePreviewMetrics, BEInsightOutput, BEStudy } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { LiveDetectionFeed, type DetectionRow } from "@/components/studies/live-detection-feed"
 
 interface ZoneWithOccupancy extends Zone {
   currentOccupancy: number
@@ -31,6 +32,9 @@ interface SpaceHeatmapProps {
   livePreviewMetrics?: BELivePreviewMetrics | null
   completedStudy?: BEStudy | null
   completedStudyInsights?: BEInsightOutput | null
+  activeStudyId?: string
+  activeStudyStatus?: string
+  demoDetections?: DetectionRow[]
 }
 
 interface BEInsightSelection {
@@ -95,6 +99,9 @@ export function SpaceHeatmap({
   livePreviewMetrics = null,
   completedStudy = null,
   completedStudyInsights = null,
+  activeStudyId,
+  activeStudyStatus,
+  demoDetections,
 }: SpaceHeatmapProps) {
   const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
@@ -322,6 +329,19 @@ export function SpaceHeatmap({
               <p className="text-[10px] text-muted-foreground">Abnormal Zones</p>
             </div>
           </div>
+
+          {/* Live detection feed — shown when a study is running */}
+          {activeStudyId && (
+            <div className="mt-4 border-t border-border pt-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Latest Detection</p>
+              <LiveDetectionFeed
+                studyId={activeStudyId}
+                status={activeStudyStatus ?? "running"}
+                limit={1}
+                demoDetections={demoDetections ? [demoDetections[demoDetections.length - 1]] : undefined}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
