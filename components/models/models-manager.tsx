@@ -43,7 +43,10 @@ import {
   CheckCircle2,
   BarChart2,
   Sliders,
+  ChevronDown,
+  Info,
 } from "lucide-react"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -208,6 +211,7 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
     epochs: 100, learningRate: 0.01, windowSize: 8, hiddenUnits: 32, numLayers: 2,
   })
   const [trainingProgress, setTrainingProgress] = useState<{ epoch: number; totalEpochs: number; loss: number } | null>(null)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [trainingLoss, setTrainingLoss] = useState<number[]>([])
 
   // Results
@@ -857,21 +861,45 @@ export function ModelsManager({ studies, datasets: initialDatasets }: ModelsMana
               </div>
             )}
             {NN_MODEL_TYPES.includes(modelType) && (
-              <div className="grid grid-cols-2 gap-3">
-                {([
-                  { label: "Epochs", key: "epochs" as const, min: 10, max: 1000 },
-                  { label: "Learning Rate", key: "learningRate" as const, min: 0.0001, max: 0.1, step: 0.0001 },
-                  { label: "Hidden Units", key: "hiddenUnits" as const, min: 4, max: 256 },
-                  { label: "Window Size", key: "windowSize" as const, min: 2, max: 64 },
-                  ...(modelType === "mlp" ? [{ label: "Layers", key: "numLayers" as const, min: 1, max: 3 }] : []),
-                ] as { label: string; key: keyof NNConfig; min: number; max: number; step?: number }[]).map(({ label, key, min, max, step }) => (
-                  <div key={key} className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">{label}</Label>
-                    <Input type="number" min={min} max={max} step={step ?? 1} value={nnConfig[key]}
-                      onChange={(e) => setNNConfig((c) => ({ ...c, [key]: Number(e.target.value) }))}
-                      className="h-8 text-sm" />
+              <div className="border border-border rounded-md overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setAdvancedOpen((o) => !o)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:bg-muted/30 transition-colors"
+                >
+                  <span className="font-medium">Advanced Settings</span>
+                  <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", advancedOpen && "rotate-180")} />
+                </button>
+                {advancedOpen && (
+                  <div className="grid grid-cols-2 gap-3 px-3 pb-3 pt-2 border-t border-border">
+                    {([
+                      { label: "Epochs", key: "epochs" as const, min: 10, max: 1000, tooltip: "Number of full passes through the training data. More epochs can improve accuracy but take longer." },
+                      { label: "Learning Rate", key: "learningRate" as const, min: 0.0001, max: 0.1, step: 0.0001, tooltip: "How large each weight update step is. Lower values train more slowly but more stably; higher values train faster but may overshoot." },
+                      { label: "Hidden Units", key: "hiddenUnits" as const, min: 4, max: 256, tooltip: "Number of neurons in each hidden layer. More units increase model capacity but also training time and risk of overfitting." },
+                      { label: "Window Size", key: "windowSize" as const, min: 2, max: 64, tooltip: "Number of past time steps used as context for each prediction. Larger windows capture longer-range patterns." },
+                      ...(modelType === "mlp" ? [{ label: "Layers", key: "numLayers" as const, min: 1, max: 3, tooltip: "Number of hidden layers in the network. Deeper networks can learn more complex patterns but are harder to train." }] : []),
+                    ] as { label: string; key: keyof NNConfig; min: number; max: number; step?: number; tooltip: string }[]).map(({ label, key, min, max, step, tooltip }) => (
+                      <div key={key} className="space-y-1.5">
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs text-muted-foreground">{label}</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                                <Info className="h-3 w-3" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[200px]">
+                              {tooltip}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input type="number" min={min} max={max} step={step ?? 1} value={nnConfig[key]}
+                          onChange={(e) => setNNConfig((c) => ({ ...c, [key]: Number(e.target.value) }))}
+                          className="h-8 text-sm" />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
             {trainingProgress && (
