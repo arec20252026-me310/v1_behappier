@@ -12,7 +12,7 @@ const DEMO_STUDY = {
   study_goal: "There is not much entry and exit in the loft. Track the number of occupants over time.",
   status: "complete",
   created_at: BE_STUDY_COMPLETE.created_at,
-  metadata: {},
+  metadata: { study_name: "ME310 Loft Occupancy Study" },
 }
 
 export default async function ModelsPage() {
