@@ -16,6 +16,7 @@ export interface DetectionRow {
   image_id: string
   timestamp_pt: string | null
   notes: string | null
+  detected_behaviors?: { name: string; value: number | string; unit?: string }[] | null
 }
 
 interface InsightsListProps {

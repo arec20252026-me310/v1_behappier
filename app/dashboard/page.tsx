@@ -73,6 +73,7 @@ export default async function DashboardPage() {
             studiesCount={demoStudies.length}
             insightsCount={insightsCount}
             metricsCount={hasStudy ? DEMO_METRICS.filter(m => m.is_active).length : 0}
+            latestInsightAt={demoInsights[0]?.created_at}
           />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <SpaceHeatmap
@@ -85,6 +86,7 @@ export default async function DashboardPage() {
               completedStudyInsights={demoCompletedInsights}
               activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
               activeStudyStatus={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined}
+              activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id : undefined}
               demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
             />
             <OccupancyChart latestOutput={latestOutput} studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000} metricDescriptions={demoMetricDescriptions} />
@@ -209,6 +211,7 @@ export default async function DashboardPage() {
           studiesCount={beStudies.length}
           insightsCount={insightsCount}
           metricsCount={metrics.length}
+          latestInsightAt={beInsights[0]?.created_at}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -222,6 +225,10 @@ export default async function DashboardPage() {
             completedStudyInsights={completedStudyInsights}
             activeStudyId={beStudies.find(s => s.status === "running")?.study_id}
             activeStudyStatus="running"
+            activeStudyMonitoredZoneId={(() => {
+              const s = beStudies.find(s => s.status === "running") as { metadata?: { monitored_zone_id?: string; target_zones?: string[] } } | undefined
+              return s?.metadata?.monitored_zone_id ?? s?.metadata?.target_zones?.[0]
+            })()}
           />
           <OccupancyChart
             latestOutput={latestOutput}

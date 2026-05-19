@@ -236,7 +236,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
           behavior_targets: form.target_metrics
             .map(id => metrics.find(m => m.id === id))
             .filter(Boolean)
-            .map(m => ({ behavior_name: m!.name, behavior_description: m!.description ?? "", behavior_units: m!.unit ?? "" })),
+            .map(m => ({ behavior_name: m!.name, behavior_description: m!.description ?? "", behavior_units: m!.unit ?? "", behavior_rubric: m!.rubric ?? "" })),
           duration_seconds: form.duration_minutes ? form.duration_minutes * 60 : null,
         }),
       })
@@ -474,17 +474,22 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
               <Card key={study.id} className="bg-card border-border">
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium text-foreground line-clamp-2 flex-1">
-                      {study.study_goal}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground line-clamp-1">
+                        {(study.metadata as Record<string, unknown>)?.study_name as string ?? study.study_goal}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5" title={study.study_id}>
+                        {study.study_id.replace(/^study_/, "ID ")}
+                      </p>
+                      {study.study_goal && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{study.study_goal}</p>
+                      )}
+                    </div>
                     <Badge className={cn(stage.color, "shrink-0 text-xs")}>{stage.label}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="font-mono" title={study.study_id}>
-                      {study.study_id.slice(0, 18)}…
-                    </span>
+                  <div className="flex items-center justify-end text-xs text-muted-foreground">
                     <span>{formatDistanceToNow(new Date(study.created_at), { addSuffix: true })}</span>
                   </div>
                   {study.status === "running" && (

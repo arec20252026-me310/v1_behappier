@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Activity, BarChart3, Users, BookOpen, Trash2, Thermometer, Shield } from "lucide-react"
+import { Plus, Activity, BarChart3, Users, BookOpen, Trash2, Thermometer, Shield, Pencil, Check, X } from "lucide-react"
 import type { Space, Metric } from "@/lib/types"
 import { METRIC_CATEGORIES, PREDEFINED_METRICS } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
@@ -30,6 +30,24 @@ export function MetricsManager({ space, initialMetrics }: MetricsManagerProps) {
   const supabase = createClient()
   const [metrics, setMetrics] = useState<Metric[]>(initialMetrics)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [editingRubricId, setEditingRubricId] = useState<string | null>(null)
+  const [rubricDraft, setRubricDraft] = useState("")
+
+  const startEditRubric = (metric: Metric) => {
+    setEditingRubricId(metric.id)
+    setRubricDraft(metric.rubric ?? "")
+  }
+
+  const saveRubric = async (metricId: string) => {
+    const { error } = await supabase
+      .from("metrics")
+      .update({ rubric: rubricDraft || null })
+      .eq("id", metricId)
+    if (!error) {
+      setMetrics(metrics.map(m => m.id === metricId ? { ...m, rubric: rubricDraft || null } : m))
+    }
+    setEditingRubricId(null)
+  }
 
   if (!space) {
     return (
@@ -149,6 +167,44 @@ export function MetricsManager({ space, initialMetrics }: MetricsManagerProps) {
                             </p>
                           </div>
                         )}
+                        {/* Rubric */}
+                        <div className="mt-2">
+                          {editingRubricId === metric.id ? (
+                            <div className="space-y-1">
+                              <textarea
+                                autoFocus
+                                value={rubricDraft}
+                                onChange={e => setRubricDraft(e.target.value)}
+                                placeholder="Describe how to calculate this metric from a snapshot…"
+                                rows={3}
+                                className="w-full text-xs px-2 py-1.5 rounded border border-border bg-background text-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
+                              />
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs gap-1" onClick={() => saveRubric(metric.id)}>
+                                  <Check className="h-3 w-3" /> Save
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs gap-1 text-muted-foreground" onClick={() => setEditingRubricId(null)}>
+                                  <X className="h-3 w-3" /> Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => startEditRubric(metric)}
+                              className="flex items-start gap-1 group w-full text-left"
+                            >
+                              {metric.rubric ? (
+                                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                                  <span className="font-medium text-foreground/60">Rubric: </span>{metric.rubric}
+                                </p>
+                              ) : (
+                                <p className="text-xs text-muted-foreground/50 italic flex items-center gap-1">
+                                  <Pencil className="h-3 w-3" /> Add scoring rubric…
+                                </p>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Switch

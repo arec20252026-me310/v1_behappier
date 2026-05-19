@@ -39,6 +39,7 @@ export function AddMetricDialog({
     category: "traffic_flow",
     unit: "",
     literature_reference: "",
+    rubric: "",
   })
 
   const existingNames = existingMetrics.map(m => m.name.toLowerCase())
@@ -82,6 +83,7 @@ export function AddMetricDialog({
         category: formData.category,
         unit: formData.unit || null,
         literature_reference: formData.literature_reference || null,
+        rubric: formData.rubric || null,
         is_active: true,
       })
       .select()
@@ -95,6 +97,7 @@ export function AddMetricDialog({
         category: "traffic_flow",
         unit: "",
         literature_reference: "",
+        rubric: "",
       })
     }
     setLoading(false)
@@ -225,6 +228,17 @@ export function AddMetricDialog({
                   value={formData.literature_reference}
                   onChange={(e) => setFormData({ ...formData, literature_reference: e.target.value })}
                   placeholder="e.g., Author (Year). Title"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="rubric">Scoring Rubric (optional)</Label>
+                <Textarea
+                  id="rubric"
+                  value={formData.rubric}
+                  onChange={(e) => setFormData({ ...formData, rubric: e.target.value })}
+                  placeholder="How should the AI calculate this metric from a snapshot? e.g., Count each visible person. Include partially visible people. Score = 0 if no one present."
+                  rows={3}
                 />
               </div>
 

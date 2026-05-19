@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { InsightsList } from "@/components/insights/insights-list"
 import type { DetectionRow } from "@/components/insights/insights-list"
+import { MarkInsightsViewed } from "@/components/insights/mark-insights-viewed"
 import { getDemoScenario } from "@/lib/demo-mode"
 import { isReviewMode } from "@/lib/review-mode"
 import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS } from "@/lib/demo-seeds"
@@ -58,7 +59,7 @@ export default async function InsightsPage() {
   if (review && studyIds.length > 0) {
     const { data: detections } = await supabase
       .from("BE_behavior_detections")
-      .select("id, study_id, image_id, timestamp_pt, notes")
+      .select("id, study_id, image_id, timestamp_pt, notes, detected_behaviors")
       .in("study_id", studyIds)
       .order("timestamp", { ascending: true })
 
@@ -75,6 +76,7 @@ export default async function InsightsPage() {
         subtitle="AI-generated findings and recommendations from your studies"
       />
 
+      <MarkInsightsViewed />
       <div className="flex-1 p-6 overflow-auto">
         <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} studyDurations={studyDurations} metricDescriptions={metricDescriptions} />
       </div>

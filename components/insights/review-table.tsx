@@ -1,13 +1,25 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { X, ChevronLeft, ChevronRight } from "lucide-react"
+import { useState, useCallback, useMemo, useEffect, useRef } from "react"
+import { X, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown } from "lucide-react"
 import { SnapshotCell } from "./snapshot-cell"
 import type { DetectionRow } from "./insights-list"
+import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
 
 function snapshotUrl(imageId: string): string {
   const path = `snapshots/camera_loft_camera_fluent/${imageId}.jpg`
   return `/api/snapshot?path=${encodeURIComponent(path)}`
+}
+
+// Each snapshot produces one row per behavior metric, so rows are not 1:1 with detections.
+// Match by the timestamp column value instead of row index.
+function buildDetectionByTimestamp(detections: DetectionRow[]): Record<string, DetectionRow> {
+  const map: Record<string, DetectionRow> = {}
+  for (const d of detections) {
+    if (d.timestamp_pt) map[d.timestamp_pt] = d
+  }
+  return map
 }
 
 interface ReviewTableProps {
@@ -17,8 +29,59 @@ interface ReviewTableProps {
   title?: string
 }
 
+type Verdict = "correct" | "incorrect"
+// evaluations[detectionId][behaviorName] = verdict
+type Evaluations = Record<string, Record<string, Verdict>>
+
 export function ReviewTable({ columns, rows, detections, title }: ReviewTableProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(null)
+  const [evaluations, setEvaluations] = useState<Evaluations>({})
+  const supabase = useRef(createClient()).current
+
+  // Load persisted evaluations from Supabase on mount
+  useEffect(() => {
+    const ids = detections.map(d => d.id).filter(Boolean)
+    if (ids.length === 0) return
+    supabase
+      .from("behavior_evaluations")
+      .select("detection_id, behavior_name, verdict")
+      .in("detection_id", ids)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return
+        const loaded: Evaluations = {}
+        for (const row of data) {
+          if (!loaded[row.detection_id]) loaded[row.detection_id] = {}
+          loaded[row.detection_id][row.behavior_name] = row.verdict as Verdict
+        }
+        setEvaluations(loaded)
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Column index helpers
+  const tsColIdx = useMemo(() => columns.findIndex(c => /^timestamp/i.test(c)), [columns])
+  const behaviorColIdx = useMemo(() => columns.findIndex(c => /^behavior/i.test(c)), [columns])
+
+  // Timestamp → detection lookup
+  const detectionByTimestamp = useMemo(() => buildDetectionByTimestamp(detections), [detections])
+  const getRowDetection = useCallback((rowIdx: number): DetectionRow | null => {
+    const row = rows[rowIdx]
+    if (!row) return null
+    if (tsColIdx >= 0 && row[tsColIdx]) {
+      return detectionByTimestamp[row[tsColIdx]] ?? detections[rowIdx] ?? null
+    }
+    return detections[rowIdx] ?? null
+  }, [rows, tsColIdx, detectionByTimestamp, detections])
+
+  // Unique snapshot count (detections represented in the table)
+  const uniqueDetectionCount = useMemo(() => {
+    const seen = new Set<string>()
+    for (const row of rows) {
+      const ts = tsColIdx >= 0 ? row[tsColIdx] : null
+      if (ts) seen.add(ts)
+    }
+    return seen.size || rows.length
+  }, [rows, tsColIdx])
 
   const close = useCallback(() => setOpenIdx(null), [])
   const prev = useCallback(() => setOpenIdx(i => (i !== null && i > 0 ? i - 1 : i)), [])
@@ -35,14 +98,80 @@ export function ReviewTable({ columns, rows, detections, title }: ReviewTablePro
     return () => window.removeEventListener("keydown", onKey)
   }, [openIdx, prev, next, close])
 
-  const currentDetection = openIdx !== null ? detections[openIdx] : null
+  const setVerdict = useCallback((detId: string, behaviorName: string, verdict: Verdict) => {
+    let isToggleOff = false
+    setEvaluations(prev => {
+      const detEvals = prev[detId] ?? {}
+      if (detEvals[behaviorName] === verdict) {
+        isToggleOff = true
+        const updated = { ...detEvals }
+        delete updated[behaviorName]
+        return { ...prev, [detId]: updated }
+      }
+      return { ...prev, [detId]: { ...detEvals, [behaviorName]: verdict } }
+    })
+
+    // Persist to Supabase
+    if (isToggleOff) {
+      supabase.from("behavior_evaluations")
+        .delete()
+        .eq("detection_id", detId)
+        .eq("behavior_name", behaviorName)
+        .then()
+    } else {
+      const studyId = detections.find(d => d.id === detId)?.study_id ?? null
+      supabase.from("behavior_evaluations")
+        .upsert(
+          { detection_id: detId, behavior_name: behaviorName, verdict, study_id: studyId, updated_at: new Date().toISOString() },
+          { onConflict: "detection_id,behavior_name" }
+        )
+        .then()
+    }
+
+    // Always advance to the next row (each row = one behavior)
+    if (!isToggleOff) {
+      setOpenIdx(i => (i !== null && i < rows.length - 1 ? i + 1 : null))
+    }
+  }, [rows.length, detections, supabase])
+
+  // Accuracy per behavior across all evaluated detections
+  const accuracySummary = useMemo(() => {
+    const counts: Record<string, { correct: number; total: number }> = {}
+    for (const behaviorVerdicts of Object.values(evaluations)) {
+      for (const [behaviorName, verdict] of Object.entries(behaviorVerdicts)) {
+        if (!counts[behaviorName]) counts[behaviorName] = { correct: 0, total: 0 }
+        counts[behaviorName].total++
+        if (verdict === "correct") counts[behaviorName].correct++
+      }
+    }
+    return Object.entries(counts).map(([metric, { correct, total }]) => ({ metric, correct, total }))
+  }, [evaluations])
+
+  // All rows evaluated = one verdict per row
+  const evaluatedRowCount = useMemo(() => {
+    let count = 0
+    for (let ri = 0; ri < rows.length; ri++) {
+      const det = getRowDetection(ri)
+      const behaviorName = behaviorColIdx >= 0 ? rows[ri][behaviorColIdx] : null
+      if (det && behaviorName && evaluations[det.id]?.[behaviorName]) count++
+    }
+    return count
+  }, [evaluations, rows, getRowDetection, behaviorColIdx])
+
+  const allEvaluated = evaluatedRowCount === rows.length && rows.length > 0
+
+  const currentDetection = openIdx !== null ? getRowDetection(openIdx) : null
   const currentRow = openIdx !== null ? rows[openIdx] : null
+  const currentBehaviorName = currentRow && behaviorColIdx >= 0 ? currentRow[behaviorColIdx] : null
+  const currentVerdict = currentDetection && currentBehaviorName
+    ? evaluations[currentDetection.id]?.[currentBehaviorName] ?? null
+    : null
   const canPrev = openIdx !== null && openIdx > 0
   const canNext = openIdx !== null && openIdx < rows.length - 1
 
   return (
     <>
-      <div className="space-y-1.5">
+      <div className="space-y-3">
         {title && <p className="text-xs text-muted-foreground">{title}</p>}
         <div className="overflow-x-auto rounded border border-border">
           <table className="w-full text-xs">
@@ -59,24 +188,72 @@ export function ReviewTable({ columns, rows, detections, title }: ReviewTablePro
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, ri) => (
-                <tr key={ri} className="border-b border-border last:border-0 hover:bg-muted/20">
-                  <td className="px-2 py-1">
-                    <SnapshotCell
-                      imageId={detections[ri]?.image_id}
-                      onExpand={() => setOpenIdx(ri)}
-                    />
-                  </td>
-                  {row.map((cell, ci) => (
-                    <td key={ci} className="px-2 py-1.5 text-foreground/80">
-                      {cell ?? "—"}
+              {rows.map((row, ri) => {
+                const det = getRowDetection(ri)
+                const behaviorName = behaviorColIdx >= 0 ? row[behaviorColIdx] : null
+                const verdict = det && behaviorName ? evaluations[det.id]?.[behaviorName] : undefined
+                return (
+                  <tr
+                    key={ri}
+                    className={cn(
+                      "border-b border-border last:border-0 hover:bg-muted/20",
+                      verdict === "correct" && "bg-green-500/5",
+                      verdict === "incorrect" && "bg-red-500/5",
+                    )}
+                  >
+                    <td className="px-2 py-1">
+                      <div className="flex items-center gap-1">
+                        {verdict && (
+                          <div className={cn(
+                            "w-1.5 h-1.5 rounded-full shrink-0",
+                            verdict === "correct" ? "bg-green-500" : "bg-red-500"
+                          )} />
+                        )}
+                        <SnapshotCell
+                          imageId={det?.image_id}
+                          onExpand={() => setOpenIdx(ri)}
+                        />
+                      </div>
                     </td>
-                  ))}
-                </tr>
-              ))}
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="px-2 py-1.5 text-foreground/80">
+                        {cell ?? "—"}
+                      </td>
+                    ))}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
+
+        {/* Accuracy summary — shown as soon as any behavior is evaluated */}
+        {accuracySummary.length > 0 && (
+          <div className="space-y-2 pt-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Metric Accuracy — {evaluatedRowCount} of {rows.length} rows evaluated{allEvaluated ? " ✓" : ""}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {accuracySummary.map(({ metric, correct, total }) => {
+                const pct = Math.round((correct / total) * 100)
+                return (
+                  <div key={metric} className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 min-w-[140px]">
+                    <div>
+                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">{metric}</p>
+                      <p className={cn(
+                        "text-xl font-semibold",
+                        pct >= 80 ? "text-green-400" : pct >= 60 ? "text-yellow-400" : "text-red-400"
+                      )}>
+                        {pct}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">{correct}/{total} correct</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {openIdx !== null && (
@@ -128,6 +305,39 @@ export function ReviewTable({ columns, rows, detections, title }: ReviewTablePro
                 alt="Snapshot"
                 className="w-full rounded-lg object-contain shadow-2xl"
               />
+            )}
+
+            {/* Single behavior evaluation — matches the row that was clicked */}
+            {currentDetection && currentBehaviorName && (
+              <div className="flex items-center justify-between gap-3 bg-black/60 backdrop-blur rounded-lg px-4 py-3">
+                <span className="text-sm text-white/80">{currentBehaviorName}</span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={e => { e.stopPropagation(); setVerdict(currentDetection.id, currentBehaviorName, "correct") }}
+                    className={cn(
+                      "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                      currentVerdict === "correct"
+                        ? "bg-green-500 text-white"
+                        : "bg-white/10 text-white/70 hover:bg-green-500/40 hover:text-white"
+                    )}
+                  >
+                    <ThumbsUp className="h-4 w-4" />
+                    Correct
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); setVerdict(currentDetection.id, currentBehaviorName, "incorrect") }}
+                    className={cn(
+                      "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                      currentVerdict === "incorrect"
+                        ? "bg-red-500 text-white"
+                        : "bg-white/10 text-white/70 hover:bg-red-500/40 hover:text-white"
+                    )}
+                  >
+                    <ThumbsDown className="h-4 w-4" />
+                    Incorrect
+                  </button>
+                </div>
+              </div>
             )}
 
             {/* Log entry */}

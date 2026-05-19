@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Map, FlaskConical, Lightbulb, BarChart3, TrendingUp, TrendingDown } from "lucide-react"
 import Link from "next/link"
@@ -9,12 +10,25 @@ interface MetricCardsProps {
   studiesCount: number
   insightsCount: number
   metricsCount: number
+  latestInsightAt?: string
 }
 
-export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCount }: MetricCardsProps) {
+export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCount, latestInsightAt }: MetricCardsProps) {
+  const [newInsightsCount, setNewInsightsCount] = useState(insightsCount)
+
+  useEffect(() => {
+    if (!latestInsightAt) { setNewInsightsCount(0); return }
+    const viewedAt = localStorage.getItem("behappier_insights_viewed_at")
+    if (viewedAt && new Date(viewedAt) >= new Date(latestInsightAt)) {
+      setNewInsightsCount(0)
+    } else {
+      setNewInsightsCount(insightsCount)
+    }
+  }, [latestInsightAt, insightsCount])
+
   const cards = [
     {
-      title: "Active Zones",
+      title: "Configured Zones",
       value: zonesCount,
       change: zonesCount === 0 ? "Set up your space" : `${zonesCount} configured`,
       trend: "neutral",
@@ -42,9 +56,9 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
     },
     {
       title: "New Insights",
-      value: insightsCount,
-      change: insightsCount === 0 ? "No insights yet" : `${insightsCount} to review`,
-      trend: insightsCount > 0 ? "up" : "neutral",
+      value: newInsightsCount,
+      change: newInsightsCount === 0 ? "No new insights" : `${newInsightsCount} to review`,
+      trend: newInsightsCount > 0 ? "up" : "neutral",
       icon: Lightbulb,
       color: "text-chart-4",
       href: "/dashboard/insights",

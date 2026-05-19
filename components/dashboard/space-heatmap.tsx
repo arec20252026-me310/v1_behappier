@@ -34,6 +34,7 @@ interface SpaceHeatmapProps {
   completedStudyInsights?: BEInsightOutput | null
   activeStudyId?: string
   activeStudyStatus?: string
+  activeStudyMonitoredZoneId?: string
   demoDetections?: DetectionRow[]
 }
 
@@ -101,12 +102,14 @@ export function SpaceHeatmap({
   completedStudyInsights = null,
   activeStudyId,
   activeStudyStatus,
+  activeStudyMonitoredZoneId,
   demoDetections,
 }: SpaceHeatmapProps) {
   const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
   const [selectedBEInsight, setSelectedBEInsight] = useState<BEInsightSelection | null>(null)
   const [cameras, setCameras] = useState<CameraPlacement[]>(cameraProp)
+  const [insightsViewed, setInsightsViewed] = useState(false)
 
   useEffect(() => {
     setHasActiveStudy(studies.some(s => s.status === "active"))
@@ -120,14 +123,24 @@ export function SpaceHeatmap({
     } catch {}
   }, [space?.id])
 
+  useEffect(() => {
+    const createdAt = completedStudyInsights?.created_at
+    if (!createdAt) return
+    const viewedAt = localStorage.getItem("behappier_insights_viewed_at")
+    setInsightsViewed(!!viewedAt && new Date(viewedAt) >= new Date(createdAt))
+  }, [completedStudyInsights?.created_at])
+
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   const gridResolution = space?.grid_resolution || 8
   const floorPlanUrl = space?.floor_plan_url
   const CONTAINER_SIZE = 500
   const CELL_SIZE = Math.floor(CONTAINER_SIZE / gridResolution)
 
-  // Zone highlighted by a completed study (from metadata.monitored_zone_id)
-  const monitoredZoneId = completedStudy?.metadata?.monitored_zone_id as string | undefined
+  // Zone highlighted by a completed study — real studies use target_zones[0], demo uses monitored_zone_id
+  const monitoredZoneId = (
+    (completedStudy?.metadata?.monitored_zone_id as string | undefined) ??
+    ((completedStudy?.metadata?.target_zones as string[] | undefined)?.[0])
+  )
 
   if (zones.length === 0) {
     return (
@@ -172,8 +185,11 @@ export function SpaceHeatmap({
   const gridWidth  = gridResolution * CELL_SIZE
   const gridHeight = gridResolution * CELL_SIZE
 
-  // Is the completed-study mode active (no live monitoring)?
-  const hasCompletedInsights = !!monitoredZoneId && !!completedStudyInsights && !livePreviewMetrics
+  // Is the completed-study mode active (no live monitoring, no running study, not yet viewed)?
+  const hasCompletedInsights = !!monitoredZoneId && !!completedStudyInsights && !livePreviewMetrics && !activeStudyId && !insightsViewed
+
+  // Active running study zone highlight
+  const isRunningStudy = !!activeStudyId && !hasCompletedInsights && !livePreviewMetrics
 
   return (
     <>
@@ -203,6 +219,19 @@ export function SpaceHeatmap({
         </CardHeader>
 
         <CardContent>
+          {/* Live detection feed — shown when a study is running */}
+          {activeStudyId && (
+            <div className="mb-3 border-b border-border pb-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Latest Detection</p>
+              <LiveDetectionFeed
+                studyId={activeStudyId}
+                status={activeStudyStatus ?? "running"}
+                limit={1}
+                demoDetections={demoDetections ? [demoDetections[demoDetections.length - 1]] : undefined}
+              />
+            </div>
+          )}
+
           {/* Legend */}
           <div className="flex items-center gap-4 mb-2 text-xs flex-wrap">
             {livePreviewMetrics ? (
@@ -215,8 +244,8 @@ export function SpaceHeatmap({
             ) : (
               <>
                 <span className="text-muted-foreground">Status:</span>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Normal</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Abnormal — click for insight</span></div>
+                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
+                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
               </>
             )}
           </div>
@@ -252,6 +281,7 @@ export function SpaceHeatmap({
             {zonesWithOccupancy.map((zone) => {
               const legacyInsight = getZoneInsight(zone.id, insights)
               const isBEInsightZone = hasCompletedInsights && zone.id === monitoredZoneId
+              const isActiveStudyZone = isRunningStudy && zone.id === activeStudyMonitoredZoneId
               const hasAnyInsight = !!legacyInsight || isBEInsightZone
 
               const liveOccupancy = livePreviewMetrics
@@ -260,11 +290,11 @@ export function SpaceHeatmap({
 
               const bgColor = liveOccupancy !== null
                 ? getLiveHeatmapColor(liveOccupancy)
-                : getHeatmapColor(hasAnyInsight)
+                : (isActiveStudyZone ? "rgba(234, 179, 8, 0.35)" : getHeatmapColor(hasAnyInsight))
 
               const borderColor = liveOccupancy !== null
                 ? (liveOccupancy >= 80 ? "rgba(239,68,68,0.8)" : liveOccupancy >= 50 ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
-                : (hasAnyInsight ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
+                : (hasAnyInsight || isActiveStudyZone ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
 
               return (
                 <div
@@ -282,9 +312,9 @@ export function SpaceHeatmap({
                     height: zone.grid_height * CELL_SIZE - 2,
                     backgroundColor: bgColor,
                     borderColor,
-                    borderWidth: hasAnyInsight || liveOccupancy !== null ? 2 : 1,
+                    borderWidth: hasAnyInsight || isActiveStudyZone || liveOccupancy !== null ? 2 : 1,
                     cursor: hasAnyInsight ? "pointer" : "default",
-                    boxShadow: isBEInsightZone && !liveOccupancy
+                    boxShadow: (isBEInsightZone || isActiveStudyZone) && !liveOccupancy
                       ? "0 0 18px rgba(234,179,8,0.5), 0 0 36px rgba(234,179,8,0.2)"
                       : undefined,
                   }}
@@ -318,30 +348,6 @@ export function SpaceHeatmap({
             })}
           </div>
 
-          {/* Stats row */}
-          <div className="mt-4 text-center">
-            <div className="p-2 rounded-lg bg-secondary/50 inline-block min-w-[100px]">
-              <p className="text-lg font-semibold text-yellow-500">
-                {zonesWithOccupancy.filter(z =>
-                  !!getZoneInsight(z.id, insights) || (hasCompletedInsights && z.id === monitoredZoneId)
-                ).length}
-              </p>
-              <p className="text-[10px] text-muted-foreground">Abnormal Zones</p>
-            </div>
-          </div>
-
-          {/* Live detection feed — shown when a study is running */}
-          {activeStudyId && (
-            <div className="mt-4 border-t border-border pt-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Latest Detection</p>
-              <LiveDetectionFeed
-                studyId={activeStudyId}
-                status={activeStudyStatus ?? "running"}
-                limit={1}
-                demoDetections={demoDetections ? [demoDetections[demoDetections.length - 1]] : undefined}
-              />
-            </div>
-          )}
         </CardContent>
       </Card>
 

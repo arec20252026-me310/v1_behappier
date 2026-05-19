@@ -133,6 +133,7 @@ export interface Metric {
   unit: string | null
   calculation_method: string | null
   literature_reference: string | null
+  rubric: string | null
   is_active: boolean
   created_at: string
   updated_at: string
