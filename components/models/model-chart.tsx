@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   ComposedChart,
   Scatter,
@@ -7,7 +8,6 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
 } from "recharts"
 import type { FitResult } from "@/lib/model-fitting"
@@ -79,6 +79,8 @@ export function ModelChart({
   xLabel,
   yLabel,
 }: ModelChartProps) {
+  const [hoveredDot, setHoveredDot] = useState<{ cx: number; cy: number; x: number; raw: number } | null>(null)
+
   if (xValues.length === 0) {
     return (
       <div className="h-80 flex items-center justify-center text-sm text-muted-foreground">
@@ -163,7 +165,7 @@ export function ModelChart({
 
   return (
     <div className="space-y-3">
-      <div style={{ height: 300 }}>
+      <div style={{ height: 300, position: "relative" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart margin={{ top: 8, right: 24, left: 8, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
@@ -197,41 +199,28 @@ export function ModelChart({
                   : undefined
               }
             />
-            <Tooltip
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null
-                const point = payload[0]?.payload as Record<string, number>
-                const x = point.x
-                return (
-                  <div style={TOOLTIP_STYLE}>
-                    <p style={{ color: "#9ca3af", marginBottom: 4 }}>
-                      {xIsTime
-                        ? secondsToTimestamp(x ?? 0)
-                        : `${xLabel ?? "X"}: ${Number.isInteger(x) ? x : (x ?? 0).toFixed(2)}`}
-                    </p>
-                    {point.raw !== undefined && (
-                      <p style={{ color: DATA_COLOR }}>Data: {point.raw.toFixed(4)}</p>
-                    )}
-                    {[...entryLines, ...entryScatters].map(({ entry }) =>
-                      point[entry.id] !== undefined ? (
-                        <p key={entry.id} style={{ color: entry.color }}>
-                          {entry.label}: {point[entry.id].toFixed(4)}
-                        </p>
-                      ) : null
-                    )}
-                  </div>
-                )
-              }}
-            />
 
             {/* Raw data scatter */}
             <Scatter
               name="Data"
               data={scatterData}
               dataKey="raw"
-              fill={DATA_COLOR}
-              opacity={0.6}
-              r={3}
+              shape={(props: Record<string, unknown>) => {
+                const { cx, cy, payload } = props as { cx: number; cy: number; payload: { x: number; raw: number } }
+                const isHovered = hoveredDot?.cx === cx && hoveredDot?.cy === cy
+                return (
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={isHovered ? 7 : 5}
+                    fill={DATA_COLOR}
+                    opacity={0.6}
+                    style={{ cursor: "default" }}
+                    onMouseEnter={() => setHoveredDot({ cx, cy, x: payload.x, raw: payload.raw })}
+                    onMouseLeave={() => setHoveredDot(null)}
+                  />
+                )
+              }}
             />
 
             {/* Single-input fits: smooth line */}
@@ -265,6 +254,29 @@ export function ModelChart({
 
           </ComposedChart>
         </ResponsiveContainer>
+
+        {hoveredDot && (
+          <div
+            style={{
+              ...TOOLTIP_STYLE,
+              position: "absolute",
+              left: hoveredDot.cx + 12,
+              top: Math.max(0, hoveredDot.cy - 40),
+              pointerEvents: "none",
+              zIndex: 10,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <p style={{ color: "#9ca3af", marginBottom: 2 }}>
+              {xIsTime
+                ? secondsToTimestamp(hoveredDot.x)
+                : `${xLabel ?? "X"}: ${Number.isInteger(hoveredDot.x) ? hoveredDot.x : hoveredDot.x.toFixed(2)}`}
+            </p>
+            <p style={{ color: DATA_COLOR }}>
+              {yLabel ?? "Y"}: {hoveredDot.raw.toFixed(4)}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Custom legend */}

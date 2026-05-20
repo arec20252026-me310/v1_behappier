@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { formatDistanceToNow } from "date-fns"
 import Papa from "papaparse"
 import * as XLSX from "xlsx"
@@ -212,8 +212,14 @@ export function ModelsManager({
   const [isMerging, setIsMerging] = useState(false)
   const [savedDatasetId, setSavedDatasetId] = useState<string | null>(() => demoSavedDatasetId ?? null)
   const [datasetName, setDatasetName] = useState(() => demoDatasetName ?? "")
-  const [selectedStudyId, setSelectedStudyId] = useState(() => demoSelectedStudyId ?? "none")
+
+  const initialStudyId = demoSelectedStudyId
+    ?? studies.find(s => s.status === "complete")?.study_id
+    ?? studies[0]?.study_id
+    ?? "none"
+  const [selectedStudyId, setSelectedStudyId] = useState(() => initialStudyId)
   const [isLoadingStudy, setIsLoadingStudy] = useState(false)
+  const autoLoaded = useRef(false)
 
   const activeDataset = mergedDataset ?? sensorDataset ?? behaviorDataset
   const canMerge = !!(sensorDataset && behaviorDataset)
@@ -257,6 +263,17 @@ export function ModelsManager({
     setModelInputCols(numCols.slice(0, 1))
     setModelOutputCol(numCols[numCols.length - 1] ?? "")
   }
+
+  // ── Auto-load most recent study on mount ─────────────────────────────────────
+
+  useEffect(() => {
+    if (autoLoaded.current) return
+    if (demoSelectedStudyId || demoBehaviorDataset || demoMergedDataset) return
+    if (initialStudyId === "none") return
+    autoLoaded.current = true
+    handleLoadFromStudy()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Load behavior data ────────────────────────────────────────────────────────
 
