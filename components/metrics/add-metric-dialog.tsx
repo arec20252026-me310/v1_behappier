@@ -59,6 +59,7 @@ export function AddMetricDialog({
         category: predefined.category,
         unit: predefined.unit,
         literature_reference: predefined.literature_reference,
+        rubric: predefined.rubric,
         is_active: true,
       })
       .select()
