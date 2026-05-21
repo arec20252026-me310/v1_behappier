@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nreturn [{\n  json: {\n    study_id: 'study_test_05',\n    building_id: 'bldg_001',\n    zone_ids: ['north_entrance_lobby'],\n    behavior_targets: [\n      { behavior_name: 'Utilization Rate', behavior_description: 'Percentage of capacity being used over time', behavior_units: 'percentage' },\n      { behavior_name: 'Foot Traffic Count', behavior_description: 'Number of people entering/exiting a zone', behavior_units: 'count' },\n    ],\n    setup_instructions: 'Monitor the main turnstile zone for occupant flow behaviors.',\n    last_etag_seen: null,\n    debug_mode: true,\n  }\n}];\n"
+        "jsCode": "return [{ json: { study_id: 'study_test_05', building_id: 'bldg_001', zone_ids: ['north_entrance_lobby'], behavior_targets: [{ behavior_name: 'Utilization Rate', behavior_description: 'Percentage of capacity being used over time', behavior_units: 'percentage' }], setup_instructions: 'Monitor the main turnstile zone for occupant flow behaviors.', last_etag_seen: null, review_mode: false, debug_mode: true, camera_id: 'camera_1' } }];"
       },
       "id": "7b44f063-3304-4b02-a79a-ac68362d385b",
       "name": "Inject Test Payload",
@@ -141,7 +141,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nlet input = {};\ntry { input = $('When Executed by Orchestrator').item.json; } catch {}\nif (!input.study_id) { try { input = $('Inject Test Payload').item.json; } catch {} }\nif (!input.study_id) { try { input = $('Extract Webhook Body').item.json; } catch {} }\n\nconst studyRows = Array.isArray($input.first().json) ? $input.first().json : [$input.first().json];\nconst study = studyRows[0] ?? {};\nconst startedAt = study.started_at ? new Date(study.started_at) : new Date();\nconst durationSeconds = study.duration_seconds ?? input.duration_seconds ?? 600;\nconst studyEndTime = new Date(startedAt.getTime() + durationSeconds * 1000);\nconst inheritedEndTime = input.study_end_time ?? null;\nconst isFirstCycle = (input.last_etag_seen ?? null) === null;\n\n// Set status to Running on first cycle\nif (isFirstCycle) {\n  const supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\n  const supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\n  const sid = study.study_id ?? input.study_id;\n  try {\n    await this.helpers.httpRequest({\n      method: 'PATCH',\n      url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(sid),\n      headers: {\n        'apikey': supabaseKey,\n        'Authorization': 'Bearer ' + supabaseKey,\n        'Content-Type': 'application/json',\n        'Prefer': 'return=minimal'\n      },\n      body: JSON.stringify({ status: 'running', current_stage: 'monitoring', updated_at: new Date().toISOString() })\n    });\n  } catch(e) {}\n}\n\nreturn [{\n  json: {\n    study_id: study.study_id ?? input.study_id,\n    building_id: study.building_id ?? input.building_id ?? null,\n    zone_ids: input.zone_ids ?? [],\n    behavior_targets: input.behavior_targets ?? [],\n    setup_instructions: input.setup_instructions ?? study.study_goal ?? '',\n    proxy_url: input.proxy_url ?? 'http://127.0.0.1:5680',\n    study_end_time: inheritedEndTime ?? studyEndTime.toISOString(),\n    last_etag_seen: input.last_etag_seen ?? null,\n    debug_mode: input.debug_mode ?? false,\n  }\n}];\n"
+        "jsCode": "\nlet input = {};\ntry { input = $('When Executed by Orchestrator').item.json; } catch {}\nif (!input.study_id) { try { input = $('Inject Test Payload').item.json; } catch {} }\nif (!input.study_id) { try { input = $('Extract Webhook Body').item.json; } catch {} }\nconst studyRows = Array.isArray($input.first().json) ? $input.first().json : [$input.first().json];\nconst study = studyRows[0] ?? {};\nconst startedAt = study.started_at ? new Date(study.started_at) : new Date();\nconst durationSeconds = study.duration_seconds ?? input.duration_seconds ?? 600;\nconst studyEndTime = new Date(startedAt.getTime() + durationSeconds * 1000);\nconst inheritedEndTime = input.study_end_time ?? null;\nconst isFirstCycle = (input.last_etag_seen ?? null) === null;\nconst reviewMode = input.review_mode ?? study.metadata?.review_mode ?? false;\nconst studyId = study.study_id ?? input.study_id;\n\n// camera_id from payload, default to camera_1\nconst cameraId = input.camera_id ?? 'camera_1';\n\n// Build proxy_url — if already contains ?camera= use as-is, otherwise append\nconst baseProxyUrl = 'http://127.0.0.1:5680';\nconst proxyUrl = baseProxyUrl + '?camera=' + cameraId;\n\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\nconst headers = { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json' };\n\nif (isFirstCycle) {\n  try { await this.helpers.httpRequest({ method: 'PATCH', url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(studyId), headers: { ...headers, 'Prefer': 'return=minimal' }, body: JSON.stringify({ status: 'running', current_stage: 'monitoring', updated_at: new Date().toISOString() }) }); } catch(e) {}\n}\n\nlet allDetections = [];\nlet recentDetections = [];\nlet studyContext = null;\n\ntry {\n  const allRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_behavior_detections?study_id=eq.' + encodeURIComponent(studyId) + '&order=timestamp.asc&limit=1000', headers });\n  allDetections = Array.isArray(allRes) ? allRes : [];\n  recentDetections = allDetections.slice(-5).map(d => ({ timestamp: d.timestamp_pt ?? d.timestamp, detected_behaviors: d.detected_behaviors ?? [], notes: d.notes ?? '' }));\n  if (allDetections.length > 0) {\n    const behaviorStats = {};\n    for (const d of allDetections) {\n      for (const b of (d.detected_behaviors ?? [])) {\n        if (!behaviorStats[b.name]) behaviorStats[b.name] = { values: [], unit: b.unit };\n        if (typeof b.value === 'number') behaviorStats[b.name].values.push(b.value);\n      }\n    }\n    const behaviorSummary = {};\n    for (const [name, stats] of Object.entries(behaviorStats)) {\n      const vals = stats.values;\n      if (vals.length === 0) continue;\n      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;\n      const sorted = [...vals].sort((a, b) => a - b);\n      let trend = 'stable';\n      if (vals.length >= 6) {\n        const earlyAvg = vals.slice(0, 3).reduce((a, b) => a + b, 0) / 3;\n        const recentAvg = vals.slice(-3).reduce((a, b) => a + b, 0) / 3;\n        if (recentAvg > earlyAvg + 0.5) trend = 'rising';\n        else if (recentAvg < earlyAvg - 0.5) trend = 'falling';\n      }\n      const recentChanges = [];\n      for (let i = Math.max(1, vals.length - 3); i < vals.length; i++) {\n        const delta = vals[i] - vals[i - 1];\n        const ts = allDetections[i]?.timestamp_pt ?? allDetections[i]?.timestamp ?? '';\n        if (Math.abs(delta) >= 2) recentChanges.push((delta > 0 ? '+' : '') + delta.toFixed(0) + ' at ' + ts);\n      }\n      behaviorSummary[name] = { unit: stats.unit, detection_count: vals.length, mean: Math.round(mean * 10) / 10, min: sorted[0], max: sorted[sorted.length - 1], latest: vals[vals.length - 1], trend, recent_changes: recentChanges };\n    }\n    studyContext = { detection_count: allDetections.length, elapsed_seconds: Math.round((new Date() - startedAt) / 1000), behaviors: behaviorSummary };\n  }\n} catch(e) { studyContext = null; recentDetections = []; }\n\nreturn [{ json: { study_id: studyId, building_id: study.building_id ?? input.building_id ?? null, zone_ids: input.zone_ids ?? [], behavior_targets: input.behavior_targets ?? [], setup_instructions: input.setup_instructions ?? study.study_goal ?? '', proxy_url: proxyUrl, camera_id: cameraId, study_end_time: inheritedEndTime ?? studyEndTime.toISOString(), last_etag_seen: input.last_etag_seen ?? null, review_mode: reviewMode, debug_mode: input.debug_mode ?? false, study_context: studyContext, recent_detections: recentDetections } }];\n"
       },
       "id": "5e058f1c-9dcd-41d8-b1b8-44789f07de00",
       "name": "Prepare Monitoring Context",
@@ -174,7 +174,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst ctx = $('Prepare Monitoring Context').item.json;\nconst etag = $json.etag ?? null;\nconst imageDataUrl = $json.image_data_url ?? null;\nconst lastEtagSeen = ctx.last_etag_seen ?? null;\nconst imageChanged = etag === null || etag !== lastEtagSeen;\nconst now = new Date();\nconst studyEndTime = new Date(ctx.study_end_time);\nconst studyExpired = now >= studyEndTime;\nreturn [{\n  json: {\n    ...ctx,\n    image_data_url: imageDataUrl,\n    current_etag: etag,\n    image_changed: imageChanged,\n    study_expired: studyExpired,\n    checked_at: now.toISOString(),\n    fetch_failed: imageDataUrl === null,\n    image_id: 'snapshot_' + now.toISOString().replace(/[:.]/g, '-'),\n    timestamp: now.toISOString(),\n    zone_id: ctx.zone_ids?.[0] ?? null,\n  }\n}];\n"
+        "jsCode": "\nconst ctx = $('Prepare Monitoring Context').item.json;\nconst etag = $json.etag ?? null;\nconst imageDataUrl = $json.image_data_url ?? null;\nconst lastEtagSeen = ctx.last_etag_seen ?? null;\nconst imageChanged = etag === null || etag !== lastEtagSeen;\nconst now = new Date();\nconst studyEndTime = new Date(ctx.study_end_time);\nconst studyExpired = now >= studyEndTime;\nreturn [{ json: { ...ctx, image_data_url: imageDataUrl, current_etag: etag, image_changed: imageChanged, study_expired: studyExpired, checked_at: now.toISOString(), fetch_failed: imageDataUrl === null, image_id: 'snapshot_' + now.toISOString().replace(/[:.]/g, '-'), timestamp: now.toISOString(), zone_id: ctx.zone_ids?.[0] ?? null } }];\n"
       },
       "id": "27725d4c-2f2a-458d-8faf-e9c0adb1f0ed",
       "name": "Check If Image Changed",
@@ -221,7 +221,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst ctx = $json;\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\ntry {\n  await this.helpers.httpRequest({\n    method: 'PATCH',\n    url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(ctx.study_id),\n    headers: {\n      'apikey': supabaseKey,\n      'Authorization': 'Bearer ' + supabaseKey,\n      'Content-Type': 'application/json',\n      'Prefer': 'return=minimal'\n    },\n    body: JSON.stringify({ status: 'analyzing', current_stage: 'analyzing', updated_at: new Date().toISOString() })\n  });\n} catch(e) {}\nreturn [{ json: ctx }];\n"
+        "jsCode": "\nconst ctx = $json;\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\ntry { await this.helpers.httpRequest({ method: 'PATCH', url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(ctx.study_id), headers: { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ status: 'analyzing', current_stage: 'analyzing', updated_at: new Date().toISOString() }) }); } catch(e) {}\nreturn [{ json: ctx }];\n"
       },
       "id": "0fe76fde-3676-4fc2-bd58-92310a29757a",
       "name": "Set Status: Analyzing",
@@ -299,6 +299,107 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rev-001",
+              "leftValue": "={{ $json.review_mode }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7f9b19dd-5361-4821-a363-2c043631544e",
+      "name": "Review Mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst ctx = $json;\nconst dataUrl = ctx.image_data_url ?? '';\nconst imageId = ctx.image_id;\nconst cameraId = ctx.camera_id ?? 'camera_1';\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\n\nlet mimeType = 'image/jpeg'; let base64Data = dataUrl; let fileExt = 'jpg';\nif (dataUrl.startsWith('data:')) {\n  const commaIdx = dataUrl.indexOf(','); const header = dataUrl.substring(5, commaIdx); base64Data = dataUrl.substring(commaIdx + 1);\n  const mimeMatch = header.match(/^([^;]+)/);\n  if (mimeMatch) { mimeType = mimeMatch[1].toLowerCase(); if (mimeType === 'image/png') fileExt = 'png'; else if (mimeType === 'image/webp') fileExt = 'webp'; else { mimeType = 'image/jpeg'; fileExt = 'jpg'; } }\n}\nbase64Data = base64Data.replace(/\\s/g, '');\nconst binaryBuffer = Buffer.from(base64Data, 'base64');\nconst magic = binaryBuffer.slice(0, 4);\nif (magic[0] === 0xFF && magic[1] === 0xD8) { mimeType = 'image/jpeg'; fileExt = 'jpg'; }\nelse if (magic[0] === 0x89 && magic[1] === 0x50) { mimeType = 'image/png'; fileExt = 'png'; }\nelse if (magic[0] === 0x52 && magic[1] === 0x49) { mimeType = 'image/webp'; fileExt = 'webp'; }\n\nconst storagePath = `snapshots/${cameraId}/${imageId}.${fileExt}`;\nconst uploadUrl = supabaseUrl + '/storage/v1/object/camera-snapshots/' + storagePath + '?upsert=true';\nconst authHeader = 'Bearer ' + supabaseKey;\nconst fileName = imageId + '.' + fileExt;\nconst binaryData = await this.helpers.prepareBinaryData(binaryBuffer, fileName, mimeType);\nreturn [{ json: { ...ctx, storage_path: storagePath, upload_url: uploadUrl, mime_type: mimeType, auth_header: authHeader, apikey: supabaseKey, buffer_size: binaryBuffer.length }, binary: { snapshot: binaryData } }];\n"
+      },
+      "id": "ae11c747-8a7b-4490-a49b-6fd90dbcc040",
+      "name": "Prepare Snapshot Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.upload_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.auth_header }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.mime_type }}"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $json.apikey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "snapshot",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "c9d5e742-4551-4e7d-bcde-71907c672b53",
+      "name": "Upload Snapshot to Storage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst prev = $('Prepare Snapshot Binary').item.json;\nconst resp = $json;\nconst success = resp.Key !== undefined || resp.key !== undefined || resp.Id !== undefined || resp.id !== undefined;\nreturn [{ json: { ...prev, snapshot_uploaded: success, snapshot_path: success ? prev.storage_path : null, snapshot_upload_error: success ? null : JSON.stringify(resp) }}];\n"
+      },
+      "id": "e42906f6-0fa6-4ffd-b05b-83b9ced3feb3",
+      "name": "Mark Snapshot Uploaded",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        192
+      ]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.openai.com/v1/responses",
         "sendHeaders": true,
@@ -316,7 +417,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: 'gpt-4.1-mini',\n  input: [\n    { role: 'system', content: [{ type: 'input_text', text: 'You are a building behavior monitoring agent. Analyze the image and return ONLY valid JSON with these exact keys:\\n- detected_behaviors: array of objects, each with { name, value, unit } where value is a quantified measurement in the given unit (not true/false)\\n- occupant_count: integer or null\\n- notes: string\\n\\nFor unit types:\\n- percentage: return a float 0.0 to 1.0 (e.g. 0.75 means 75% utilized)\\n- count: return an integer (e.g. 2 people)\\n- score: return a float 0.0 to 1.0\\n- rate: return a float (events per minute)\\nIf a behavior is not present, return value: 0 (not null).' }] },\n    { role: 'user', content: [\n      { type: 'input_text', text: 'Study: ' + $json.study_id + '\\nZone: ' + ($json.zone_id || 'unknown') + '\\nSetup: ' + ($json.setup_instructions || '') + '\\n\\nBehaviors to detect and quantify:\\n' + ($json.behavior_targets || []).map(b => '- ' + b.behavior_name + ' (' + (b.behavior_units || 'value') + ')' + (b.behavior_description ? ': ' + b.behavior_description : '')).join('\\n') },\n      { type: 'input_image', image_url: $json.image_data_url }\n    ]}\n  ],\n  max_output_tokens: 1500\n}) }}",
+        "jsonBody": "={{ JSON.stringify({ model: 'gpt-4.1', input: [{ role: 'system', content: [{ type: 'input_text', text: 'You are a building behavior monitoring agent. Analyze the image and return ONLY valid JSON with these exact keys:\\n- detected_behaviors: array of objects, each with { name, value, unit }\\n- occupant_count: integer or null\\n- notes: string\\n\\nIMPORTANT: You MUST return one entry in detected_behaviors for EVERY behavior listed in the input, even if the value is 0. Never return an empty detected_behaviors array.\\n\\nTEMPORAL CONTEXT: You will receive two optional fields:\\n- study_context: a code-computed statistical summary of ALL detections so far this study (mean, min, max, trend, recent changes per behavior)\\n- recent_detections: the last 5 raw detections with timestamps, values and notes\\n\\nUse this context to inform your current reading — for example, detect whether a sustained behavior is continuing or changing, track whether the same people are present, or note if a behavior has shifted from its recent trend. Only reference past context in your notes when it adds meaningful insight.' }] }, { role: 'user', content: [{ type: 'input_text', text: 'Study: ' + $json.study_id + '\\nCamera: ' + ($json.camera_id || 'camera_1') + '\\nZone: ' + ($json.zone_id || 'unknown') + '\\nBehaviors:\\n' + ($json.behavior_targets || []).map(b => '- ' + b.behavior_name + ' (' + (b.behavior_units || 'value') + ')' + (b.behavior_description ? ' — ' + b.behavior_description : '') + (b.behavior_rubric ? '\\n  Rubric: ' + b.behavior_rubric : '')).join('\\n') + ($json.study_context ? '\\n\\nStudy context (all detections so far):\\n' + JSON.stringify($json.study_context, null, 2) : '') + ($json.recent_detections && $json.recent_detections.length > 0 ? '\\n\\nLast ' + $json.recent_detections.length + ' detections:\\n' + JSON.stringify($json.recent_detections, null, 2) : '') }, { type: 'input_image', image_url: $json.image_data_url }] }], max_output_tokens: 1500 }) }}",
         "options": {
           "response": {
             "response": {
@@ -330,21 +431,60 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1792,
+        2688,
         288
       ],
       "retryOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "\nconst ctx = $('Check If Image Changed').item.json;\nconst body = $json;\nlet rawText = '';\nif (body.output && Array.isArray(body.output)) {\n  for (const block of body.output) {\n    if (block.type === 'message' && Array.isArray(block.content)) {\n      for (const c of block.content) {\n        if (c.type === 'output_text' || c.type === 'text') { rawText = c.text ?? ''; break; }\n      }\n    }\n    if (rawText) break;\n  }\n}\nif (!rawText && body.choices) rawText = body.choices?.[0]?.message?.content ?? '';\nif (!rawText) rawText = body.output_text ?? '';\nconst debugResponse = { status: body.status ?? null, error: body.error ?? null, usage: body.usage ?? null, raw_text_extracted: rawText.slice(0, 500) };\nlet parsed = {}, parseError = null;\ntry {\n  const clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();\n  parsed = JSON.parse(clean);\n} catch (e) { parseError = 'parse_failed: ' + rawText.slice(0, 200); }\nreturn [{\n  json: {\n    study_id: ctx.study_id, image_id: ctx.image_id, timestamp: ctx.timestamp, zone_id: ctx.zone_id,\n    detected_behaviors: parsed.detected_behaviors ?? [],\n    notes: parsed.notes ?? (parseError ? parseError : ''),\n    model_version: 'gpt-4.1-mini',\n    parse_error: parseError, raw_api_response: debugResponse,\n    proxy_url: ctx.proxy_url, study_end_time: ctx.study_end_time,\n    behavior_targets: ctx.behavior_targets, setup_instructions: ctx.setup_instructions,\n    zone_ids: ctx.zone_ids, building_id: ctx.building_id,\n    current_etag: ctx.current_etag, debug_mode: ctx.debug_mode,\n  }\n}];\n"
+        "jsCode": "return [{ json: { ...$json, snapshot_uploaded: false, snapshot_path: null } }];"
+      },
+      "id": "d2735768-73e0-459a-bf93-26b2e79dfefc",
+      "name": "Skip Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$json, skip_reason: 'image_unchanged' } }];"
+      },
+      "id": "31583bd8-9259-4c87-a8de-91bc2039a653",
+      "name": "Skip — Image Unchanged",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3136,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nlet ctx = {};\ntry { ctx = $('Parse Detection JSON').item.json; } catch {}\nif (!ctx.study_id) { try { ctx = $('Skip — Image Unchanged').item.json; } catch {} }\nif (!ctx.study_id) { try { ctx = $('Check If Image Changed').item.json; } catch {} }\nreturn [{ json: { study_id: ctx.study_id, building_id: ctx.building_id ?? null, zone_ids: ctx.zone_ids ?? [], behavior_targets: ctx.behavior_targets ?? [], setup_instructions: ctx.setup_instructions ?? '', proxy_url: ctx.proxy_url ?? 'http://127.0.0.1:5680?camera=camera_1', camera_id: ctx.camera_id ?? 'camera_1', study_end_time: ctx.study_end_time, last_etag_seen: ctx.current_etag ?? ctx.last_etag_seen ?? null, review_mode: ctx.review_mode ?? false, debug_mode: ctx.debug_mode ?? false } }];\n"
+      },
+      "id": "a2277891-9afc-488d-9664-7913e78699b2",
+      "name": "Prepare Next Loop",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst ctx = $('Check If Image Changed').item.json;\nconst body = $json;\nlet rawText = '';\nif (body.output && Array.isArray(body.output)) { for (const block of body.output) { if (block.type === 'message' && Array.isArray(block.content)) { for (const c of block.content) { if (c.type === 'output_text' || c.type === 'text') { rawText = c.text ?? ''; break; } } } if (rawText) break; } }\nif (!rawText && body.choices) rawText = body.choices?.[0]?.message?.content ?? '';\nif (!rawText) rawText = body.output_text ?? '';\nconst debugResponse = { status: body.status ?? null, error: body.error ?? null, usage: body.usage ?? null, raw_text_extracted: rawText.slice(0, 500) };\nlet parsed = {}, parseError = null;\ntry { const clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim(); parsed = JSON.parse(clean); } catch (e) { parseError = 'parse_failed: ' + rawText.slice(0, 200); }\nif (parseError && (!parsed.detected_behaviors || parsed.detected_behaviors.length === 0)) { return []; }\nconst behaviorTargets = ctx.behavior_targets ?? [];\nconst normalizedBehaviors = (parsed.detected_behaviors ?? []).map((b, i) => {\n  const target = behaviorTargets[i] ?? behaviorTargets[0];\n  return { name: target ? target.behavior_name : b.name, value: b.value, unit: target ? target.behavior_units : b.unit };\n});\nconst finalBehaviors = normalizedBehaviors.length > 0\n  ? normalizedBehaviors\n  : behaviorTargets.map(t => ({ name: t.behavior_name, value: 0, unit: t.behavior_units }));\nreturn [{ json: { study_id: ctx.study_id, image_id: ctx.image_id, timestamp: ctx.timestamp, zone_id: ctx.zone_id, camera_id: ctx.camera_id, detected_behaviors: finalBehaviors, notes: parsed.notes ?? '', model_version: 'gpt-4.1', parse_error: parseError, raw_api_response: debugResponse, proxy_url: ctx.proxy_url, study_end_time: ctx.study_end_time, behavior_targets: ctx.behavior_targets, setup_instructions: ctx.setup_instructions, zone_ids: ctx.zone_ids, building_id: ctx.building_id, current_etag: ctx.current_etag, debug_mode: ctx.debug_mode, review_mode: ctx.review_mode } }];\n"
       },
       "id": "2e9d57ff-fe21-4d35-8f14-eab28ac4cc72",
       "name": "Parse Detection JSON",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2016,
+        2912,
         288
       ]
     },
@@ -375,7 +515,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  study_id: $json.study_id, image_id: $json.image_id, timestamp: $json.timestamp,\n  zone_id: $json.zone_id, detected_behaviors: $json.detected_behaviors,\n  notes: $json.notes, model_version: $json.model_version,\n  raw_api_response: $json.raw_api_response,\n  created_at: new Date().toISOString()\n}) }}",
+        "jsonBody": "={{ JSON.stringify({ study_id: $json.study_id, image_id: $json.image_id, timestamp: $json.timestamp, zone_id: $json.zone_id, detected_behaviors: $json.detected_behaviors, notes: $json.notes, model_version: $json.model_version, raw_api_response: $json.raw_api_response, created_at: new Date().toISOString() }) }}",
         "options": {
           "response": {
             "response": {
@@ -389,23 +529,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2240,
+        3136,
         288
       ],
       "retryOnFail": true
-    },
-    {
-      "parameters": {
-        "jsCode": "\nlet ctx = {};\ntry { ctx = $('Parse Detection JSON').item.json; } catch {}\nif (!ctx.study_id) { try { ctx = $('Skip — Image Unchanged').item.json; } catch {} }\nif (!ctx.study_id) { try { ctx = $('Check If Image Changed').item.json; } catch {} }\nreturn [{\n  json: {\n    study_id: ctx.study_id,\n    building_id: ctx.building_id ?? null,\n    zone_ids: ctx.zone_ids ?? [],\n    behavior_targets: ctx.behavior_targets ?? [],\n    setup_instructions: ctx.setup_instructions ?? '',\n    proxy_url: ctx.proxy_url ?? 'http://127.0.0.1:5680',\n    study_end_time: ctx.study_end_time,\n    last_etag_seen: ctx.current_etag ?? ctx.last_etag_seen ?? null,\n    debug_mode: ctx.debug_mode ?? false,\n  }\n}];\n"
-      },
-      "id": "a2277891-9afc-488d-9664-7913e78699b2",
-      "name": "Prepare Next Loop",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2464,
-        480
-      ]
     },
     {
       "parameters": {
@@ -416,10 +543,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        2688,
+        3584,
         480
       ],
-      "webhookId": "85b0bfc4-86fd-4487-b77b-5dbd8c48c108"
+      "webhookId": "6b11c455-30eb-4bcf-b14c-cca6bd6faacd"
     },
     {
       "parameters": {
@@ -437,8 +564,10 @@
             "behavior_targets": "={{ $json.behavior_targets }}",
             "setup_instructions": "={{ $json.setup_instructions }}",
             "proxy_url": "={{ $json.proxy_url }}",
+            "camera_id": "={{ $json.camera_id }}",
             "study_end_time": "={{ $json.study_end_time }}",
             "last_etag_seen": "={{ $json.last_etag_seen }}",
+            "review_mode": "={{ $json.review_mode }}",
             "debug_mode": "={{ $json.debug_mode }}"
           },
           "matchingColumns": [],
@@ -455,20 +584,7 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2912,
-        480
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ json: { ...$json, skip_reason: 'image_unchanged' } }];"
-      },
-      "id": "31583bd8-9259-4c87-a8de-91bc2039a653",
-      "name": "Skip — Image Unchanged",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2240,
+        3808,
         480
       ]
     }
@@ -612,7 +728,7 @@
       "main": [
         [
           {
-            "node": "Analyze Image With Vision Model",
+            "node": "Review Mode?",
             "type": "main",
             "index": 0
           }
@@ -626,11 +742,95 @@
         ]
       ]
     },
+    "Review Mode?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Snapshot Binary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Snapshot Binary": {
+      "main": [
+        [
+          {
+            "node": "Upload Snapshot to Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Snapshot to Storage": {
+      "main": [
+        [
+          {
+            "node": "Mark Snapshot Uploaded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Snapshot Uploaded": {
+      "main": [
+        [
+          {
+            "node": "Analyze Image With Vision Model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Analyze Image With Vision Model": {
       "main": [
         [
           {
             "node": "Parse Detection JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip Upload": {
+      "main": [
+        [
+          {
+            "node": "Analyze Image With Vision Model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip — Image Unchanged": {
+      "main": [
+        [
+          {
+            "node": "Prepare Next Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Next Loop": {
+      "main": [
+        [
+          {
+            "node": "Wait 3 Seconds",
             "type": "main",
             "index": 0
           }
@@ -659,33 +859,11 @@
         ]
       ]
     },
-    "Prepare Next Loop": {
-      "main": [
-        [
-          {
-            "node": "Wait 3 Seconds",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Wait 3 Seconds": {
       "main": [
         [
           {
             "node": "Loop — Run Next Cycle",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Skip — Image Unchanged": {
-      "main": [
-        [
-          {
-            "node": "Prepare Next Loop",
             "type": "main",
             "index": 0
           }
@@ -699,7 +877,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "f8dce30d-af2f-4ef1-858b-b1b582168e69",
+  "versionId": "12e9af93-2650-47f5-b9f7-d93a509c3702",
   "meta": {
     "aiBuilderAssisted": true,
     "builderVariant": "mcp",
