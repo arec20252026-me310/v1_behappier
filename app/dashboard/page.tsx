@@ -4,6 +4,7 @@ import { MetricCards } from "@/components/dashboard/metric-cards"
 import { OccupancyChart } from "@/components/dashboard/occupancy-chart"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
 import { LatestDetectionCard } from "@/components/dashboard/latest-detection-card"
+import { StudyStatusWatcher } from "@/components/dashboard/study-status-watcher"
 import { getDemoScenario } from "@/lib/demo-mode"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
@@ -221,6 +222,8 @@ export default async function DashboardPage() {
           metricsCount={metrics.length}
           latestInsightAt={beInsights[0]?.created_at}
         />
+
+        {beStudies[0] && <StudyStatusWatcher activeStudyId={beStudies[0].study_id} />}
 
         {(() => {
           const runningStudy = beStudies.find(s => s.status === "running")
