@@ -386,12 +386,12 @@ export function SpaceHeatmap({
 
       {/* Enlarge Dialog */}
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="max-w-[min(95vw,95vh)] w-[min(95vw,95vh)] h-[95vh] flex flex-col p-4 gap-0 overflow-y-auto">
+          <DialogHeader className="shrink-0 pb-2">
             <DialogTitle className="text-base font-medium">Occupancy Heatmap</DialogTitle>
             <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
           </DialogHeader>
-          {gridInner}
+          <div className="flex-1 min-h-0">{gridInner}</div>
         </DialogContent>
       </Dialog>
 

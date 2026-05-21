@@ -4,7 +4,14 @@ import { useEffect, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { BarChart3 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { BarChart3, Maximize2 } from "lucide-react"
 import Link from "next/link"
 import type { BEInsightOutput } from "@/lib/types"
 import { TimeSeriesChart } from "@/components/insights/time-series-chart"
@@ -33,7 +40,6 @@ function extractLineSeries(output: BEInsightOutput): ChartSeries[] {
 }
 
 function buildLiveSeries(detections: DetectionRow[]): ChartSeries[] {
-  // Group rows by behavior name, use timestamp_pt as labels
   const seriesMap = new Map<string, { labels: string[]; values: (number | null)[] }>()
 
   for (const row of detections) {
@@ -68,21 +74,19 @@ export function OccupancyChart({
   demoDetections,
 }: OccupancyChartProps) {
   const [liveDetections, setLiveDetections] = useState<DetectionRow[]>([])
+  const [isEnlarged, setIsEnlarged] = useState(false)
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
   useEffect(() => {
-    // Reset live detections when activeStudyId changes
     setLiveDetections([])
 
     if (!activeStudyId) return
 
-    // Demo mode: use provided detections, no Supabase subscription
     if (demoDetections) {
       setLiveDetections(demoDetections)
       return
     }
 
-    // Real mode: subscribe to Supabase realtime
     const supabase = createClient()
 
     async function loadInitial() {
@@ -126,7 +130,6 @@ export function OccupancyChart({
   const fallbackSeries = latestOutput ? extractLineSeries(latestOutput) : []
   const series = isLive ? liveSeries : fallbackSeries
 
-  // Empty state: no live study and no historical data
   if (!isLive && !series.length) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
@@ -151,7 +154,6 @@ export function OccupancyChart({
     )
   }
 
-  // Empty state: live study active but no detections yet
   if (isLive && liveDetections.length === 0) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
@@ -178,32 +180,66 @@ export function OccupancyChart({
     )
   }
 
+  const chartEl = (
+    <TimeSeriesChart
+      series={series}
+      height={350}
+      studyDurationMs={studyDurationMs}
+      xAxisLabel="Timestamp"
+      yAxisLabel={series.length === 1 ? series[0].title : undefined}
+      seriesDescriptions={metricDescriptions}
+      isLive={isLive}
+    />
+  )
+
   return (
-    <Card className="bg-card border-border pt-2 pb-4">
-      <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
-          {isLive && (
-            <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
-              Live
-            </Badge>
-          )}
-        </div>
-        <Link href="/dashboard/insights">
-          <Button variant="ghost" size="sm" className="text-xs">View All</Button>
-        </Link>
-      </CardHeader>
-      <CardContent>
-        <TimeSeriesChart
-          series={series}
-          height={350}
-          studyDurationMs={studyDurationMs}
-          xAxisLabel="Timestamp"
-          yAxisLabel={series.length === 1 ? series[0].title : undefined}
-          seriesDescriptions={metricDescriptions}
-          isLive={isLive}
-        />
-      </CardContent>
-    </Card>
+    <>
+      <Card className="bg-card border-border pt-2 pb-4">
+        <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
+            {isLive && (
+              <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
+                Live
+              </Badge>
+            )}
+          </div>
+          <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => setIsEnlarged(true)}>
+            <Maximize2 className="h-3.5 w-3.5" />
+            Enlarge
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {chartEl}
+        </CardContent>
+      </Card>
+
+      <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
+        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col p-6 gap-0 overflow-y-auto">
+          <DialogHeader className="shrink-0 pb-3">
+            <div className="flex items-center gap-2">
+              <DialogTitle className="text-base font-medium">Occupancy Over Time</DialogTitle>
+              {isLive && (
+                <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
+                  Live
+                </Badge>
+              )}
+            </div>
+            <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            <TimeSeriesChart
+              series={series}
+              height={600}
+              studyDurationMs={studyDurationMs}
+              xAxisLabel="Timestamp"
+              yAxisLabel={series.length === 1 ? series[0].title : undefined}
+              seriesDescriptions={metricDescriptions}
+              isLive={isLive}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
