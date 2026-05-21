@@ -21,7 +21,7 @@ export function LatestDetectionCard({ studyId, status, demoDetections }: LatestD
         </Badge>
       </CardHeader>
       <CardContent>
-        <LiveDetectionFeed studyId={studyId} status={status} limit={4} demoDetections={demoDetections} />
+        <LiveDetectionFeed studyId={studyId} status={status} limit={1} demoDetections={demoDetections} />
       </CardContent>
     </Card>
   )
