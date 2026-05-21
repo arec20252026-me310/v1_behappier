@@ -247,7 +247,7 @@ export function OccupancyChart({
                 <LiveDetectionFeed
                   studyId={activeStudyId}
                   status={activeStudyStatus ?? "running"}
-                  limit={4}
+                  limit={1}
                   demoDetections={demoDetections}
                 />
               </div>

@@ -386,7 +386,7 @@ export function SpaceHeatmap({
                 <LiveDetectionFeed
                   studyId={activeStudyId}
                   status={activeStudyStatus ?? "running"}
-                  limit={6}
+                  limit={1}
                   demoDetections={demoDetections}
                 />
               </div>
