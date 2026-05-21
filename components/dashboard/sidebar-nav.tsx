@@ -99,7 +99,7 @@ export function SidebarNav() {
               )}
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span className="text-sm font-semibold">{item.title}</span>}
+              {!collapsed && <span className="text-base font-semibold">{item.title}</span>}
             </Link>
           )
         })}
@@ -114,7 +114,7 @@ export function SidebarNav() {
           )}
         >
           <Clapperboard className="h-5 w-5 shrink-0 text-muted-foreground" />
-          {!collapsed && <span className="text-sm font-semibold text-muted-foreground">Start Demo</span>}
+          {!collapsed && <span className="text-base font-semibold text-muted-foreground">Start Demo</span>}
         </Link>
         <Link
           href="/dashboard/settings"
@@ -124,7 +124,7 @@ export function SidebarNav() {
           )}
         >
           <Settings className="h-5 w-5 shrink-0" />
-          {!collapsed && <span className="text-sm font-semibold">Settings</span>}
+          {!collapsed && <span className="text-base font-semibold">Settings</span>}
         </Link>
       </div>
     </aside>
