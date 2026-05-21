@@ -1,10 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { MetricCards } from "@/components/dashboard/metric-cards"
-import { RecentInsights } from "@/components/dashboard/recent-insights"
-import { ActiveStudies } from "@/components/dashboard/active-studies"
 import { OccupancyChart } from "@/components/dashboard/occupancy-chart"
-import { ZoneOverview } from "@/components/dashboard/zone-overview"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
 import { LatestDetectionCard } from "@/components/dashboard/latest-detection-card"
 import { getDemoScenario } from "@/lib/demo-mode"
@@ -107,13 +104,6 @@ export default async function DashboardPage() {
                 />
               )}
             </div>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ZoneOverview zones={demoZones} />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ActiveStudies studies={[...demoStudies, ...demoCompleted]} />
-            <RecentInsights outputs={demoInsights} />
           </div>
         </div>
       </div>
@@ -272,14 +262,6 @@ export default async function DashboardPage() {
           )
         })()}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ZoneOverview zones={zones} />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActiveStudies studies={[...beStudies, ...completedStudies]} />
-          <RecentInsights outputs={beInsights} />
-        </div>
       </div>
     </div>
   )
