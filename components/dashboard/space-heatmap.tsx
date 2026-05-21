@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -132,6 +133,8 @@ export function SpaceHeatmap({
   const [cameras, setCameras] = useState<CameraPlacement[]>(cameraProp)
   const [insightsViewed, setInsightsViewed] = useState(false)
   const [isEnlarged, setIsEnlarged] = useState(false)
+  const [latestOccupancyCount, setLatestOccupancyCount] = useState<number | null>(null)
+  const occChannelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
   useEffect(() => {
     setHasActiveStudy(studies.some(s => s.status === "active"))
@@ -151,6 +154,60 @@ export function SpaceHeatmap({
     const viewedAt = localStorage.getItem("behappier_insights_viewed_at")
     setInsightsViewed(!!viewedAt && new Date(viewedAt) >= new Date(createdAt))
   }, [completedStudyInsights?.created_at])
+
+  // Subscribe to BE_behavior_detections for live occupancy count
+  useEffect(() => {
+    setLatestOccupancyCount(null)
+    if (!activeStudyId || tracksOccupancy === false) return
+
+    if (demoDetections) {
+      const last = demoDetections[demoDetections.length - 1]
+      const b = (Array.isArray(last?.detected_behaviors) ? last.detected_behaviors : [])
+        .find((beh: { name: string }) => beh.name.toLowerCase().includes("occupancy"))
+      setLatestOccupancyCount(b ? Number((b as { value: number | string }).value) : null)
+      return
+    }
+
+    const supabase = createClient()
+
+    async function loadLatest() {
+      const { data } = await supabase
+        .from("BE_behavior_detections")
+        .select("detected_behaviors")
+        .eq("study_id", activeStudyId)
+        .order("timestamp", { ascending: false })
+        .limit(1)
+        .single()
+      if (data) {
+        const behaviors = Array.isArray(data.detected_behaviors) ? data.detected_behaviors : []
+        const occ = (behaviors as { name: string; value: number | string }[])
+          .find(beh => beh.name.toLowerCase().includes("occupancy"))
+        setLatestOccupancyCount(occ != null ? Number(occ.value) : null)
+      }
+    }
+    loadLatest()
+
+    const channel = supabase
+      .channel("heatmap-occ-" + activeStudyId)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "BE_behavior_detections",
+        filter: `study_id=eq.${activeStudyId}`,
+      }, (payload) => {
+        const behaviors = Array.isArray(payload.new.detected_behaviors) ? payload.new.detected_behaviors : []
+        const occ = (behaviors as { name: string; value: number | string }[])
+          .find(beh => beh.name.toLowerCase().includes("occupancy"))
+        if (occ != null) setLatestOccupancyCount(Number(occ.value))
+      })
+      .subscribe()
+
+    occChannelRef.current = channel
+    return () => {
+      supabase.removeChannel(channel)
+      occChannelRef.current = null
+    }
+  }, [activeStudyId, tracksOccupancy, demoDetections])
 
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   const gridResolution = space?.grid_resolution || 8
@@ -269,7 +326,9 @@ export function SpaceHeatmap({
             ? getLiveOccupancy(zone.name, zone.id, livePreviewMetrics.metrics)
             : null
 
-          const liveCount = livePreviewMetrics ? getLiveCount(zone.name, zone.id, livePreviewMetrics.metrics) : null
+          // Count: prefer per-zone preview metrics, fall back to detection-based count for the monitored zone
+          const liveCountFromPreview = livePreviewMetrics ? getLiveCount(zone.name, zone.id, livePreviewMetrics.metrics) : null
+          const liveCount = liveCountFromPreview ?? (isActiveStudyZone ? latestOccupancyCount : null)
 
           const bgColor = liveOccupancy !== null
             ? getLiveHeatmapColor(liveOccupancy)

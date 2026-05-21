@@ -236,6 +236,7 @@ const ZOOM_SENSITIVITY = 0.002
 type DragMode = "pan" | "left" | "right"
 
 export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive }: TimeSeriesChartProps) {
+  const effectiveYAxisLabel = yAxisLabel ?? (series.length > 1 ? "Multiple behaviors" : undefined)
   const allData = mergeSeriesData(series)
   const total = allData.length
 
@@ -550,7 +551,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
           <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
             <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "#9ca3af", fontSize: 11 } : undefined} />
-            <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} width={52} label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: "center", fill: "#9ca3af", fontSize: 11 } : undefined} />
+            <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} width={52} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "#9ca3af", fontSize: 11 } : undefined} />
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]

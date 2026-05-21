@@ -23,15 +23,18 @@ export default async function InsightsPage() {
   const studyIds = (outputs ?? []).map((o: { study_id: string }) => o.study_id).filter(Boolean)
 
   let studyDurations: Record<string, number> = {}
+  let studyGoals: Record<string, string> = {}
   if (demo && (scenario === "study-complete" || scenario === "model-created")) {
     studyDurations = { [BE_STUDY_COMPLETE.study_id]: BE_STUDY_COMPLETE.duration_seconds * 1000 }
+    studyGoals = { [BE_STUDY_COMPLETE.study_id]: BE_STUDY_COMPLETE.study_goal }
   } else if (studyIds.length > 0) {
     const { data: studies } = await supabase
       .from("BE_studies")
-      .select("study_id, duration_seconds")
+      .select("study_id, duration_seconds, study_goal")
       .in("study_id", studyIds)
-    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null }[]) {
+    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null; study_goal: string | null }[]) {
       if (s.duration_seconds) studyDurations[s.study_id] = s.duration_seconds * 1000
+      if (s.study_goal) studyGoals[s.study_id] = s.study_goal
     }
   }
 
@@ -78,7 +81,7 @@ export default async function InsightsPage() {
 
       <MarkInsightsViewed />
       <div className="flex-1 p-6 overflow-auto">
-        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} studyDurations={studyDurations} metricDescriptions={metricDescriptions} />
+        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} studyDurations={studyDurations} metricDescriptions={metricDescriptions} studyGoals={studyGoals} />
       </div>
     </div>
   )

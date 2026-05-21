@@ -25,6 +25,7 @@ interface InsightsListProps {
   reviewMode?: boolean
   studyDurations?: Record<string, number>
   metricDescriptions?: Record<string, string>
+  studyGoals?: Record<string, string>
 }
 
 function toText(v: unknown): string {
@@ -65,7 +66,7 @@ function normalizeOutput(output: BEInsightOutput): NormalizedOutput {
   }
 }
 
-export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = false, studyDurations = {}, metricDescriptions }: InsightsListProps) {
+export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = false, studyDurations = {}, metricDescriptions, studyGoals = {} }: InsightsListProps) {
   const normalized = outputs.map(normalizeOutput)
   if (normalized.length === 0) {
     return (
@@ -97,6 +98,16 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
         {normalized.map(output => (
           <Card key={output.id} className="bg-card border-border">
             <CardContent className="p-5 space-y-4">
+              {/* Study title */}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground leading-snug">
+                  {studyGoals[output.study_id] || "Study"}
+                </h3>
+                <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                  {output.study_id}
+                </p>
+              </div>
+
               {/* Header row */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
@@ -114,11 +125,6 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                   {formatDistanceToNow(new Date(output.created_at), { addSuffix: true })}
                 </span>
               </div>
-
-              {/* Study reference */}
-              <p className="text-xs text-muted-foreground font-mono">
-                Study: {output.study_id}
-              </p>
 
               {/* Summary */}
               {output.dashboard_summary && (

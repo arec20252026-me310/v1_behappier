@@ -15,7 +15,31 @@ export function StudyStatusWatcher({ activeStudyId }: StudyStatusWatcherProps) {
 
   useEffect(() => {
     const supabase = createClient()
+    let refreshed = false
 
+    function triggerRefresh() {
+      if (!refreshed) {
+        refreshed = true
+        router.refresh()
+      }
+    }
+
+    async function pollStatus() {
+      const { data } = await supabase
+        .from("BE_studies")
+        .select("status")
+        .eq("study_id", activeStudyId)
+        .single()
+      if (data && !ACTIVE_STATUSES.includes((data as { status: string }).status)) {
+        triggerRefresh()
+      }
+    }
+
+    // Poll every 20 seconds as primary mechanism
+    pollStatus()
+    const interval = setInterval(pollStatus, 20000)
+
+    // Realtime as fast-path (now that BE_studies is in the publication)
     const channel = supabase
       .channel("study-status-watcher-" + activeStudyId)
       .on(
@@ -29,13 +53,14 @@ export function StudyStatusWatcher({ activeStudyId }: StudyStatusWatcherProps) {
         (payload) => {
           const newStatus = (payload.new as { status?: string }).status
           if (newStatus && !ACTIVE_STATUSES.includes(newStatus)) {
-            router.refresh()
+            triggerRefresh()
           }
         }
       )
       .subscribe()
 
     return () => {
+      clearInterval(interval)
       supabase.removeChannel(channel)
     }
   }, [activeStudyId, router])
