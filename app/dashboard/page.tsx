@@ -223,10 +223,31 @@ export default async function DashboardPage() {
           latestInsightAt={beInsights[0]?.created_at}
         />
 
-        {beStudies[0] && <StudyStatusWatcher activeStudyId={beStudies[0].study_id} />}
+        {beStudies.map(s => <StudyStatusWatcher key={s.study_id} activeStudyId={s.study_id} />)}
 
         {(() => {
-          const runningStudy = beStudies.find(s => s.status === "running")
+          // Include both "running" and "analyzing" so zones stay lit during analysis
+          const activeStudies = beStudies.map(s => {
+            const meta = (s as { metadata?: { monitored_zone_id?: string; target_zones?: string[] } }).metadata
+            return {
+              study_id: s.study_id,
+              status: s.status,
+              monitoredZoneId: meta?.monitored_zone_id ?? meta?.target_zones?.[0] ?? null,
+            }
+          })
+
+          const completedZoneInsights = completedStudies.flatMap(study => {
+            const meta = (study as { metadata?: { monitored_zone_id?: string; target_zones?: string[] } }).metadata
+            const zoneId = meta?.monitored_zone_id ?? meta?.target_zones?.[0] ?? null
+            if (!zoneId) return []
+            const insight = beInsights.find(o => o.study_id === study.study_id && o.output_mode === "final_insights")
+            if (!insight) return []
+            return [{ zoneId, studyId: study.study_id, insights: insight }]
+          })
+
+          const chartStudies = activeStudies.map(s => ({ study_id: s.study_id, status: s.status }))
+          const detectionCardStudies = activeStudies.map(s => ({ studyId: s.study_id, status: s.status }))
+
           return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <SpaceHeatmap
@@ -235,14 +256,8 @@ export default async function DashboardPage() {
                 space={space}
                 studies={[]}
                 livePreviewMetrics={livePreviewMetrics}
-                completedStudy={completedStudy}
-                completedStudyInsights={completedStudyInsights}
-                activeStudyId={runningStudy?.study_id}
-                activeStudyStatus="running"
-                activeStudyMonitoredZoneId={(() => {
-                  const s = runningStudy as { metadata?: { monitored_zone_id?: string; target_zones?: string[] } } | undefined
-                  return s?.metadata?.monitored_zone_id ?? s?.metadata?.target_zones?.[0]
-                })()}
+                activeStudies={activeStudies}
+                completedZoneInsights={completedZoneInsights}
                 tracksOccupancy={metrics.some(m => (m as { name: string }).name?.toLowerCase().includes("occupancy"))}
               />
               <div className="flex flex-col gap-6">
@@ -253,14 +268,10 @@ export default async function DashboardPage() {
                     const s = allFetchedStudies.find(s => s.study_id === latestOutput?.study_id)
                     return s?.duration_seconds ? s.duration_seconds * 1000 : undefined
                   })()}
-                  activeStudyId={runningStudy?.study_id}
-                  activeStudyStatus="running"
+                  activeStudies={chartStudies.length > 0 ? chartStudies : undefined}
                 />
-                {runningStudy && (
-                  <LatestDetectionCard
-                    studyId={runningStudy.study_id}
-                    status="running"
-                  />
+                {detectionCardStudies.length > 0 && (
+                  <LatestDetectionCard studies={detectionCardStudies} />
                 )}
               </div>
             </div>

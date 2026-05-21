@@ -3,22 +3,24 @@
 import { useState } from "react"
 import { Camera, X } from "lucide-react"
 
-function snapshotUrl(imageId: string): string {
-  const path = `snapshots/camera_loft_camera_fluent/${imageId}.jpg`
+function snapshotUrl(imageId: string, cameraId?: string | null): string {
+  const folder = cameraId ?? "camera_loft_camera_fluent"
+  const path = `snapshots/${folder}/${imageId}.jpg`
   return `/api/snapshot?path=${encodeURIComponent(path)}`
 }
 
 interface SnapshotCellProps {
   imageId?: string | null
+  cameraId?: string | null
   onExpand?: () => void
 }
 
-export function SnapshotCell({ imageId, onExpand }: SnapshotCellProps) {
+export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps) {
   const [open, setOpen] = useState(false)
   // Start in "loading" so the camera icon shows until the image confirms success
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">("loading")
 
-  const url = imageId ? snapshotUrl(imageId) : null
+  const url = imageId ? snapshotUrl(imageId, cameraId) : null
   const hasImage = !!url && imgStatus === "loaded"
 
   const handleClick = () => {

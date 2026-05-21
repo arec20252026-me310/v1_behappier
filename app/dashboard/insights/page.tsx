@@ -7,6 +7,8 @@ import { getDemoScenario } from "@/lib/demo-mode"
 import { isReviewMode } from "@/lib/review-mode"
 import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS } from "@/lib/demo-seeds"
 
+export const dynamic = 'force-dynamic'
+
 export default async function InsightsPage() {
   const scenario = await getDemoScenario()
   const demo = scenario !== null
@@ -24,6 +26,7 @@ export default async function InsightsPage() {
 
   let studyDurations: Record<string, number> = {}
   let studyGoals: Record<string, string> = {}
+  let camerasByStudy: Record<string, string> = {}
   if (demo && (scenario === "study-complete" || scenario === "model-created")) {
     studyDurations = { [BE_STUDY_COMPLETE.study_id]: BE_STUDY_COMPLETE.duration_seconds * 1000 }
     const demoName = (BE_STUDY_COMPLETE.metadata as Record<string, unknown>)?.study_name
@@ -31,12 +34,17 @@ export default async function InsightsPage() {
   } else if (studyIds.length > 0) {
     const { data: studies } = await supabase
       .from("BE_studies")
-      .select("study_id, duration_seconds, study_name")
+      .select("study_id, duration_seconds, study_name, metadata")
       .in("study_id", studyIds)
-    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null; study_name: string | null }[]) {
+    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null; study_name: string | null; metadata?: Record<string, unknown> | null }[]) {
       if (s.duration_seconds) studyDurations[s.study_id] = s.duration_seconds * 1000
       if (s.study_name) studyGoals[s.study_id] = s.study_name
     }
+    camerasByStudy = Object.fromEntries(
+      ((studies ?? []) as { study_id: string; metadata?: Record<string, unknown> | null }[])
+        .filter(s => typeof s.metadata?.camera_id === "string")
+        .map(s => [s.study_id, s.metadata!.camera_id as string])
+    )
   }
 
   // Build name → description+citation map for legend info buttons
@@ -82,7 +90,7 @@ export default async function InsightsPage() {
 
       <MarkInsightsViewed />
       <div className="flex-1 p-6 overflow-auto">
-        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} reviewMode={review} studyDurations={studyDurations} metricDescriptions={metricDescriptions} studyGoals={studyGoals} />
+        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} camerasByStudy={camerasByStudy} reviewMode={review} studyDurations={studyDurations} metricDescriptions={metricDescriptions} studyGoals={studyGoals} />
       </div>
     </div>
   )

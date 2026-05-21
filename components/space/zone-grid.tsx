@@ -316,9 +316,8 @@ export function ZoneGrid({
             if (insideZone?.id === cam.zoneId) return null
             const center = getZoneCenter(cam.zoneId)
             if (!center || !assignedZone) return null
-            const ICON_SIZE = 28
-            const camCenterX = cam.x + ICON_SIZE / 2
-            const camCenterY = cam.y + ICON_SIZE / 2
+            const camCenterX = cam.x
+            const camCenterY = cam.y
 
             return (
               <g key={`link-${cam.id}`}>

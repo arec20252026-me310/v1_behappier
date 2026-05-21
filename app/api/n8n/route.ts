@@ -39,6 +39,22 @@ export async function POST(req: NextRequest) {
   const existingStudyId = body.existing_study_id as string | null
   const study_id = existingStudyId ?? `study_${Date.now()}`
 
+  // Resolve camera_id early so it can be stored in study metadata
+  const zone_ids_early = (body.target_zones as string[]) ?? []
+  let camera_id_early: string | null = null
+  if (zone_ids_early.length > 0) {
+    const { data: zoneCameras } = await supabase
+      .from("cameras")
+      .select("id, metadata")
+      .in("zone_id", zone_ids_early)
+      .limit(1)
+    const cam = (zoneCameras ?? [])[0] as { id: string; metadata?: Record<string, unknown> } | undefined
+    if (cam) {
+      const haEntityId = cam.metadata?.ha_entity_id
+      camera_id_early = haEntityId ? String(haEntityId) : cam.id
+    }
+  }
+
   const studyFields = {
     study_goal: (body.study_goal as string) || (body.study_name as string) || "Untitled study",
     duration_seconds: (body.duration_seconds as number) ?? null,
@@ -47,6 +63,7 @@ export async function POST(req: NextRequest) {
       study_goal: body.study_goal ?? null,
       target_zones: body.target_zones ?? [],
       target_metric_names: body.target_metric_names ?? [],
+      ...(camera_id_early ? { camera_id: camera_id_early } : {}),
     },
   }
 
@@ -96,12 +113,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Build the n8n webhook payload
-  const zone_ids = (body.target_zones as string[]) ?? []
+  const zone_ids = zone_ids_early
+  const camera_id = camera_id_early
   const behavior_targets = (body.behavior_targets as Array<{ behavior_name: string; behavior_description: string; behavior_units: string }>) ?? []
   const setup_instructions = (body.message_text as string) ?? ""
   const review_mode = await isReviewMode()
 
-  const n8nPayload = { study_id, zone_ids, behavior_targets, setup_instructions, review_mode }
+  const n8nPayload = { study_id, zone_ids, behavior_targets, setup_instructions, review_mode, ...(camera_id ? { camera_id } : {}) }
 
   try {
     const response = await fetch(`${n8nUrl}/webhook/start-study`, {

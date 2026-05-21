@@ -22,6 +22,7 @@ export interface DetectionRow {
 interface InsightsListProps {
   outputs: BEInsightOutput[]
   detectionsByStudy?: Record<string, DetectionRow[]>
+  camerasByStudy?: Record<string, string>
   reviewMode?: boolean
   studyDurations?: Record<string, number>
   metricDescriptions?: Record<string, string>
@@ -81,7 +82,7 @@ function studyLabel(studyId: string): string {
   return studyId
 }
 
-export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = false, studyDurations = {}, metricDescriptions, studyGoals = {} }: InsightsListProps) {
+export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy = {}, reviewMode = false, studyDurations = {}, metricDescriptions, studyGoals = {} }: InsightsListProps) {
   const normalized = outputs.map(normalizeOutput)
   if (normalized.length === 0) {
     return (
@@ -236,6 +237,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                     const rows = t.rows as string[][]
                     const title = t.title as string
                     const studyDetections = detectionsByStudy[output.study_id] ?? []
+                    const studyCameraId = camerasByStudy[output.study_id] ?? null
 
                     if (reviewMode) {
                       return (
@@ -245,6 +247,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                           rows={rows}
                           detections={studyDetections}
                           title={title}
+                          cameraId={studyCameraId}
                         />
                       )
                     }

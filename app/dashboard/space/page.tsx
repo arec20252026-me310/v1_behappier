@@ -5,6 +5,8 @@ import { getDemoScenario } from "@/lib/demo-mode"
 import { DEMO_SPACE, ZONES, CAMERA } from "@/lib/demo-seeds"
 import type { HACameraMapping } from "@/lib/types"
 
+export const dynamic = 'force-dynamic'
+
 export default async function SpacePage() {
   const scenario = await getDemoScenario()
   const demo = scenario !== null

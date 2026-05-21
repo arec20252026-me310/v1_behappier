@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,13 +19,21 @@ import type { ChartSeries } from "@/components/insights/time-series-chart"
 import { createClient } from "@/lib/supabase/client"
 import { LiveDetectionFeed, type DetectionRow } from "@/components/studies/live-detection-feed"
 
+interface ActiveStudyEntry {
+  study_id: string
+  status: string
+}
+
 interface OccupancyChartProps {
   latestOutput?: BEInsightOutput | null
   studyDurationMs?: number
   metricDescriptions?: Record<string, string>
+  // Legacy single-study (demo mode)
   activeStudyId?: string
   activeStudyStatus?: string
   demoDetections?: DetectionRow[]
+  // Multi-study (real mode)
+  activeStudies?: ActiveStudyEntry[]
 }
 
 function extractLineSeries(output: BEInsightOutput): ChartSeries[] {
@@ -74,65 +82,69 @@ export function OccupancyChart({
   activeStudyId,
   activeStudyStatus,
   demoDetections,
+  activeStudies: activeStudiesProp,
 }: OccupancyChartProps) {
-  const [liveDetections, setLiveDetections] = useState<DetectionRow[]>([])
+  const [perStudyDetections, setPerStudyDetections] = useState<Record<string, DetectionRow[]>>({})
   const [isEnlarged, setIsEnlarged] = useState(false)
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
+  // Merge legacy single-study prop with multi-study prop
+  const allActiveStudies: ActiveStudyEntry[] = useMemo(() => {
+    if (activeStudiesProp && activeStudiesProp.length > 0) return activeStudiesProp
+    if (activeStudyId) return [{ study_id: activeStudyId, status: activeStudyStatus ?? "running" }]
+    return []
+  }, [activeStudiesProp, activeStudyId, activeStudyStatus])
+
+  const studiesKey = allActiveStudies.map(s => s.study_id).sort().join(",")
+  const isLive = allActiveStudies.length > 0
+
   useEffect(() => {
-    setLiveDetections([])
+    setPerStudyDetections({})
+    if (!isLive) return
 
-    if (!activeStudyId) return
-
-    if (demoDetections) {
-      setLiveDetections(demoDetections)
+    if (demoDetections && allActiveStudies.length > 0) {
+      setPerStudyDetections({ [allActiveStudies[0].study_id]: demoDetections })
       return
     }
 
     const supabase = createClient()
+    const studyIdSet = new Set(allActiveStudies.map(s => s.study_id))
 
-    async function loadInitial() {
-      const { data } = await supabase
+    allActiveStudies.forEach(({ study_id }) => {
+      supabase
         .from("BE_behavior_detections")
         .select("timestamp_pt, detected_behaviors, notes")
-        .eq("study_id", activeStudyId)
+        .eq("study_id", study_id)
         .order("timestamp", { ascending: true })
         .limit(200)
-      if (data) setLiveDetections(data as DetectionRow[])
-    }
-
-    loadInitial()
+        .then(({ data }) => {
+          if (data) setPerStudyDetections(prev => ({ ...prev, [study_id]: data as DetectionRow[] }))
+        })
+    })
 
     const channel = supabase
-      .channel("occupancy-chart-live-" + activeStudyId)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "BE_behavior_detections",
-          filter: `study_id=eq.${activeStudyId}`,
-        },
+      .channel("occupancy-chart-multi-" + studiesKey)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "BE_behavior_detections" },
         (payload) => {
-          setLiveDetections(prev => [...prev, payload.new as DetectionRow])
-        }
-      )
+          const studyId = (payload.new as { study_id?: string }).study_id
+          if (!studyId || !studyIdSet.has(studyId)) return
+          setPerStudyDetections(prev => ({
+            ...prev,
+            [studyId]: [...(prev[studyId] ?? []), payload.new as DetectionRow],
+          }))
+        })
       .subscribe()
 
     channelRef.current = channel
+    return () => { supabase.removeChannel(channel); channelRef.current = null }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studiesKey, demoDetections])
 
-    return () => {
-      supabase.removeChannel(channel)
-      channelRef.current = null
-    }
-  }, [activeStudyId, demoDetections])
-
-  const isLive = !!activeStudyId
-  const liveSeries = isLive ? buildLiveSeries(liveDetections) : []
   const fallbackSeries = latestOutput ? extractLineSeries(latestOutput) : []
-  const series = isLive ? liveSeries : fallbackSeries
+  const totalDetections = Object.values(perStudyDetections).reduce((sum, d) => sum + d.length, 0)
 
-  if (!isLive && !series.length) {
+  // Empty non-live state
+  if (!isLive && !fallbackSeries.length) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5">
@@ -144,31 +156,26 @@ export function OccupancyChart({
               <BarChart3 className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground mb-2">No occupancy data yet</p>
-            <p className="text-xs text-muted-foreground mb-4">
-              Start a study to begin collecting data
-            </p>
-            <Link href="/dashboard/studies">
-              <Button size="sm">Create Study</Button>
-            </Link>
+            <p className="text-xs text-muted-foreground mb-4">Start a study to begin collecting data</p>
+            <Link href="/dashboard/studies"><Button size="sm">Create Study</Button></Link>
           </div>
         </CardContent>
       </Card>
     )
   }
 
-  if (isLive && liveDetections.length === 0) {
+  // Waiting for first live data
+  if (isLive && totalDetections === 0) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
             <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
-              Live
+              {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
             </Badge>
           </div>
-          <Link href="/dashboard/insights">
-            <Button variant="ghost" size="sm" className="text-xs">View All</Button>
-          </Link>
+          <Link href="/dashboard/insights"><Button variant="ghost" size="sm" className="text-xs">View All</Button></Link>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -182,17 +189,58 @@ export function OccupancyChart({
     )
   }
 
-  const chartEl = (
-    <TimeSeriesChart
-      series={series}
-      height={isLive ? 220 : 350}
-      studyDurationMs={studyDurationMs}
-      xAxisLabel="Timestamp"
-      yAxisLabel={series.length === 1 ? series[0].title : undefined}
-      seriesDescriptions={metricDescriptions}
-      isLive={isLive}
-    />
-  )
+  const renderCharts = (enlarged: boolean) => {
+    if (!isLive) {
+      return (
+        <TimeSeriesChart
+          series={fallbackSeries}
+          height={enlarged ? 500 : 350}
+          studyDurationMs={studyDurationMs}
+          xAxisLabel="Timestamp"
+          yAxisLabel={fallbackSeries.length === 1 ? fallbackSeries[0].title : undefined}
+          seriesDescriptions={metricDescriptions}
+          isLive={false}
+        />
+      )
+    }
+
+    return (
+      <div className="flex flex-col gap-4">
+        {allActiveStudies.map(({ study_id }, idx) => {
+          const detections = perStudyDetections[study_id] ?? []
+          const liveSeries = buildLiveSeries(detections)
+          const chartHeight = enlarged
+            ? 300
+            : Math.max(140, Math.floor(220 / allActiveStudies.length))
+
+          return (
+            <div key={study_id}>
+              {allActiveStudies.length > 1 && (
+                <p className="text-[10px] font-mono text-muted-foreground/60 mb-1 truncate">
+                  Study {idx + 1}: {study_id}
+                </p>
+              )}
+              {detections.length === 0 ? (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 py-2">
+                  <BarChart3 className="h-3 w-3 animate-pulse" />
+                  <span>Waiting for data…</span>
+                </div>
+              ) : (
+                <TimeSeriesChart
+                  series={liveSeries}
+                  height={chartHeight}
+                  xAxisLabel="Timestamp"
+                  yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
+                  seriesDescriptions={metricDescriptions}
+                  isLive={true}
+                />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -202,7 +250,7 @@ export function OccupancyChart({
             <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
             {isLive && (
               <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
-                Live
+                {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
               </Badge>
             )}
           </div>
@@ -211,9 +259,7 @@ export function OccupancyChart({
             Enlarge
           </Button>
         </CardHeader>
-        <CardContent>
-          {chartEl}
-        </CardContent>
+        <CardContent>{renderCharts(false)}</CardContent>
       </Card>
 
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
@@ -223,33 +269,34 @@ export function OccupancyChart({
               <DialogTitle className="text-base font-medium">Occupancy Over Time</DialogTitle>
               {isLive && (
                 <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
-                  Live
+                  {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
                 </Badge>
               )}
             </div>
             <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 flex flex-row gap-4 overflow-hidden">
-            <div className="flex-1 min-h-0 min-w-0">
-              <TimeSeriesChart
-                series={series}
-                height={isLive ? 600 : 650}
-                studyDurationMs={studyDurationMs}
-                xAxisLabel="Timestamp"
-                yAxisLabel={series.length === 1 ? series[0].title : undefined}
-                seriesDescriptions={metricDescriptions}
-                isLive={isLive}
-              />
+            <div className="flex-1 min-h-0 min-w-0 overflow-y-auto pr-2">
+              {renderCharts(true)}
             </div>
-            {isLive && activeStudyId && (
-              <div className="w-64 shrink-0 border-l border-border pl-4 overflow-y-auto">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Latest Detection</p>
-                <LiveDetectionFeed
-                  studyId={activeStudyId}
-                  status={activeStudyStatus ?? "running"}
-                  limit={1}
-                  demoDetections={demoDetections}
-                />
+            {isLive && allActiveStudies.length > 0 && (
+              <div className="w-40 shrink-0 border-l border-border pl-4 overflow-y-auto">
+                {allActiveStudies.map((s, idx) => (
+                  <div key={s.study_id} className={idx > 0 ? "mt-4 pt-4 border-t border-border" : ""}>
+                    {allActiveStudies.length > 1 && (
+                      <p className="text-[10px] font-mono text-muted-foreground/60 mb-1 truncate">
+                        Study {idx + 1}: {s.study_id}
+                      </p>
+                    )}
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Latest Detection</p>
+                    <LiveDetectionFeed
+                      studyId={s.study_id}
+                      status={s.status}
+                      limit={1}
+                      demoDetections={idx === 0 ? demoDetections : undefined}
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </div>

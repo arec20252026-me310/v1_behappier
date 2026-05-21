@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,18 @@ interface ZoneWithOccupancy extends Zone {
   occupancyPercentage: number
 }
 
+interface ActiveStudyEntry {
+  study_id: string
+  status: string
+  monitoredZoneId: string | null
+}
+
+interface CompletedZoneInsight {
+  zoneId: string
+  studyId: string
+  insights: BEInsightOutput
+}
+
 interface SpaceHeatmapProps {
   zones: Zone[]
   insights?: Insight[]
@@ -32,6 +44,10 @@ interface SpaceHeatmapProps {
   studies?: Study[]
   cameras?: CameraPlacement[]
   livePreviewMetrics?: BELivePreviewMetrics | null
+  // Multi-study props (preferred)
+  activeStudies?: ActiveStudyEntry[]
+  completedZoneInsights?: CompletedZoneInsight[]
+  // Legacy single-study props (used by demo mode)
   completedStudy?: BEStudy | null
   completedStudyInsights?: BEInsightOutput | null
   activeStudyId?: string
@@ -119,6 +135,8 @@ export function SpaceHeatmap({
   studies = [],
   cameras: cameraProp = [],
   livePreviewMetrics = null,
+  activeStudies: activeStudiesProp,
+  completedZoneInsights: completedZoneInsightsProp,
   completedStudy = null,
   completedStudyInsights = null,
   activeStudyId,
@@ -133,8 +151,32 @@ export function SpaceHeatmap({
   const [cameras, setCameras] = useState<CameraPlacement[]>(cameraProp)
   const [insightsViewed, setInsightsViewed] = useState(false)
   const [isEnlarged, setIsEnlarged] = useState(false)
-  const [latestOccupancyCount, setLatestOccupancyCount] = useState<number | null>(null)
-  const occChannelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
+  // Per-zone occupancy: zoneId → latest count
+  const [zoneOccupancies, setZoneOccupancies] = useState<Record<string, number>>({})
+
+  // Merge multi-study prop with legacy single-study props
+  const allActiveStudies: ActiveStudyEntry[] = useMemo(() => {
+    if (activeStudiesProp && activeStudiesProp.length > 0) return activeStudiesProp
+    if (activeStudyId) return [{
+      study_id: activeStudyId,
+      status: activeStudyStatus ?? "running",
+      monitoredZoneId: activeStudyMonitoredZoneId ?? null,
+    }]
+    return []
+  }, [activeStudiesProp, activeStudyId, activeStudyStatus, activeStudyMonitoredZoneId])
+
+  // Merge multi-zone insight prop with legacy single-study insight props
+  const allCompletedZoneInsights: CompletedZoneInsight[] = useMemo(() => {
+    if (completedZoneInsightsProp && completedZoneInsightsProp.length > 0) return completedZoneInsightsProp
+    const legacyZoneId = (
+      (completedStudy?.metadata?.monitored_zone_id as string | undefined) ??
+      ((completedStudy?.metadata?.target_zones as string[] | undefined)?.[0])
+    )
+    if (legacyZoneId && completedStudyInsights && completedStudy) {
+      return [{ zoneId: legacyZoneId, studyId: completedStudy.study_id, insights: completedStudyInsights }]
+    }
+    return []
+  }, [completedZoneInsightsProp, completedStudy, completedStudyInsights])
 
   useEffect(() => {
     setHasActiveStudy(studies.some(s => s.status === "active"))
@@ -149,76 +191,93 @@ export function SpaceHeatmap({
   }, [space?.id])
 
   useEffect(() => {
-    const createdAt = completedStudyInsights?.created_at
-    if (!createdAt) return
+    // Use the most recently created completed insight to determine viewed state
+    const latestCreatedAt = allCompletedZoneInsights
+      .map(c => c.insights.created_at)
+      .sort()
+      .at(-1)
+    if (!latestCreatedAt) return
     const viewedAt = localStorage.getItem("behappier_insights_viewed_at")
-    setInsightsViewed(!!viewedAt && new Date(viewedAt) >= new Date(createdAt))
-  }, [completedStudyInsights?.created_at])
+    setInsightsViewed(!!viewedAt && new Date(viewedAt) >= new Date(latestCreatedAt))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allCompletedZoneInsights.map(c => c.insights.created_at).join(",")])
 
-  // Subscribe to BE_behavior_detections for live occupancy count
+  // Build study_id → zoneId map and subscribe to all active studies' detections
+  const studiesKey = allActiveStudies.map(s => s.study_id).sort().join(",")
   useEffect(() => {
-    setLatestOccupancyCount(null)
-    if (!activeStudyId || tracksOccupancy === false) return
+    setZoneOccupancies({})
+    if (allActiveStudies.length === 0 || tracksOccupancy === false) return
+
+    // Build lookup: study_id → monitoredZoneId
+    const studyToZone: Record<string, string> = {}
+    for (const s of allActiveStudies) {
+      if (s.monitoredZoneId) studyToZone[s.study_id] = s.monitoredZoneId
+    }
 
     if (demoDetections) {
       const last = demoDetections[demoDetections.length - 1]
       const b = (Array.isArray(last?.detected_behaviors) ? last.detected_behaviors : [])
         .find((beh: { name: string }) => beh.name.toLowerCase().includes("occupancy"))
-      setLatestOccupancyCount(b ? Number((b as { value: number | string }).value) : null)
+      const count = b ? Number((b as { value: number | string }).value) : null
+      // Apply to the first active study's zone
+      const firstZone = allActiveStudies[0]?.monitoredZoneId
+      if (firstZone && count != null) setZoneOccupancies({ [firstZone]: count })
       return
     }
 
     const supabase = createClient()
 
     async function loadLatest() {
-      const { data } = await supabase
-        .from("BE_behavior_detections")
-        .select("detected_behaviors")
-        .eq("study_id", activeStudyId)
-        .order("timestamp", { ascending: false })
-        .limit(1)
-        .single()
-      if (data) {
-        const behaviors = Array.isArray(data.detected_behaviors) ? data.detected_behaviors : []
-        const occ = (behaviors as { name: string; value: number | string }[])
-          .find(beh => beh.name.toLowerCase().includes("occupancy"))
-        setLatestOccupancyCount(occ != null ? Number(occ.value) : null)
+      for (const [studyId, zoneId] of Object.entries(studyToZone)) {
+        const { data } = await supabase
+          .from("BE_behavior_detections")
+          .select("detected_behaviors")
+          .eq("study_id", studyId)
+          .order("timestamp", { ascending: false })
+          .limit(1)
+          .single()
+        if (data) {
+          const behaviors = Array.isArray(data.detected_behaviors) ? data.detected_behaviors : []
+          const occ = (behaviors as { name: string; value: number | string }[])
+            .find(beh => beh.name.toLowerCase().includes("occupancy"))
+          if (occ != null) setZoneOccupancies(prev => ({ ...prev, [zoneId]: Number(occ.value) }))
+        }
       }
     }
     loadLatest()
 
+    // Single channel handles all studies — filter client-side
     const channel = supabase
-      .channel("heatmap-occ-" + activeStudyId)
+      .channel("heatmap-occ-multi")
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
         table: "BE_behavior_detections",
-        filter: `study_id=eq.${activeStudyId}`,
       }, (payload) => {
+        const studyId = (payload.new as { study_id?: string }).study_id
+        if (!studyId) return
+        const zoneId = studyToZone[studyId]
+        if (!zoneId) return
         const behaviors = Array.isArray(payload.new.detected_behaviors) ? payload.new.detected_behaviors : []
         const occ = (behaviors as { name: string; value: number | string }[])
           .find(beh => beh.name.toLowerCase().includes("occupancy"))
-        if (occ != null) setLatestOccupancyCount(Number(occ.value))
+        if (occ != null) setZoneOccupancies(prev => ({ ...prev, [zoneId]: Number(occ.value) }))
       })
       .subscribe()
 
-    occChannelRef.current = channel
-    return () => {
-      supabase.removeChannel(channel)
-      occChannelRef.current = null
-    }
-  }, [activeStudyId, tracksOccupancy, demoDetections])
+    return () => { supabase.removeChannel(channel) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studiesKey, tracksOccupancy, demoDetections])
 
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   const gridResolution = space?.grid_resolution || 8
   const floorPlanUrl = space?.floor_plan_url
   const cellPct = 100 / gridResolution
 
-  // Zone highlighted by a completed study — real studies use target_zones[0], demo uses monitored_zone_id
-  const monitoredZoneId = (
-    (completedStudy?.metadata?.monitored_zone_id as string | undefined) ??
-    ((completedStudy?.metadata?.target_zones as string[] | undefined)?.[0])
-  )
+  // Zone IDs with unviewed completed insights
+  const completedInsightZoneIds = insightsViewed
+    ? new Set<string>()
+    : new Set(allCompletedZoneInsights.map(c => c.zoneId))
 
   if (zones.length === 0) {
     return (
@@ -244,14 +303,15 @@ export function SpaceHeatmap({
   }
 
   const handleZoneClick = (zone: ZoneWithOccupancy) => {
-    // Completed study insight takes priority
-    if (monitoredZoneId === zone.id && completedStudyInsights) {
-      const toArr = (v: string | string[]): string[] => Array.isArray(v) ? v : (v ? [v] : [])
+    // Check if this zone has a completed insight
+    const zoneInsight = allCompletedZoneInsights.find(c => c.zoneId === zone.id)
+    if (zoneInsight && !insightsViewed) {
+      const toArr = (v: unknown): string[] => Array.isArray(v) ? (v as string[]) : (v ? [String(v)] : [])
       setSelectedBEInsight({
         zoneName: zone.name,
-        insights: toArr(completedStudyInsights.insights),
-        recommendations: toArr(completedStudyInsights.recommendations),
-        summary: completedStudyInsights.dashboard_summary,
+        insights: toArr(zoneInsight.insights.insights),
+        recommendations: toArr(zoneInsight.insights.recommendations),
+        summary: zoneInsight.insights.dashboard_summary,
       })
       return
     }
@@ -260,11 +320,11 @@ export function SpaceHeatmap({
     if (insight) setSelectedInsight(insight)
   }
 
-  // Is the completed-study mode active (no live monitoring, no running study, not yet viewed)?
-  const hasCompletedInsights = !!monitoredZoneId && !!completedStudyInsights && !livePreviewMetrics && !activeStudyId && !insightsViewed
+  // Any zone has unviewed completed insights and no live data is running
+  const hasAnyCompletedInsights = completedInsightZoneIds.size > 0 && !livePreviewMetrics && allActiveStudies.length === 0
 
-  // Active running study zone highlight
-  const isRunningStudy = !!activeStudyId && !hasCompletedInsights && !livePreviewMetrics
+  // Any running study active
+  const hasAnyRunningStudy = allActiveStudies.length > 0 && !livePreviewMetrics
 
   // Extract grid+legend JSX for reuse in card and enlarge dialog
   const renderGrid = (enlarged: boolean) => (
@@ -291,7 +351,7 @@ export function SpaceHeatmap({
       <div className={enlarged ? "flex-1 min-h-0 flex items-center justify-center" : ""}>
       <div
         className="relative rounded-lg overflow-hidden mx-auto border border-border"
-        style={enlarged ? { height: "100%", aspectRatio: "1 / 1", width: "auto" } : { width: "100%", aspectRatio: "1 / 1" }}
+        style={enlarged ? { width: "100%", aspectRatio: "1 / 1", maxHeight: "100%" } : { width: "100%", aspectRatio: "1 / 1" }}
       >
         {floorPlanUrl ? (
           <img
@@ -318,17 +378,17 @@ export function SpaceHeatmap({
 
         {zonesWithOccupancy.map((zone) => {
           const legacyInsight = getZoneInsight(zone.id, insights)
-          const isBEInsightZone = hasCompletedInsights && zone.id === monitoredZoneId
-          const isActiveStudyZone = isRunningStudy && zone.id === activeStudyMonitoredZoneId
+          const isBEInsightZone = completedInsightZoneIds.has(zone.id)
+          const isActiveStudyZone = hasAnyRunningStudy && allActiveStudies.some(s => s.monitoredZoneId === zone.id)
           const hasAnyInsight = !!legacyInsight || isBEInsightZone
 
           const liveOccupancy = livePreviewMetrics
             ? getLiveOccupancy(zone.name, zone.id, livePreviewMetrics.metrics)
             : null
 
-          // Count: prefer per-zone preview metrics, fall back to detection-based count for the monitored zone
+          // Count: prefer per-zone preview metrics, fall back to per-zone detection-based count
           const liveCountFromPreview = livePreviewMetrics ? getLiveCount(zone.name, zone.id, livePreviewMetrics.metrics) : null
-          const liveCount = liveCountFromPreview ?? (isActiveStudyZone ? latestOccupancyCount : null)
+          const liveCount = liveCountFromPreview ?? (isActiveStudyZone ? (zoneOccupancies[zone.id] ?? null) : null)
 
           const bgColor = liveOccupancy !== null
             ? getLiveHeatmapColor(liveOccupancy)
@@ -407,9 +467,9 @@ export function SpaceHeatmap({
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-medium">Occupancy Heatmap</CardTitle>
-            {activeStudyId && !hasCompletedInsights && (
+            {hasAnyRunningStudy && (
               <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
-                Live
+                {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
               </Badge>
             )}
             {livePreviewMetrics && (
@@ -417,12 +477,12 @@ export function SpaceHeatmap({
                 Live Preview
               </Badge>
             )}
-            {hasCompletedInsights && (
+            {hasAnyCompletedInsights && (
               <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-500/50 bg-yellow-500/10">
                 Insights Ready
               </Badge>
             )}
-            {!activeStudyId && !livePreviewMetrics && !hasCompletedInsights && hasActiveStudy && (
+            {!hasAnyRunningStudy && !livePreviewMetrics && !hasAnyCompletedInsights && hasActiveStudy && (
               <Badge variant="outline" className="text-xs text-green-600 border-green-500/50 bg-green-500/10">
                 Active Study
               </Badge>
@@ -448,15 +508,22 @@ export function SpaceHeatmap({
           </DialogHeader>
           <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
             <div className="flex-1 min-w-0 min-h-0 overflow-hidden">{renderGrid(true)}</div>
-            {activeStudyId && (
-              <div className="w-72 shrink-0 flex flex-col gap-2 overflow-y-auto border-l border-border pl-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide shrink-0">Latest Detection</p>
-                <LiveDetectionFeed
-                  studyId={activeStudyId}
-                  status={activeStudyStatus ?? "running"}
-                  limit={1}
-                  demoDetections={demoDetections}
-                />
+            {allActiveStudies.length > 0 && (
+              <div className="w-72 shrink-0 flex flex-col gap-4 overflow-y-auto border-l border-border pl-4">
+                {allActiveStudies.map((s) => (
+                  <div key={s.study_id}>
+                    {allActiveStudies.length > 1 && (
+                      <p className="text-[10px] font-mono text-muted-foreground mb-1 truncate">{s.study_id}</p>
+                    )}
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Latest Detection</p>
+                    <LiveDetectionFeed
+                      studyId={s.study_id}
+                      status={s.status}
+                      limit={1}
+                      demoDetections={demoDetections}
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </div>

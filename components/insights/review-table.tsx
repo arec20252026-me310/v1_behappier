@@ -7,8 +7,9 @@ import type { DetectionRow } from "./insights-list"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
-function snapshotUrl(imageId: string): string {
-  const path = `snapshots/camera_loft_camera_fluent/${imageId}.jpg`
+function snapshotUrl(imageId: string, cameraId?: string | null): string {
+  const folder = cameraId ?? "camera_loft_camera_fluent"
+  const path = `snapshots/${folder}/${imageId}.jpg`
   return `/api/snapshot?path=${encodeURIComponent(path)}`
 }
 
@@ -27,13 +28,14 @@ interface ReviewTableProps {
   rows: string[][]
   detections: DetectionRow[]
   title?: string
+  cameraId?: string | null
 }
 
 type Verdict = "correct" | "incorrect"
 // evaluations[detectionId][behaviorName] = verdict
 type Evaluations = Record<string, Record<string, Verdict>>
 
-export function ReviewTable({ columns, rows, detections, title }: ReviewTableProps) {
+export function ReviewTable({ columns, rows, detections, title, cameraId }: ReviewTableProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(null)
   const [evaluations, setEvaluations] = useState<Evaluations>({})
   const supabase = useRef(createClient()).current
@@ -211,6 +213,7 @@ export function ReviewTable({ columns, rows, detections, title }: ReviewTablePro
                         )}
                         <SnapshotCell
                           imageId={det?.image_id}
+                          cameraId={cameraId}
                           onExpand={() => setOpenIdx(ri)}
                         />
                       </div>
@@ -301,7 +304,7 @@ export function ReviewTable({ columns, rows, detections, title }: ReviewTablePro
             {currentDetection && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={snapshotUrl(currentDetection.image_id)}
+                src={snapshotUrl(currentDetection.image_id, cameraId)}
                 alt="Snapshot"
                 className="w-full rounded-lg object-contain shadow-2xl"
               />

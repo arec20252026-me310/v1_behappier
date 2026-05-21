@@ -11,6 +11,12 @@ import type { Zone, Camera as CameraType, HACameraMapping } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { ZONE_TYPES } from "@/lib/types"
 
+const CAMERA_OPTIONS = [
+  { id: "camera_1", label: "camera_1" },
+  { id: "camera_2", label: "camera_2" },
+  { id: "camera_3", label: "camera_3" },
+]
+
 interface ZonePanelProps {
   zone: Zone | null
   onUpdate: (zone: Zone) => void
@@ -30,11 +36,11 @@ export function ZonePanel({
   onAssignCamera,
   onRemoveCamera,
   assignedCamera,
-  haCameras = [],
+  haCameras: _haCameras = [],
   saving,
   gridResolution = 8,
 }: ZonePanelProps) {
-  const [selectedHaId, setSelectedHaId] = useState<string>("")
+  const [selectedCameraId, setSelectedCameraId] = useState<string>("")
   const sizeOptions = Array.from({ length: gridResolution }, (_, i) => i + 1)
 
   if (!zone) {
@@ -62,11 +68,25 @@ export function ZonePanel({
   }
 
   const handleAssign = () => {
-    if (!selectedHaId || !onAssignCamera) return
-    const haCamera = haCameras.find(c => c.ha_entity_id === selectedHaId)
-    if (!haCamera) return
+    if (!selectedCameraId || !onAssignCamera) return
+    const opt = CAMERA_OPTIONS.find(c => c.id === selectedCameraId)
+    if (!opt) return
+    // Construct a minimal HACameraMapping; id is a nil UUID so the ha_camera_mappings
+    // link step in the editor is a no-op — the cameras record is what matters.
+    const haCamera: HACameraMapping = {
+      id: "00000000-0000-0000-0000-000000000000",
+      camera_id: null,
+      ha_entity_id: opt.id,
+      ha_friendly_name: opt.label,
+      ha_device_class: null,
+      snapshot_interval_seconds: null,
+      is_active: true,
+      last_snapshot_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
     onAssignCamera(zone.id, haCamera)
-    setSelectedHaId("")
+    setSelectedCameraId("")
   }
 
   return (
@@ -173,25 +193,21 @@ export function ZonePanel({
             </div>
           ) : (
             <div className="flex gap-2">
-              <Select value={selectedHaId} onValueChange={setSelectedHaId}>
+              <Select value={selectedCameraId} onValueChange={setSelectedCameraId}>
                 <SelectTrigger className="flex-1 text-sm">
                   <SelectValue placeholder="Assign a camera…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {haCameras.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">No cameras found</div>
-                  ) : (
-                    haCameras.map((cam) => (
-                      <SelectItem key={cam.ha_entity_id} value={cam.ha_entity_id}>
-                        {cam.ha_friendly_name || cam.ha_entity_id}
-                      </SelectItem>
-                    ))
-                  )}
+                  {CAMERA_OPTIONS.map((cam) => (
+                    <SelectItem key={cam.id} value={cam.id}>
+                      {cam.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Button
                 size="sm"
-                disabled={!selectedHaId}
+                disabled={!selectedCameraId}
                 onClick={handleAssign}
               >
                 Assign
