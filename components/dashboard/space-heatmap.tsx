@@ -367,31 +367,31 @@ export function SpaceHeatmap({
         </CardHeader>
 
         <CardContent>
-          {/* Live detection feed — shown when a study is running */}
-          {activeStudyId && (
-            <div className="mb-3 border-b border-border pb-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Latest Detection</p>
-              <LiveDetectionFeed
-                studyId={activeStudyId}
-                status={activeStudyStatus ?? "running"}
-                limit={1}
-                demoDetections={demoDetections ? [demoDetections[demoDetections.length - 1]] : undefined}
-              />
-            </div>
-          )}
-
           {gridInner}
         </CardContent>
       </Card>
 
       {/* Enlarge Dialog */}
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
-        <DialogContent className="max-w-[min(95vw,95vh)] w-[min(95vw,95vh)] h-[95vh] flex flex-col p-4 gap-0 overflow-y-auto">
+        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col p-4 gap-0 overflow-hidden">
           <DialogHeader className="shrink-0 pb-2">
             <DialogTitle className="text-base font-medium">Occupancy Heatmap</DialogTitle>
             <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0">{gridInner}</div>
+          <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
+            <div className="flex-1 min-w-0 overflow-auto">{gridInner}</div>
+            {activeStudyId && (
+              <div className="w-72 shrink-0 flex flex-col gap-2 overflow-y-auto border-l border-border pl-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide shrink-0">Latest Detection</p>
+                <LiveDetectionFeed
+                  studyId={activeStudyId}
+                  status={activeStudyStatus ?? "running"}
+                  limit={6}
+                  demoDetections={demoDetections}
+                />
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

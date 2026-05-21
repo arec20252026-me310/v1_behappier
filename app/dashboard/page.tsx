@@ -6,6 +6,7 @@ import { ActiveStudies } from "@/components/dashboard/active-studies"
 import { OccupancyChart } from "@/components/dashboard/occupancy-chart"
 import { ZoneOverview } from "@/components/dashboard/zone-overview"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
+import { LatestDetectionCard } from "@/components/dashboard/latest-detection-card"
 import { getDemoScenario } from "@/lib/demo-mode"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
@@ -89,13 +90,23 @@ export default async function DashboardPage() {
               activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id : undefined}
               demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
             />
-            <OccupancyChart
-              latestOutput={latestOutput}
-              studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000}
-              metricDescriptions={demoMetricDescriptions}
-              activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
-              demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
-            />
+            <div className="flex flex-col gap-6">
+              <OccupancyChart
+                latestOutput={latestOutput}
+                studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000}
+                metricDescriptions={demoMetricDescriptions}
+                activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
+                activeStudyStatus={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined}
+                demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
+              />
+              {scenario === "study-in-progress" && (
+                <LatestDetectionCard
+                  studyId={BE_STUDY_IN_PROGRESS.study_id}
+                  status={BE_STUDY_IN_PROGRESS.status}
+                  demoDetections={DEMO_DETECTIONS}
+                />
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ZoneOverview zones={demoZones} />
@@ -220,32 +231,46 @@ export default async function DashboardPage() {
           latestInsightAt={beInsights[0]?.created_at}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SpaceHeatmap
-            zones={zones}
-            insights={[]}
-            space={space}
-            studies={[]}
-            livePreviewMetrics={livePreviewMetrics}
-            completedStudy={completedStudy}
-            completedStudyInsights={completedStudyInsights}
-            activeStudyId={beStudies.find(s => s.status === "running")?.study_id}
-            activeStudyStatus="running"
-            activeStudyMonitoredZoneId={(() => {
-              const s = beStudies.find(s => s.status === "running") as { metadata?: { monitored_zone_id?: string; target_zones?: string[] } } | undefined
-              return s?.metadata?.monitored_zone_id ?? s?.metadata?.target_zones?.[0]
-            })()}
-          />
-          <OccupancyChart
-            latestOutput={latestOutput}
-            metricDescriptions={metricDescriptions}
-            studyDurationMs={(() => {
-              const s = allFetchedStudies.find(s => s.study_id === latestOutput?.study_id)
-              return s?.duration_seconds ? s.duration_seconds * 1000 : undefined
-            })()}
-            activeStudyId={beStudies.find(s => s.status === "running")?.study_id}
-          />
-        </div>
+        {(() => {
+          const runningStudy = beStudies.find(s => s.status === "running")
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <SpaceHeatmap
+                zones={zones}
+                insights={[]}
+                space={space}
+                studies={[]}
+                livePreviewMetrics={livePreviewMetrics}
+                completedStudy={completedStudy}
+                completedStudyInsights={completedStudyInsights}
+                activeStudyId={runningStudy?.study_id}
+                activeStudyStatus="running"
+                activeStudyMonitoredZoneId={(() => {
+                  const s = runningStudy as { metadata?: { monitored_zone_id?: string; target_zones?: string[] } } | undefined
+                  return s?.metadata?.monitored_zone_id ?? s?.metadata?.target_zones?.[0]
+                })()}
+              />
+              <div className="flex flex-col gap-6">
+                <OccupancyChart
+                  latestOutput={latestOutput}
+                  metricDescriptions={metricDescriptions}
+                  studyDurationMs={(() => {
+                    const s = allFetchedStudies.find(s => s.study_id === latestOutput?.study_id)
+                    return s?.duration_seconds ? s.duration_seconds * 1000 : undefined
+                  })()}
+                  activeStudyId={runningStudy?.study_id}
+                  activeStudyStatus="running"
+                />
+                {runningStudy && (
+                  <LatestDetectionCard
+                    studyId={runningStudy.study_id}
+                    status="running"
+                  />
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ZoneOverview zones={zones} />

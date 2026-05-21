@@ -17,13 +17,14 @@ import type { BEInsightOutput } from "@/lib/types"
 import { TimeSeriesChart } from "@/components/insights/time-series-chart"
 import type { ChartSeries } from "@/components/insights/time-series-chart"
 import { createClient } from "@/lib/supabase/client"
-import type { DetectionRow } from "@/components/studies/live-detection-feed"
+import { LiveDetectionFeed, type DetectionRow } from "@/components/studies/live-detection-feed"
 
 interface OccupancyChartProps {
   latestOutput?: BEInsightOutput | null
   studyDurationMs?: number
   metricDescriptions?: Record<string, string>
   activeStudyId?: string
+  activeStudyStatus?: string
   demoDetections?: DetectionRow[]
 }
 
@@ -71,6 +72,7 @@ export function OccupancyChart({
   studyDurationMs,
   metricDescriptions,
   activeStudyId,
+  activeStudyStatus,
   demoDetections,
 }: OccupancyChartProps) {
   const [liveDetections, setLiveDetections] = useState<DetectionRow[]>([])
@@ -183,7 +185,7 @@ export function OccupancyChart({
   const chartEl = (
     <TimeSeriesChart
       series={series}
-      height={350}
+      height={isLive ? 220 : 350}
       studyDurationMs={studyDurationMs}
       xAxisLabel="Timestamp"
       yAxisLabel={series.length === 1 ? series[0].title : undefined}
@@ -215,7 +217,7 @@ export function OccupancyChart({
       </Card>
 
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
-        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col p-6 gap-0 overflow-y-auto">
+        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col p-6 gap-0 overflow-hidden">
           <DialogHeader className="shrink-0 pb-3">
             <div className="flex items-center gap-2">
               <DialogTitle className="text-base font-medium">Occupancy Over Time</DialogTitle>
@@ -227,16 +229,29 @@ export function OccupancyChart({
             </div>
             <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0">
-            <TimeSeriesChart
-              series={series}
-              height={600}
-              studyDurationMs={studyDurationMs}
-              xAxisLabel="Timestamp"
-              yAxisLabel={series.length === 1 ? series[0].title : undefined}
-              seriesDescriptions={metricDescriptions}
-              isLive={isLive}
-            />
+          <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden">
+            <div className="flex-1 min-h-0">
+              <TimeSeriesChart
+                series={series}
+                height={isLive ? 480 : 580}
+                studyDurationMs={studyDurationMs}
+                xAxisLabel="Timestamp"
+                yAxisLabel={series.length === 1 ? series[0].title : undefined}
+                seriesDescriptions={metricDescriptions}
+                isLive={isLive}
+              />
+            </div>
+            {isLive && activeStudyId && (
+              <div className="shrink-0 border-t border-border pt-3 overflow-y-auto max-h-48">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Latest Detection</p>
+                <LiveDetectionFeed
+                  studyId={activeStudyId}
+                  status={activeStudyStatus ?? "running"}
+                  limit={4}
+                  demoDetections={demoDetections}
+                />
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

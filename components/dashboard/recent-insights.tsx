@@ -31,10 +31,21 @@ export function RecentInsights({ outputs }: RecentInsightsProps) {
     )
   }
 
+  function toText(v: unknown): string {
+    if (typeof v === "string") return v
+    if (v && typeof v === "object") {
+      const obj = v as Record<string, unknown>
+      if (typeof obj.text === "string") return obj.text
+      if (typeof obj.content === "string") return obj.content
+      if (typeof obj.message === "string") return obj.message
+    }
+    return String(v ?? "")
+  }
+
   function toArr(v: unknown): string[] {
-    if (Array.isArray(v)) return v as string[]
+    if (Array.isArray(v)) return v.map(toText)
     if (v === null || v === undefined || v === "") return []
-    return [String(v)]
+    return [toText(v)]
   }
 
   // Flatten the most recent insight strings across all outputs (up to 4)
