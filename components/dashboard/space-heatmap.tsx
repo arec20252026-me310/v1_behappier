@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { MapPin, AlertTriangle, ArrowRight, Maximize2 } from "lucide-react"
+import { MapPin, AlertTriangle, ArrowRight, Maximize2, Users } from "lucide-react"
 import { CameraMapIcon } from "@/components/space/camera-map-icon"
 import Link from "next/link"
 // Link kept for insight dialogs below
@@ -373,8 +373,9 @@ export function SpaceHeatmap({
                 {liveCount !== null && tracksOccupancy !== false && (
                   <div className="flex items-center justify-center flex-1">
                     <div className="relative inline-flex items-center justify-center">
-                      <div className="absolute w-8 h-8 rounded-full bg-white/20 animate-ping" />
-                      <div className="relative w-7 h-7 rounded-full bg-black/65 border border-white/40 flex items-center justify-center shadow-lg">
+                      <div className="absolute w-10 h-10 rounded-full bg-white/25 animate-ping" />
+                      <div className="relative w-9 h-9 rounded-full bg-white/20 border border-white/60 flex flex-col items-center justify-center shadow-lg gap-0">
+                        <Users className="h-3 w-3 text-white mb-0.5" />
                         <span className="text-[11px] font-bold text-white leading-none">{liveCount}</span>
                       </div>
                     </div>
