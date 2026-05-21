@@ -84,7 +84,7 @@ export function SidebarNav() {
         </Button>
       </div>
 
-      <nav className="flex-1 p-2 space-y-1">
+      <nav className="flex-1 p-2 space-y-0.5">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(`${item.href}/`))
           return (
@@ -92,39 +92,39 @@ export function SidebarNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
                 isActive
                   ? "bg-sidebar-accent text-sidebar-primary"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span className="text-sm font-medium">{item.title}</span>}
+              {!collapsed && <span className="text-sm font-semibold">{item.title}</span>}
             </Link>
           )
         })}
       </nav>
 
-      <div className="p-2 border-t border-sidebar-border space-y-1">
+      <div className="p-2 border-t border-sidebar-border space-y-0.5">
         <Link
           href="/dashboard/demo"
           className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+            "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
             "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
         >
           <Clapperboard className="h-5 w-5 shrink-0 text-muted-foreground" />
-          {!collapsed && <span className="text-sm font-medium text-muted-foreground">Start Demo</span>}
+          {!collapsed && <span className="text-sm font-semibold text-muted-foreground">Start Demo</span>}
         </Link>
         <Link
           href="/dashboard/settings"
           className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+            "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
             "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
         >
           <Settings className="h-5 w-5 shrink-0" />
-          {!collapsed && <span className="text-sm font-medium">Settings</span>}
+          {!collapsed && <span className="text-sm font-semibold">Settings</span>}
         </Link>
       </div>
     </aside>

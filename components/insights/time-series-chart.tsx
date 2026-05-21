@@ -88,6 +88,7 @@ interface TimeSeriesChartProps {
   xAxisLabel?: string
   yAxisLabel?: string
   seriesDescriptions?: Record<string, string>
+  isLive?: boolean
 }
 
 function lookupDescription(title: string, descriptions: Record<string, string>): string | undefined {
@@ -234,7 +235,7 @@ const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
 
-export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions }: TimeSeriesChartProps) {
+export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive }: TimeSeriesChartProps) {
   const allData = mergeSeriesData(series)
   const total = allData.length
 
@@ -259,9 +260,13 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
   useEffect(() => {
     totalRef.current = total
     setViewEnd(total)
-    setViewStart(0)
-    setActivePreset("All time")
-  }, [total])
+    if (!isLive) {
+      setViewStart(0)
+      setActivePreset("All time")
+    } else if (!hasInteracted.current) {
+      setViewStart(0)
+    }
+  }, [total, isLive])
 
   // Duration used to filter presets: prefer planned study duration, fall back to actual data span
   const dataDurationMs = total >= 2
@@ -568,6 +573,18 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                     const prev = visibleData[index - 1]?.[s.title]
                     const next = visibleData[index + 1]?.[s.title]
                     const isolated = (prev == null) && (next == null)
+                    const isLastLive = isLive && index === visibleData.length - 1
+                    if (isLastLive) {
+                      return (
+                        <g key={`dot-${s.title}-${index}`}>
+                          <circle cx={cx} cy={cy} r={5} fill="none" stroke={color} strokeWidth={2}>
+                            <animate attributeName="r" values="5;14;5" dur="1.8s" repeatCount="indefinite" />
+                            <animate attributeName="stroke-opacity" values="0.8;0;0.8" dur="1.8s" repeatCount="indefinite" />
+                          </circle>
+                          <circle cx={cx} cy={cy} r={5} fill={color} />
+                        </g>
+                      )
+                    }
                     return isolated
                       ? <circle key={`dot-${s.title}-${index}`} cx={cx} cy={cy} r={5} fill={color} />
                       : <g key={`dot-${s.title}-${index}`} />
@@ -681,6 +698,12 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
             <span className="text-xs" style={{ color: "oklch(0.40 0 0)" }}>
               {statusLabel}
             </span>
+            {isLive && (
+              <span className="text-xs flex items-center gap-1" style={{ color: "oklch(0.65 0.18 160)" }}>
+                <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "oklch(0.65 0.18 160)" }} />
+                Live
+              </span>
+            )}
           </div>
         </div>
       )}

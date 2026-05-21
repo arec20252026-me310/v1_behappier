@@ -11,9 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { MapPin, AlertTriangle, ArrowRight } from "lucide-react"
+import { MapPin, AlertTriangle, ArrowRight, Maximize2 } from "lucide-react"
 import { CameraMapIcon } from "@/components/space/camera-map-icon"
 import Link from "next/link"
+// Link kept for insight dialogs below
 import type { Zone, Insight, Space, Study, CameraPlacement, BELivePreviewMetrics, BEInsightOutput, BEStudy } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { LiveDetectionFeed, type DetectionRow } from "@/components/studies/live-detection-feed"
@@ -91,6 +92,24 @@ function getLiveHeatmapColor(occupancy: number): string {
   return "rgba(34, 197, 94, 0.35)"
 }
 
+function getLiveCount(zoneName: string, zoneId: string, metrics: Record<string, unknown>): number | null {
+  const candidates = [
+    (metrics.zone_metrics as Record<string, unknown>)?.[zoneName],
+    (metrics.zone_metrics as Record<string, unknown>)?.[zoneId],
+    (metrics.zones as Record<string, unknown>)?.[zoneName],
+    (metrics.zones as Record<string, unknown>)?.[zoneId],
+  ]
+  for (const candidate of candidates) {
+    if (candidate == null) continue
+    if (typeof candidate === "object") {
+      const obj = candidate as Record<string, unknown>
+      const count = obj.count ?? obj.occupant_count ?? obj.total_occupants
+      if (typeof count === "number") return count
+    }
+  }
+  return null
+}
+
 export function SpaceHeatmap({
   zones,
   insights = [],
@@ -110,6 +129,7 @@ export function SpaceHeatmap({
   const [selectedBEInsight, setSelectedBEInsight] = useState<BEInsightSelection | null>(null)
   const [cameras, setCameras] = useState<CameraPlacement[]>(cameraProp)
   const [insightsViewed, setInsightsViewed] = useState(false)
+  const [isEnlarged, setIsEnlarged] = useState(false)
 
   useEffect(() => {
     setHasActiveStudy(studies.some(s => s.status === "active"))
@@ -187,6 +207,137 @@ export function SpaceHeatmap({
   // Active running study zone highlight
   const isRunningStudy = !!activeStudyId && !hasCompletedInsights && !livePreviewMetrics
 
+  // Extract grid+legend JSX for reuse in card and enlarge dialog
+  const gridInner = (
+    <>
+      {/* Legend */}
+      <div className="flex items-center gap-4 mb-2 text-xs flex-wrap">
+        {livePreviewMetrics ? (
+          <>
+            <span className="text-muted-foreground">Occupancy:</span>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-red-400" style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
+          </>
+        ) : (
+          <>
+            <span className="text-muted-foreground">Status:</span>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
+          </>
+        )}
+      </div>
+
+      {/* Grid */}
+      <div
+        className="relative rounded-lg overflow-hidden mx-auto border border-border w-full"
+        style={{ aspectRatio: "1 / 1" }}
+      >
+        {floorPlanUrl ? (
+          <img
+            src={floorPlanUrl}
+            alt="Floor plan"
+            className="absolute inset-0 w-full h-full object-contain opacity-50"
+            style={{ pointerEvents: "none" }}
+            crossOrigin="anonymous"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-secondary/20" />
+        )}
+
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px)
+            `,
+            backgroundSize: `${cellPct}% ${cellPct}%`,
+          }}
+        />
+
+        {zonesWithOccupancy.map((zone) => {
+          const legacyInsight = getZoneInsight(zone.id, insights)
+          const isBEInsightZone = hasCompletedInsights && zone.id === monitoredZoneId
+          const isActiveStudyZone = isRunningStudy && zone.id === activeStudyMonitoredZoneId
+          const hasAnyInsight = !!legacyInsight || isBEInsightZone
+
+          const liveOccupancy = livePreviewMetrics
+            ? getLiveOccupancy(zone.name, zone.id, livePreviewMetrics.metrics)
+            : null
+
+          const liveCount = livePreviewMetrics ? getLiveCount(zone.name, zone.id, livePreviewMetrics.metrics) : null
+
+          const bgColor = liveOccupancy !== null
+            ? getLiveHeatmapColor(liveOccupancy)
+            : (isActiveStudyZone ? "rgba(234, 179, 8, 0.35)" : getHeatmapColor(hasAnyInsight))
+
+          const borderColor = liveOccupancy !== null
+            ? (liveOccupancy >= 80 ? "rgba(239,68,68,0.8)" : liveOccupancy >= 50 ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
+            : (hasAnyInsight || isActiveStudyZone ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
+
+          return (
+            <div
+              key={zone.id}
+              onClick={() => handleZoneClick(zone)}
+              className={cn(
+                "absolute rounded-md border transition-all",
+                "hover:scale-[1.02] hover:shadow-lg hover:z-10",
+                hasAnyInsight && !liveOccupancy && "zone-flashing"
+              )}
+              style={{
+                left: `${zone.grid_x * cellPct}%`,
+                top: `${zone.grid_y * cellPct}%`,
+                width: `calc(${zone.grid_width * cellPct}% - 2px)`,
+                height: `calc(${zone.grid_height * cellPct}% - 2px)`,
+                backgroundColor: bgColor,
+                borderColor,
+                borderWidth: hasAnyInsight || isActiveStudyZone || liveOccupancy !== null ? 2 : 1,
+                cursor: hasAnyInsight ? "pointer" : "default",
+                boxShadow: (isBEInsightZone || isActiveStudyZone) && !liveOccupancy
+                  ? "0 0 18px rgba(234,179,8,0.5), 0 0 36px rgba(234,179,8,0.2)"
+                  : undefined,
+              }}
+            >
+              <div className="p-1 h-full flex flex-col justify-between text-foreground">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-medium truncate leading-tight" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+                    {zone.name}
+                  </span>
+                  {hasAnyInsight && !liveOccupancy && (
+                    <AlertTriangle className="h-2.5 w-2.5 text-yellow-400 animate-pulse shrink-0" />
+                  )}
+                </div>
+                {liveCount !== null && (
+                  <div className="flex flex-col items-center justify-center flex-1">
+                    <span className="text-lg font-bold text-white leading-none" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
+                      {liveCount}
+                    </span>
+                    <span className="text-[8px] text-white/70">occupants</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+
+        {cameras.map((cam) => {
+          const builderCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
+          const totalBuilderSize = builderCellSize * gridResolution
+          return (
+            <div
+              key={cam.id}
+              className="absolute pointer-events-none"
+              style={{ left: `${(cam.x / totalBuilderSize) * 100}%`, top: `${(cam.y / totalBuilderSize) * 100}%`, zIndex: 20, transform: "translate(-50%, -50%)" }}
+            >
+              <CameraMapIcon direction={cam.direction} size={18} label={cam.label} showLabel={false} />
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+
   return (
     <>
       <Card className="bg-card border-border pt-2 pb-4">
@@ -209,9 +360,10 @@ export function SpaceHeatmap({
               </Badge>
             )}
           </div>
-          <Link href="/dashboard/space">
-            <Button variant="ghost" size="sm" className="text-xs">View Space</Button>
-          </Link>
+          <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => setIsEnlarged(true)}>
+            <Maximize2 className="h-3.5 w-3.5" />
+            Enlarge
+          </Button>
         </CardHeader>
 
         <CardContent>
@@ -228,124 +380,20 @@ export function SpaceHeatmap({
             </div>
           )}
 
-          {/* Legend */}
-          <div className="flex items-center gap-4 mb-2 text-xs flex-wrap">
-            {livePreviewMetrics ? (
-              <>
-                <span className="text-muted-foreground">Occupancy:</span>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-red-400" style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
-              </>
-            ) : (
-              <>
-                <span className="text-muted-foreground">Status:</span>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
-              </>
-            )}
-          </div>
-
-          {/* Grid */}
-          <div
-            className="relative rounded-lg overflow-hidden mx-auto border border-border w-full"
-            style={{ aspectRatio: "1 / 1" }}
-          >
-            {floorPlanUrl ? (
-              <img
-                src={floorPlanUrl}
-                alt="Floor plan"
-                className="absolute inset-0 w-full h-full object-contain opacity-50"
-                style={{ pointerEvents: "none" }}
-                crossOrigin="anonymous"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-secondary/20" />
-            )}
-
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                backgroundImage: `
-                  linear-gradient(to right, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px)
-                `,
-                backgroundSize: `${cellPct}% ${cellPct}%`,
-              }}
-            />
-
-            {zonesWithOccupancy.map((zone) => {
-              const legacyInsight = getZoneInsight(zone.id, insights)
-              const isBEInsightZone = hasCompletedInsights && zone.id === monitoredZoneId
-              const isActiveStudyZone = isRunningStudy && zone.id === activeStudyMonitoredZoneId
-              const hasAnyInsight = !!legacyInsight || isBEInsightZone
-
-              const liveOccupancy = livePreviewMetrics
-                ? getLiveOccupancy(zone.name, zone.id, livePreviewMetrics.metrics)
-                : null
-
-              const bgColor = liveOccupancy !== null
-                ? getLiveHeatmapColor(liveOccupancy)
-                : (isActiveStudyZone ? "rgba(234, 179, 8, 0.35)" : getHeatmapColor(hasAnyInsight))
-
-              const borderColor = liveOccupancy !== null
-                ? (liveOccupancy >= 80 ? "rgba(239,68,68,0.8)" : liveOccupancy >= 50 ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
-                : (hasAnyInsight || isActiveStudyZone ? "rgba(234,179,8,0.8)" : "rgba(34,197,94,0.4)")
-
-              return (
-                <div
-                  key={zone.id}
-                  onClick={() => handleZoneClick(zone)}
-                  className={cn(
-                    "absolute rounded-md border transition-all",
-                    "hover:scale-[1.02] hover:shadow-lg hover:z-10",
-                    hasAnyInsight && !liveOccupancy && "zone-flashing"
-                  )}
-                  style={{
-                    left: `${zone.grid_x * cellPct}%`,
-                    top: `${zone.grid_y * cellPct}%`,
-                    width: `calc(${zone.grid_width * cellPct}% - 2px)`,
-                    height: `calc(${zone.grid_height * cellPct}% - 2px)`,
-                    backgroundColor: bgColor,
-                    borderColor,
-                    borderWidth: hasAnyInsight || isActiveStudyZone || liveOccupancy !== null ? 2 : 1,
-                    cursor: hasAnyInsight ? "pointer" : "default",
-                    boxShadow: (isBEInsightZone || isActiveStudyZone) && !liveOccupancy
-                      ? "0 0 18px rgba(234,179,8,0.5), 0 0 36px rgba(234,179,8,0.2)"
-                      : undefined,
-                  }}
-                >
-                  <div className="p-1 h-full flex flex-col justify-between text-foreground">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-medium truncate leading-tight" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
-                        {zone.name}
-                      </span>
-                      {hasAnyInsight && !liveOccupancy && (
-                        <AlertTriangle className="h-2.5 w-2.5 text-yellow-400 animate-pulse shrink-0" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-
-            {cameras.map((cam) => {
-              const builderCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
-              const totalBuilderSize = builderCellSize * gridResolution
-              return (
-                <div
-                  key={cam.id}
-                  className="absolute pointer-events-none"
-                  style={{ left: `${(cam.x / totalBuilderSize) * 100}%`, top: `${(cam.y / totalBuilderSize) * 100}%`, zIndex: 20, transform: "translate(-50%, -50%)" }}
-                >
-                  <CameraMapIcon direction={cam.direction} size={18} label={cam.label} showLabel={false} />
-                </div>
-              )
-            })}
-          </div>
-
+          {gridInner}
         </CardContent>
       </Card>
+
+      {/* Enlarge Dialog */}
+      <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-medium">Occupancy Heatmap</DialogTitle>
+            <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
+          </DialogHeader>
+          {gridInner}
+        </DialogContent>
+      </Dialog>
 
       {/* Legacy Insight dialog */}
       <Dialog open={!!selectedInsight} onOpenChange={(open) => !open && setSelectedInsight(null)}>

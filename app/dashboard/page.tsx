@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   if (demo) {
     const hasSpace  = scenario !== "blank"
     const hasStudy  = scenario === "study-in-progress" || scenario === "study-complete"
-    const hasLive   = false
+    const hasLive   = scenario === "study-in-progress"
     const hasInsights = scenario === "study-complete"
 
     const demoSpace   = hasSpace ? DEMO_SPACE : null
@@ -89,7 +89,13 @@ export default async function DashboardPage() {
               activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id : undefined}
               demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
             />
-            <OccupancyChart latestOutput={latestOutput} studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000} metricDescriptions={demoMetricDescriptions} />
+            <OccupancyChart
+              latestOutput={latestOutput}
+              studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000}
+              metricDescriptions={demoMetricDescriptions}
+              activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
+              demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
+            />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ZoneOverview zones={demoZones} />
@@ -237,6 +243,7 @@ export default async function DashboardPage() {
               const s = allFetchedStudies.find(s => s.study_id === latestOutput?.study_id)
               return s?.duration_seconds ? s.duration_seconds * 1000 : undefined
             })()}
+            activeStudyId={beStudies.find(s => s.status === "running")?.study_id}
           />
         </div>
 
