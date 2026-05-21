@@ -31,12 +31,11 @@ export default async function InsightsPage() {
   } else if (studyIds.length > 0) {
     const { data: studies } = await supabase
       .from("BE_studies")
-      .select("study_id, duration_seconds, metadata")
+      .select("study_id, duration_seconds, study_name")
       .in("study_id", studyIds)
-    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null; metadata: Record<string, unknown> | null }[]) {
+    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null; study_name: string | null }[]) {
       if (s.duration_seconds) studyDurations[s.study_id] = s.duration_seconds * 1000
-      const name = s.metadata?.study_name
-      if (typeof name === "string" && name) studyGoals[s.study_id] = name
+      if (s.study_name) studyGoals[s.study_id] = s.study_name
     }
   }
 
