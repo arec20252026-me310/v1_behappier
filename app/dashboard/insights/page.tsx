@@ -26,15 +26,17 @@ export default async function InsightsPage() {
   let studyGoals: Record<string, string> = {}
   if (demo && (scenario === "study-complete" || scenario === "model-created")) {
     studyDurations = { [BE_STUDY_COMPLETE.study_id]: BE_STUDY_COMPLETE.duration_seconds * 1000 }
-    studyGoals = { [BE_STUDY_COMPLETE.study_id]: BE_STUDY_COMPLETE.study_goal }
+    const demoName = (BE_STUDY_COMPLETE.metadata as Record<string, unknown>)?.study_name
+    if (typeof demoName === "string" && demoName) studyGoals[BE_STUDY_COMPLETE.study_id] = demoName
   } else if (studyIds.length > 0) {
     const { data: studies } = await supabase
       .from("BE_studies")
-      .select("study_id, duration_seconds, study_goal")
+      .select("study_id, duration_seconds, metadata")
       .in("study_id", studyIds)
-    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null; study_goal: string | null }[]) {
+    for (const s of (studies ?? []) as { study_id: string; duration_seconds: number | null; metadata: Record<string, unknown> | null }[]) {
       if (s.duration_seconds) studyDurations[s.study_id] = s.duration_seconds * 1000
-      if (s.study_goal) studyGoals[s.study_id] = s.study_goal
+      const name = s.metadata?.study_name
+      if (typeof name === "string" && name) studyGoals[s.study_id] = name
     }
   }
 

@@ -116,7 +116,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
               {/* Study title */}
               <div>
                 <h3 className="text-sm font-semibold text-foreground leading-snug">
-                  {studyLabel(output.study_id)}
+                  {studyGoals[output.study_id] || studyLabel(output.study_id)}
                 </h3>
                 <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                   {output.study_id}
