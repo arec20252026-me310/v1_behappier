@@ -205,7 +205,7 @@ export function ModelChart({
               name="Data"
               data={scatterData}
               dataKey="raw"
-              shape={(props: Record<string, unknown>) => {
+              shape={(props: unknown) => {
                 const { cx, cy, payload } = props as { cx: number; cy: number; payload: { x: number; raw: number } }
                 const isHovered = hoveredDot?.cx === cx && hoveredDot?.cy === cy
                 return (
