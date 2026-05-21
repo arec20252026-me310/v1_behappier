@@ -407,6 +407,11 @@ export function SpaceHeatmap({
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-medium">Occupancy Heatmap</CardTitle>
+            {activeStudyId && !hasCompletedInsights && (
+              <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
+                Live
+              </Badge>
+            )}
             {livePreviewMetrics && (
               <Badge variant="outline" className="text-xs text-blue-400 border-blue-500/50 bg-blue-500/10">
                 Live Preview
@@ -417,7 +422,7 @@ export function SpaceHeatmap({
                 Insights Ready
               </Badge>
             )}
-            {!livePreviewMetrics && !hasCompletedInsights && hasActiveStudy && (
+            {!activeStudyId && !livePreviewMetrics && !hasCompletedInsights && hasActiveStudy && (
               <Badge variant="outline" className="text-xs text-green-600 border-green-500/50 bg-green-500/10">
                 Active Study
               </Badge>
