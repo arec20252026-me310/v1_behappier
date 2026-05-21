@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Activity } from "lucide-react"
 
@@ -19,6 +19,7 @@ interface LiveDetectionFeedProps {
 
 export function LiveDetectionFeed({ studyId, status, limit = 4, demoDetections }: LiveDetectionFeedProps) {
   const [detections, setDetections] = useState<DetectionRow[]>(demoDetections ?? [])
+  const instanceId = useId()
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export function LiveDetectionFeed({ studyId, status, limit = 4, demoDetections }
     if (status !== "running") return
 
     const channel = supabase
-      .channel("live-preview-" + studyId)
+      .channel("live-preview-" + studyId + instanceId)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "BE_behavior_detections", filter: `study_id=eq.${studyId}` },
