@@ -37,6 +37,7 @@ interface SpaceHeatmapProps {
   activeStudyStatus?: string
   activeStudyMonitoredZoneId?: string
   demoDetections?: DetectionRow[]
+  tracksOccupancy?: boolean
 }
 
 interface BEInsightSelection {
@@ -123,6 +124,7 @@ export function SpaceHeatmap({
   activeStudyStatus,
   activeStudyMonitoredZoneId,
   demoDetections,
+  tracksOccupancy,
 }: SpaceHeatmapProps) {
   const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
@@ -208,10 +210,10 @@ export function SpaceHeatmap({
   const isRunningStudy = !!activeStudyId && !hasCompletedInsights && !livePreviewMetrics
 
   // Extract grid+legend JSX for reuse in card and enlarge dialog
-  const gridInner = (
-    <>
+  const renderGrid = (enlarged: boolean) => (
+    <div className={enlarged ? "flex flex-col h-full" : ""}>
       {/* Legend */}
-      <div className="flex items-center gap-4 mb-2 text-xs flex-wrap">
+      <div className="flex items-center gap-4 mb-2 text-xs flex-wrap shrink-0">
         {livePreviewMetrics ? (
           <>
             <span className="text-muted-foreground">Occupancy:</span>
@@ -229,9 +231,10 @@ export function SpaceHeatmap({
       </div>
 
       {/* Grid */}
+      <div className={enlarged ? "flex-1 min-h-0 flex items-center justify-center" : ""}>
       <div
-        className="relative rounded-lg overflow-hidden mx-auto border border-border w-full"
-        style={{ aspectRatio: "1 / 1" }}
+        className="relative rounded-lg overflow-hidden mx-auto border border-border"
+        style={enlarged ? { height: "100%", aspectRatio: "1 / 1", width: "auto" } : { width: "100%", aspectRatio: "1 / 1" }}
       >
         {floorPlanUrl ? (
           <img
@@ -308,12 +311,14 @@ export function SpaceHeatmap({
                     <AlertTriangle className="h-2.5 w-2.5 text-yellow-400 animate-pulse shrink-0" />
                   )}
                 </div>
-                {liveCount !== null && (
-                  <div className="flex flex-col items-center justify-center flex-1">
-                    <span className="text-lg font-bold text-white leading-none" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
-                      {liveCount}
-                    </span>
-                    <span className="text-[8px] text-white/70">occupants</span>
+                {liveCount !== null && tracksOccupancy !== false && (
+                  <div className="flex items-center justify-center flex-1">
+                    <div className="relative inline-flex items-center justify-center">
+                      <div className="absolute w-8 h-8 rounded-full bg-white/20 animate-ping" />
+                      <div className="relative w-7 h-7 rounded-full bg-black/65 border border-white/40 flex items-center justify-center shadow-lg">
+                        <span className="text-[11px] font-bold text-white leading-none">{liveCount}</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -335,7 +340,8 @@ export function SpaceHeatmap({
           )
         })}
       </div>
-    </>
+      </div>
+    </div>
   )
 
   return (
@@ -367,7 +373,7 @@ export function SpaceHeatmap({
         </CardHeader>
 
         <CardContent>
-          {gridInner}
+          {renderGrid(false)}
         </CardContent>
       </Card>
 
@@ -379,7 +385,7 @@ export function SpaceHeatmap({
             <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
-            <div className="flex-1 min-w-0 overflow-auto">{gridInner}</div>
+            <div className="flex-1 min-w-0 min-h-0 overflow-hidden">{renderGrid(true)}</div>
             {activeStudyId && (
               <div className="w-72 shrink-0 flex flex-col gap-2 overflow-y-auto border-l border-border pl-4">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide shrink-0">Latest Detection</p>

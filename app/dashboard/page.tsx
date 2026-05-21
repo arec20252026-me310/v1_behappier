@@ -86,6 +86,7 @@ export default async function DashboardPage() {
               activeStudyStatus={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined}
               activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id : undefined}
               demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
+            tracksOccupancy={scenario === "study-in-progress"}
             />
             <div className="flex flex-col gap-6">
               <OccupancyChart
@@ -239,6 +240,7 @@ export default async function DashboardPage() {
                   const s = runningStudy as { metadata?: { monitored_zone_id?: string; target_zones?: string[] } } | undefined
                   return s?.metadata?.monitored_zone_id ?? s?.metadata?.target_zones?.[0]
                 })()}
+                tracksOccupancy={metrics.some(m => (m as { name: string }).name?.toLowerCase().includes("occupancy"))}
               />
               <div className="flex flex-col gap-6">
                 <OccupancyChart

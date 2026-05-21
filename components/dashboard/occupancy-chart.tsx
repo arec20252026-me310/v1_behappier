@@ -229,11 +229,11 @@ export function OccupancyChart({
             </div>
             <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-hidden">
-            <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 flex flex-row gap-4 overflow-hidden">
+            <div className="flex-1 min-h-0 min-w-0">
               <TimeSeriesChart
                 series={series}
-                height={isLive ? 480 : 580}
+                height={isLive ? 600 : 650}
                 studyDurationMs={studyDurationMs}
                 xAxisLabel="Timestamp"
                 yAxisLabel={series.length === 1 ? series[0].title : undefined}
@@ -242,7 +242,7 @@ export function OccupancyChart({
               />
             </div>
             {isLive && activeStudyId && (
-              <div className="shrink-0 border-t border-border pt-3 overflow-y-auto max-h-48">
+              <div className="w-64 shrink-0 border-l border-border pl-4 overflow-y-auto">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Latest Detection</p>
                 <LiveDetectionFeed
                   studyId={activeStudyId}
