@@ -27,6 +27,23 @@ interface InsightsListProps {
   metricDescriptions?: Record<string, string>
 }
 
+function toText(v: unknown): string {
+  if (typeof v === "string") return v
+  if (v && typeof v === "object") {
+    const obj = v as Record<string, unknown>
+    if (typeof obj.text === "string") return obj.text
+    if (typeof obj.content === "string") return obj.content
+    if (typeof obj.message === "string") return obj.message
+  }
+  return String(v ?? "")
+}
+
+function toStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(toText)
+  if (value === null || value === undefined) return []
+  return [toText(value)]
+}
+
 function toArray<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[]
   if (value === null || value === undefined) return []
@@ -41,8 +58,8 @@ type NormalizedOutput = Omit<BEInsightOutput, 'insights' | 'recommendations'> & 
 function normalizeOutput(output: BEInsightOutput): NormalizedOutput {
   return {
     ...output,
-    insights: toArray<string>(output.insights),
-    recommendations: toArray<string>(output.recommendations),
+    insights: toStringArray(output.insights),
+    recommendations: toStringArray(output.recommendations),
     charts: toArray(output.charts),
     tables: toArray(output.tables),
   }
@@ -230,7 +247,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
                                 <tr key={ri} className="border-b border-border last:border-0 hover:bg-muted/20">
                                   {row.map((cell, ci) => (
                                     <td key={ci} className="px-2 py-1.5 text-foreground/80">
-                                      {cell ?? "—"}
+                                      {cell != null ? toText(cell) : "—"}
                                     </td>
                                   ))}
                                 </tr>
