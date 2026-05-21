@@ -66,6 +66,21 @@ function normalizeOutput(output: BEInsightOutput): NormalizedOutput {
   }
 }
 
+function studyLabel(studyId: string): string {
+  const match = studyId.match(/study_(\d+)/)
+  if (match) {
+    const ms = Number(match[1])
+    if (!isNaN(ms) && ms > 1e12) {
+      return new Date(ms).toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit",
+        timeZone: "America/Los_Angeles",
+      })
+    }
+  }
+  return studyId
+}
+
 export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = false, studyDurations = {}, metricDescriptions, studyGoals = {} }: InsightsListProps) {
   const normalized = outputs.map(normalizeOutput)
   if (normalized.length === 0) {
@@ -101,7 +116,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, reviewMode = fal
               {/* Study title */}
               <div>
                 <h3 className="text-sm font-semibold text-foreground leading-snug">
-                  {studyGoals[output.study_id] || "Study"}
+                  {studyLabel(output.study_id)}
                 </h3>
                 <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                   {output.study_id}

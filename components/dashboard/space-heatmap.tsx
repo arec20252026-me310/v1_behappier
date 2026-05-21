@@ -366,9 +366,6 @@ export function SpaceHeatmap({
                   <span className="text-[10px] font-medium truncate leading-tight" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                     {zone.name}
                   </span>
-                  {hasAnyInsight && !liveOccupancy && (
-                    <AlertTriangle className="h-2.5 w-2.5 text-yellow-400 animate-pulse shrink-0" />
-                  )}
                 </div>
                 {liveCount !== null && tracksOccupancy !== false && (
                   <div className="flex items-center justify-center flex-1">
