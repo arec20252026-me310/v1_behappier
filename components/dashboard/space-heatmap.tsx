@@ -328,7 +328,7 @@ export function SpaceHeatmap({
 
   // Extract grid+legend JSX for reuse in card and enlarge dialog
   const renderGrid = (enlarged: boolean) => (
-    <div className={enlarged ? "flex flex-col h-full" : ""}>
+    <div className={enlarged ? "w-full h-full flex flex-col" : ""}>
       {/* Legend */}
       <div className="flex items-center gap-4 mb-2 text-xs flex-wrap shrink-0">
         {livePreviewMetrics ? (
@@ -501,15 +501,19 @@ export function SpaceHeatmap({
 
       {/* Enlarge Dialog */}
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
-        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col p-4 gap-0 overflow-hidden">
-          <DialogHeader className="shrink-0 pb-2">
+        <DialogContent className="max-w-[92vw] w-[92vw] h-[88vh] flex flex-col p-4 gap-0 overflow-hidden">
+          <DialogHeader className="shrink-0 pb-3">
             <DialogTitle className="text-base font-medium">Occupancy Heatmap</DialogTitle>
             <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
-            <div className="flex-1 min-w-0 min-h-0 overflow-hidden">{renderGrid(true)}</div>
+          <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
+            {/* Left: square heatmap column sized by dialog height */}
+            <div className="h-full aspect-square shrink-0">
+              {renderGrid(true)}
+            </div>
+            {/* Right: study detections */}
             {allActiveStudies.length > 0 && (
-              <div className="w-72 shrink-0 flex flex-col gap-4 overflow-y-auto border-l border-border pl-4">
+              <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
                 {allActiveStudies.map((s) => (
                   <div key={s.study_id}>
                     {allActiveStudies.length > 1 && (

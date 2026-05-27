@@ -263,7 +263,7 @@ export function OccupancyChart({
       </Card>
 
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
-        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col p-6 gap-0 overflow-hidden">
+        <DialogContent className="max-w-[92vw] w-[92vw] h-[88vh] flex flex-col p-4 gap-0 overflow-hidden">
           <DialogHeader className="shrink-0 pb-3">
             <div className="flex items-center gap-2">
               <DialogTitle className="text-base font-medium">Occupancy Over Time</DialogTitle>
@@ -275,14 +275,16 @@ export function OccupancyChart({
             </div>
             <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 flex flex-row gap-4 overflow-hidden">
-            <div className="flex-1 min-h-0 min-w-0 overflow-y-auto pr-2">
+          <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
+            {/* Left: chart(s) */}
+            <div className="flex-1 min-w-0 overflow-y-auto">
               {renderCharts(true)}
             </div>
+            {/* Right: detections */}
             {isLive && allActiveStudies.length > 0 && (
-              <div className="w-40 shrink-0 border-l border-border pl-4 overflow-y-auto">
+              <div className="w-72 shrink-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
                 {allActiveStudies.map((s, idx) => (
-                  <div key={s.study_id} className={idx > 0 ? "mt-4 pt-4 border-t border-border" : ""}>
+                  <div key={s.study_id} className={idx > 0 ? "pt-4 border-t border-border" : ""}>
                     {allActiveStudies.length > 1 && (
                       <p className="text-[10px] font-mono text-muted-foreground/60 mb-1 truncate">
                         Study {idx + 1}: {s.study_id}
