@@ -900,22 +900,17 @@ export function ModelsManager({
               {modelInputColOptions.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-2">Load data to see columns.</p>
               ) : (
-                <div className="rounded-md border border-border p-2.5 bg-muted/10 space-y-1">
-                  {/* Timestamp cols (auto-converted to elapsed seconds) */}
-                  {tsCols.length > 0 && (
-                    <>
-                      {tsCols.map((col) => (
-                        <label key={col} className={cn(
-                          "flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-muted/30 transition-colors",
-                          modelInputCols.includes(col) ? "text-foreground" : "text-muted-foreground"
-                        )}>
-                          <Checkbox checked={modelInputCols.includes(col)} onCheckedChange={() => toggleInputCol(col)} />
-                          <span className="truncate">{tsElapsedLabel}</span>
-                        </label>
-                      ))}
-                    </>
-                  )}
+                <div className="rounded-md border border-border p-2.5 bg-muted/10">
                   <div className="grid grid-cols-2 gap-1.5">
+                    {tsCols.map((col) => (
+                      <label key={col} className={cn(
+                        "flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-muted/30 transition-colors",
+                        modelInputCols.includes(col) ? "text-foreground" : "text-muted-foreground"
+                      )}>
+                        <Checkbox checked={modelInputCols.includes(col)} onCheckedChange={() => toggleInputCol(col)} />
+                        <span className="truncate">{tsElapsedLabel}</span>
+                      </label>
+                    ))}
                     {numericCols.map((col) => (
                       <label key={col} className={cn(
                         "flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-muted/30 transition-colors",
