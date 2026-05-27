@@ -224,11 +224,16 @@ export function ModelsManager({
   const activeDataset = mergedDataset ?? sensorDataset ?? behaviorDataset
   const canMerge = !!(sensorDataset && behaviorDataset)
 
-  // Available columns (exclude timestamp cols from model inputs)
+  // Available columns
   const allCols = activeDataset?.columns ?? []
+  const tsCols = activeDataset
+    ? allCols.filter((c) => isTimestampColumn(activeDataset.rows, c))
+    : []
   const numericCols = activeDataset
     ? allCols.filter((c) => !isTimestampColumn(activeDataset.rows, c))
     : []
+  // Timestamp cols can be model inputs (auto-converted to elapsed seconds at fit time)
+  const modelInputColOptions = [...tsCols, ...numericCols]
 
   // Chart axis selectors
   const [chartXCol, setChartXCol] = useState(() => demoChartX ?? "")
@@ -423,7 +428,14 @@ export function ModelsManager({
 
     try {
       const rawY = extractNumericColumn(activeDataset.rows, modelOutputCol)
-      const rawXs = modelInputCols.map((col) => extractNumericColumn(activeDataset.rows, col))
+      const rawXs = modelInputCols.map((col) => {
+        const rawVals = extractNumericColumn(activeDataset.rows, col)
+        if (isTimestampColumn(activeDataset.rows, col)) {
+          const minTime = Math.min(...rawVals.filter(isFinite))
+          return rawVals.map((t) => (isFinite(t) ? t - minTime : NaN))
+        }
+        return rawVals
+      })
 
       // Filter to rows where all inputs and output are finite
       const validIdx = rawY
@@ -626,6 +638,9 @@ export function ModelsManager({
     : []
   const xIsTime = activeDataset && chartXCol
     ? isTimestampColumn(activeDataset.rows, chartXCol)
+    : false
+  const yIsTime = activeDataset && chartYCol
+    ? isTimestampColumn(activeDataset.rows, chartYCol)
     : false
   const showSaveDataset = !!(mergedDataset || (behaviorDataset && !sensorDataset))
   const isSingleInputModel = SINGLE_INPUT_ONLY.includes(modelType)
@@ -835,6 +850,7 @@ export function ModelsManager({
               onToggle={handleToggleEntry}
               onRemove={handleRemoveEntry}
               xIsTime={xIsTime}
+              yIsTime={yIsTime}
               xLabel={chartXCol || undefined}
               yLabel={chartYCol || undefined}
             />
@@ -856,19 +872,37 @@ export function ModelsManager({
                   <span className="ml-1 text-muted-foreground/60">· single input only</span>
                 )}
               </Label>
-              {numericCols.length === 0 ? (
+              {modelInputColOptions.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-2">Load data to see columns.</p>
               ) : (
-                <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border p-2.5 bg-muted/10">
-                  {numericCols.map((col) => (
-                    <label key={col} className={cn(
-                      "flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-muted/30 transition-colors",
-                      modelInputCols.includes(col) ? "text-foreground" : "text-muted-foreground"
-                    )}>
-                      <Checkbox checked={modelInputCols.includes(col)} onCheckedChange={() => toggleInputCol(col)} />
-                      <span className="truncate">{col}</span>
-                    </label>
-                  ))}
+                <div className="rounded-md border border-border p-2.5 bg-muted/10 space-y-1">
+                  {/* Timestamp cols (auto-converted to elapsed seconds) */}
+                  {tsCols.length > 0 && (
+                    <>
+                      {tsCols.map((col) => (
+                        <label key={col} className={cn(
+                          "flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-muted/30 transition-colors",
+                          modelInputCols.includes(col) ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                          <Checkbox checked={modelInputCols.includes(col)} onCheckedChange={() => toggleInputCol(col)} />
+                          <span className="truncate">{col}</span>
+                          <span className="text-[10px] text-muted-foreground/50 ml-auto shrink-0">elapsed s</span>
+                        </label>
+                      ))}
+                      {numericCols.length > 0 && <div className="border-t border-border/50 my-1" />}
+                    </>
+                  )}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {numericCols.map((col) => (
+                      <label key={col} className={cn(
+                        "flex items-center gap-2 text-sm cursor-pointer px-1 py-0.5 rounded hover:bg-muted/30 transition-colors",
+                        modelInputCols.includes(col) ? "text-foreground" : "text-muted-foreground"
+                      )}>
+                        <Checkbox checked={modelInputCols.includes(col)} onCheckedChange={() => toggleInputCol(col)} />
+                        <span className="truncate">{col}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

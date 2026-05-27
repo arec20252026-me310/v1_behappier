@@ -34,6 +34,7 @@ interface ModelChartProps {
   onToggle: (id: string) => void
   onRemove: (id: string) => void
   xIsTime?: boolean
+  yIsTime?: boolean
   xLabel?: string
   yLabel?: string
 }
@@ -76,6 +77,7 @@ export function ModelChart({
   onToggle,
   onRemove,
   xIsTime = false,
+  yIsTime = false,
   xLabel,
   yLabel,
 }: ModelChartProps) {
@@ -89,8 +91,17 @@ export function ModelChart({
     )
   }
 
-  const xMin = Math.min(...xValues)
-  const xMax = Math.max(...xValues)
+  // Convert timestamps to elapsed seconds so chart axes align with model fits
+  const xRawMin = xValues.length > 0 ? Math.min(...xValues.filter(isFinite)) : 0
+  const xValuesDisplay = xIsTime
+    ? xValues.map(x => (isFinite(x) ? x - xRawMin : x))
+    : xValues
+
+  const yRawMin = yIsTime && yValues.length > 0 ? Math.min(...yValues.filter(isFinite)) : 0
+  const yValuesDisplay = yIsTime
+    ? yValues.map(y => (isFinite(y) ? y - yRawMin : y))
+    : yValues
+
   const xTickFormatter = xIsTime
     ? (v: unknown) => secondsToTimestamp(Number(v))
     : (v: unknown) => {
@@ -99,7 +110,11 @@ export function ModelChart({
         return Number.isInteger(n) ? String(n) : n.toFixed(1)
       }
 
-  const scatterData = xValues.map((x, i) => ({ x, raw: yValues[i] }))
+  const yTickFormatter = yIsTime
+    ? (v: number) => secondsToTimestamp(v)
+    : (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))
+
+  const scatterData = xValuesDisplay.map((x, i) => ({ x, raw: yValuesDisplay[i] }))
 
   // Multi-input fits: project onto chart X axis only if xLabel is one of the inputs
   const entryScatters = fitEntries
@@ -137,12 +152,12 @@ export function ModelChart({
 
   // Domain derived only from what is actually rendered — autoscales when axis selection changes
   const renderedX = [
-    ...xValues,
+    ...xValuesDisplay,
     ...entryLines.flatMap(({ pts }) => pts.map((p) => p.x)),
     ...entryScatters.flatMap(({ pts }) => pts.map((p) => p.x)),
   ].filter(isFinite)
   const renderedY = [
-    ...yValues,
+    ...yValuesDisplay,
     ...entryLines.flatMap(({ entry }) => entry.fitResult.predictedY),
     ...entryScatters.flatMap(({ entry }) => entry.fitResult.predictedY),
   ].filter(isFinite)
@@ -159,9 +174,14 @@ export function ModelChart({
   const [yDomainMin, yDomainMax] = paddedDomain(renderedY)
 
   const TICK_COUNT = 6
-  const xTicks = Array.from({ length: TICK_COUNT }, (_, i) =>
-    xDomainMin + (i / (TICK_COUNT - 1)) * (xDomainMax - xDomainMin)
-  )
+  const rawXRange = renderedX.length > 0
+    ? Math.max(...renderedX) - Math.min(...renderedX)
+    : 0
+  const xTicks = rawXRange === 0
+    ? (renderedX.length > 0 ? [renderedX[0]] : [0])
+    : Array.from({ length: TICK_COUNT }, (_, i) =>
+        xDomainMin + (i / (TICK_COUNT - 1)) * (xDomainMax - xDomainMin)
+      )
 
   return (
     <div className="space-y-3">
@@ -188,7 +208,7 @@ export function ModelChart({
             <YAxis
               type="number"
               domain={[yDomainMin, yDomainMax]}
-              tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))}
+              tickFormatter={yTickFormatter}
               tick={{ fill: "#9ca3af", fontSize: 10 }}
               axisLine={{ stroke: "#9ca3af" }}
               tickLine={{ stroke: "#9ca3af" }}
@@ -273,7 +293,7 @@ export function ModelChart({
                 : `${xLabel ?? "X"}: ${Number.isInteger(hoveredDot.x) ? hoveredDot.x : hoveredDot.x.toFixed(2)}`}
             </p>
             <p style={{ color: DATA_COLOR }}>
-              {yLabel ?? "Y"}: {hoveredDot.raw.toFixed(4)}
+              {yLabel ?? "Y"}: {yIsTime ? secondsToTimestamp(hoveredDot.raw) : hoveredDot.raw.toFixed(4)}
             </p>
           </div>
         )}
