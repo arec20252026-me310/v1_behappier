@@ -829,7 +829,11 @@ export function ModelsManager({
                 <Select value={chartXCol} onValueChange={setChartXCol} disabled={allCols.length === 0}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
                   <SelectContent>
-                    {allCols.map((col) => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                    {allCols.map((col) => (
+                      <SelectItem key={col} value={col}>
+                        {isTimestampColumn(activeDataset?.rows ?? [], col) ? "Elapsed Time (s)" : col}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -838,7 +842,11 @@ export function ModelsManager({
                 <Select value={chartYCol} onValueChange={setChartYCol} disabled={allCols.length === 0}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
                   <SelectContent>
-                    {allCols.map((col) => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                    {allCols.map((col) => (
+                      <SelectItem key={col} value={col}>
+                        {isTimestampColumn(activeDataset?.rows ?? [], col) ? "Elapsed Time (s)" : col}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -853,6 +861,8 @@ export function ModelsManager({
               yIsTime={yIsTime}
               xLabel={chartXCol || undefined}
               yLabel={chartYCol || undefined}
+              xAxisLabel={chartXCol ? (xIsTime ? "Elapsed Time (s)" : chartXCol) : undefined}
+              yAxisLabel={chartYCol ? (yIsTime ? "Elapsed Time (s)" : chartYCol) : undefined}
             />
           </CardContent>
         </Card>
@@ -885,8 +895,7 @@ export function ModelsManager({
                           modelInputCols.includes(col) ? "text-foreground" : "text-muted-foreground"
                         )}>
                           <Checkbox checked={modelInputCols.includes(col)} onCheckedChange={() => toggleInputCol(col)} />
-                          <span className="truncate">{col}</span>
-                          <span className="text-[10px] text-muted-foreground/50 ml-auto shrink-0">elapsed s</span>
+                          <span className="truncate">Elapsed Time (s)</span>
                         </label>
                       ))}
                       {numericCols.length > 0 && <div className="border-t border-border/50 my-1" />}

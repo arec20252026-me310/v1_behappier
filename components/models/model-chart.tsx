@@ -35,8 +35,10 @@ interface ModelChartProps {
   onRemove: (id: string) => void
   xIsTime?: boolean
   yIsTime?: boolean
-  xLabel?: string
+  xLabel?: string   // raw column name — used for axis-match detection
   yLabel?: string
+  xAxisLabel?: string  // display label shown on the chart axis and tooltip
+  yAxisLabel?: string
 }
 
 const DATA_COLOR = "oklch(0.7 0.15 180)"
@@ -52,13 +54,11 @@ export const FIT_COLORS = [
   "#06b6d4",
 ]
 
-function secondsToTimestamp(s: number): string {
-  if (!isFinite(s)) return ""
-  const absS = Math.abs(s)
-  const h = Math.floor(absS / 3600)
-  const m = Math.floor((absS % 3600) / 60)
-  const sec = Math.floor(absS % 60)
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+function makeElapsedFormatter(maxSec: number): (v: number) => string {
+  if (maxSec < 180) return (v) => `${Math.round(v)}s`
+  if (maxSec < 7200) return (v) => `${Math.round(v / 60)}min`
+  if (maxSec < 172800) return (v) => `${(v / 3600).toFixed(1)}h`
+  return (v) => `${(v / 86400).toFixed(1)}d`
 }
 
 const TOOLTIP_STYLE: React.CSSProperties = {
@@ -80,6 +80,8 @@ export function ModelChart({
   yIsTime = false,
   xLabel,
   yLabel,
+  xAxisLabel,
+  yAxisLabel,
 }: ModelChartProps) {
   const [hoveredDot, setHoveredDot] = useState<{ cx: number; cy: number; x: number; raw: number } | null>(null)
 
@@ -102,8 +104,14 @@ export function ModelChart({
     ? yValues.map(y => (isFinite(y) ? y - yRawMin : y))
     : yValues
 
+  const xMaxElapsed = xIsTime && xValuesDisplay.length > 0 ? Math.max(...xValuesDisplay.filter(isFinite)) : 0
+  const yMaxElapsed = yIsTime && yValuesDisplay.length > 0 ? Math.max(...yValuesDisplay.filter(isFinite)) : 0
+
+  const xElapsedFmt = makeElapsedFormatter(xMaxElapsed)
+  const yElapsedFmt = makeElapsedFormatter(yMaxElapsed)
+
   const xTickFormatter = xIsTime
-    ? (v: unknown) => secondsToTimestamp(Number(v))
+    ? (v: unknown) => xElapsedFmt(Number(v))
     : (v: unknown) => {
         const n = Number(v)
         if (!isFinite(n)) return ""
@@ -111,7 +119,7 @@ export function ModelChart({
       }
 
   const yTickFormatter = yIsTime
-    ? (v: number) => secondsToTimestamp(v)
+    ? (v: number) => yElapsedFmt(v)
     : (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))
 
   const scatterData = xValuesDisplay.map((x, i) => ({ x, raw: yValuesDisplay[i] }))
@@ -200,8 +208,8 @@ export function ModelChart({
               axisLine={{ stroke: "#9ca3af" }}
               tickLine={{ stroke: "#9ca3af" }}
               label={
-                xLabel
-                  ? { value: xLabel, position: "insideBottom", offset: -10, fill: "#9ca3af", fontSize: 11 }
+                (xAxisLabel ?? xLabel)
+                  ? { value: xAxisLabel ?? xLabel, position: "insideBottom", offset: -10, fill: "#9ca3af", fontSize: 11 }
                   : undefined
               }
             />
@@ -214,8 +222,8 @@ export function ModelChart({
               tickLine={{ stroke: "#9ca3af" }}
               width={56}
               label={
-                yLabel
-                  ? { value: yLabel, angle: -90, position: "insideLeft", fill: "#9ca3af", fontSize: 11 }
+                (yAxisLabel ?? yLabel)
+                  ? { value: yAxisLabel ?? yLabel, angle: -90, position: "insideLeft", fill: "#9ca3af", fontSize: 11 }
                   : undefined
               }
             />
@@ -289,11 +297,11 @@ export function ModelChart({
           >
             <p style={{ color: "#9ca3af", marginBottom: 2 }}>
               {xIsTime
-                ? secondsToTimestamp(hoveredDot.x)
-                : `${xLabel ?? "X"}: ${Number.isInteger(hoveredDot.x) ? hoveredDot.x : hoveredDot.x.toFixed(2)}`}
+                ? `${xAxisLabel ?? xLabel ?? "X"}: ${xElapsedFmt(hoveredDot.x)}`
+                : `${xAxisLabel ?? xLabel ?? "X"}: ${Number.isInteger(hoveredDot.x) ? hoveredDot.x : hoveredDot.x.toFixed(2)}`}
             </p>
             <p style={{ color: DATA_COLOR }}>
-              {yLabel ?? "Y"}: {yIsTime ? secondsToTimestamp(hoveredDot.raw) : hoveredDot.raw.toFixed(4)}
+              {yAxisLabel ?? yLabel ?? "Y"}: {yIsTime ? yElapsedFmt(hoveredDot.raw) : hoveredDot.raw.toFixed(4)}
             </p>
           </div>
         )}
