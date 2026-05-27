@@ -55,10 +55,10 @@ export const FIT_COLORS = [
 ]
 
 function makeElapsedFormatter(maxSec: number): (v: number) => string {
-  if (maxSec < 180) return (v) => `${Math.round(v)}s`
-  if (maxSec < 7200) return (v) => `${Math.round(v / 60)}min`
-  if (maxSec < 172800) return (v) => `${(v / 3600).toFixed(1)}h`
-  return (v) => `${(v / 86400).toFixed(1)}d`
+  if (maxSec < 180) return (v) => `${Math.round(v)}`
+  if (maxSec < 7200) return (v) => `${Math.round(v / 60)}`
+  if (maxSec < 172800) return (v) => `${(v / 3600).toFixed(1)}`
+  return (v) => `${(v / 86400).toFixed(1)}`
 }
 
 const TOOLTIP_STYLE: React.CSSProperties = {

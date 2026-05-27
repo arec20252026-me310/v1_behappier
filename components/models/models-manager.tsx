@@ -111,6 +111,13 @@ const MODEL_OPTIONS: { value: ModelSelectValue; label: string; tooltip: string }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function elapsedDisplayLabel(maxSec: number): string {
+  if (maxSec < 180) return "Elapsed Time (s)"
+  if (maxSec < 7200) return "Elapsed Time (min)"
+  if (maxSec < 172800) return "Elapsed Time (h)"
+  return "Elapsed Time (days)"
+}
+
 function parseToNumber(val: unknown): number {
   if (typeof val === "number") return val
   if (typeof val === "string") {
@@ -645,6 +652,14 @@ export function ModelsManager({
   const showSaveDataset = !!(mergedDataset || (behaviorDataset && !sensorDataset))
   const isSingleInputModel = SINGLE_INPUT_ONLY.includes(modelType)
 
+  // Elapsed time label derived from the actual timestamp range in the dataset
+  const tsElapsedLabel = (() => {
+    if (!activeDataset || tsCols.length === 0) return "Elapsed Time (s)"
+    const vals = extractNumericColumn(activeDataset.rows, tsCols[0]).filter(isFinite)
+    if (vals.length === 0) return "Elapsed Time (s)"
+    return elapsedDisplayLabel(Math.max(...vals) - Math.min(...vals))
+  })()
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
@@ -831,7 +846,7 @@ export function ModelsManager({
                   <SelectContent>
                     {allCols.map((col) => (
                       <SelectItem key={col} value={col}>
-                        {isTimestampColumn(activeDataset?.rows ?? [], col) ? "Elapsed Time (s)" : col}
+                        {isTimestampColumn(activeDataset?.rows ?? [], col) ? tsElapsedLabel : col}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -844,7 +859,7 @@ export function ModelsManager({
                   <SelectContent>
                     {allCols.map((col) => (
                       <SelectItem key={col} value={col}>
-                        {isTimestampColumn(activeDataset?.rows ?? [], col) ? "Elapsed Time (s)" : col}
+                        {isTimestampColumn(activeDataset?.rows ?? [], col) ? tsElapsedLabel : col}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -861,8 +876,8 @@ export function ModelsManager({
               yIsTime={yIsTime}
               xLabel={chartXCol || undefined}
               yLabel={chartYCol || undefined}
-              xAxisLabel={chartXCol ? (xIsTime ? "Elapsed Time (s)" : chartXCol) : undefined}
-              yAxisLabel={chartYCol ? (yIsTime ? "Elapsed Time (s)" : chartYCol) : undefined}
+              xAxisLabel={chartXCol ? (xIsTime ? tsElapsedLabel : chartXCol) : undefined}
+              yAxisLabel={chartYCol ? (yIsTime ? tsElapsedLabel : chartYCol) : undefined}
             />
           </CardContent>
         </Card>
@@ -895,10 +910,9 @@ export function ModelsManager({
                           modelInputCols.includes(col) ? "text-foreground" : "text-muted-foreground"
                         )}>
                           <Checkbox checked={modelInputCols.includes(col)} onCheckedChange={() => toggleInputCol(col)} />
-                          <span className="truncate">Elapsed Time (s)</span>
+                          <span className="truncate">{tsElapsedLabel}</span>
                         </label>
                       ))}
-                      {numericCols.length > 0 && <div className="border-t border-border/50 my-1" />}
                     </>
                   )}
                   <div className="grid grid-cols-2 gap-1.5">
