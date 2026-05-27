@@ -328,9 +328,9 @@ export function SpaceHeatmap({
 
   // Extract grid+legend JSX for reuse in card and enlarge dialog
   const renderGrid = (enlarged: boolean) => (
-    <div className={enlarged ? "w-full h-full flex flex-col" : ""}>
+    <div>
       {/* Legend */}
-      <div className="flex items-center gap-4 mb-2 text-xs flex-wrap shrink-0">
+      <div className="flex items-center gap-4 mb-2 text-xs flex-wrap">
         {livePreviewMetrics ? (
           <>
             <span className="text-muted-foreground">Occupancy:</span>
@@ -348,10 +348,11 @@ export function SpaceHeatmap({
       </div>
 
       {/* Grid */}
-      <div className={enlarged ? "flex-1 min-h-0 flex items-start" : ""}>
       <div
         className="relative rounded-lg overflow-hidden border border-border"
-        style={enlarged ? { height: "100%", aspectRatio: "1 / 1" } : { width: "100%", aspectRatio: "1 / 1" }}
+        style={enlarged
+          ? { height: "calc(88vh - 100px)", aspectRatio: "1 / 1" }
+          : { width: "100%", aspectRatio: "1 / 1" }}
       >
         {floorPlanUrl ? (
           <img
@@ -457,7 +458,6 @@ export function SpaceHeatmap({
           )
         })}
       </div>
-      </div>
     </div>
   )
 
@@ -507,13 +507,13 @@ export function SpaceHeatmap({
             <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
-            {/* Left: heatmap fills available width as a rectangle */}
-            <div className="flex-1 min-w-0 min-h-0">
+            {/* Left: grid is self-sized via calc height */}
+            <div className="shrink-0">
               {renderGrid(true)}
             </div>
             {/* Right: study detections */}
             {allActiveStudies.length > 0 && (
-              <div className="w-72 shrink-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
+              <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
                 {allActiveStudies.map((s) => (
                   <div key={s.study_id}>
                     {allActiveStudies.length > 1 && (
