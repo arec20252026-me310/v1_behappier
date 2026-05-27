@@ -348,10 +348,10 @@ export function SpaceHeatmap({
       </div>
 
       {/* Grid */}
-      <div className={enlarged ? "flex-1 min-h-0 flex items-center justify-center" : ""}>
+      <div className={enlarged ? "flex-1 min-h-0" : ""}>
       <div
-        className="relative rounded-lg overflow-hidden mx-auto border border-border"
-        style={enlarged ? { width: "100%", aspectRatio: "1 / 1", maxHeight: "100%" } : { width: "100%", aspectRatio: "1 / 1" }}
+        className="relative rounded-lg overflow-hidden border border-border"
+        style={enlarged ? { width: "100%", height: "100%" } : { width: "100%", aspectRatio: "1 / 1" }}
       >
         {floorPlanUrl ? (
           <img
@@ -507,13 +507,13 @@ export function SpaceHeatmap({
             <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
-            {/* Left: square heatmap column sized by dialog height */}
-            <div className="h-full aspect-square shrink-0">
+            {/* Left: heatmap fills available width as a rectangle */}
+            <div className="flex-1 min-w-0 min-h-0">
               {renderGrid(true)}
             </div>
             {/* Right: study detections */}
             {allActiveStudies.length > 0 && (
-              <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
+              <div className="w-72 shrink-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
                 {allActiveStudies.map((s) => (
                   <div key={s.study_id}>
                     {allActiveStudies.length > 1 && (
