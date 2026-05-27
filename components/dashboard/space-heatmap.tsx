@@ -351,7 +351,7 @@ export function SpaceHeatmap({
       <div
         className="relative rounded-lg overflow-hidden border border-border"
         style={enlarged
-          ? { height: "calc(88vh - 100px)", aspectRatio: "1 / 1" }
+          ? { height: "calc(88vh - 100px)", width: "calc(88vh - 100px)" }
           : { width: "100%", aspectRatio: "1 / 1" }}
       >
         {floorPlanUrl ? (
