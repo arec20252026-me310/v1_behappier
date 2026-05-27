@@ -348,10 +348,10 @@ export function SpaceHeatmap({
       </div>
 
       {/* Grid */}
-      <div className={enlarged ? "flex-1 min-h-0" : ""}>
+      <div className={enlarged ? "flex-1 min-h-0 flex items-start" : ""}>
       <div
         className="relative rounded-lg overflow-hidden border border-border"
-        style={enlarged ? { width: "100%", height: "100%" } : { width: "100%", aspectRatio: "1 / 1" }}
+        style={enlarged ? { height: "100%", aspectRatio: "1 / 1" } : { width: "100%", aspectRatio: "1 / 1" }}
       >
         {floorPlanUrl ? (
           <img
