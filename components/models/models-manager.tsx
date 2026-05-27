@@ -506,7 +506,7 @@ export function ModelsManager({
 
       const baseLabel = MODEL_OPTIONS.find((m) => m.value === modelSelectValue)?.label ?? modelSelectValue
       const modelDesc = modelType === "polynomial" ? `Polynomial (deg ${polyDegree})` : baseLabel
-      const ioLabel = `${modelInputCols.join(", ")} → ${modelOutputCol}`
+      const ioLabel = `${modelInputCols.map(c => isTimestampColumn(activeDataset.rows, c) ? tsElapsedLabel : c).join(", ")} → ${modelOutputCol}`
       const label = `${modelDesc}: ${ioLabel}`
 
       // Store each input column's values at valid indices so the chart can project onto any axis

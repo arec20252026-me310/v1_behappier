@@ -61,6 +61,13 @@ function makeElapsedFormatter(maxSec: number): (v: number) => string {
   return (v) => `${(v / 86400).toFixed(1)}`
 }
 
+function makeElapsedTooltipFormatter(maxSec: number): (v: number) => string {
+  if (maxSec < 180) return (v) => v.toFixed(2)
+  if (maxSec < 7200) return (v) => (v / 60).toFixed(2)
+  if (maxSec < 172800) return (v) => (v / 3600).toFixed(2)
+  return (v) => (v / 86400).toFixed(2)
+}
+
 const TOOLTIP_STYLE: React.CSSProperties = {
   backgroundColor: "oklch(0.17 0.01 260)",
   border: "1px solid oklch(0.28 0.01 260)",
@@ -109,6 +116,8 @@ export function ModelChart({
 
   const xElapsedFmt = makeElapsedFormatter(xMaxElapsed)
   const yElapsedFmt = makeElapsedFormatter(yMaxElapsed)
+  const xElapsedTooltipFmt = makeElapsedTooltipFormatter(xMaxElapsed)
+  const yElapsedTooltipFmt = makeElapsedTooltipFormatter(yMaxElapsed)
 
   const xTickFormatter = xIsTime
     ? (v: unknown) => xElapsedFmt(Number(v))
@@ -296,12 +305,10 @@ export function ModelChart({
             }}
           >
             <p style={{ color: "#9ca3af", marginBottom: 2 }}>
-              {xIsTime
-                ? `${xAxisLabel ?? xLabel ?? "X"}: ${xElapsedFmt(hoveredDot.x)}`
-                : `${xAxisLabel ?? xLabel ?? "X"}: ${Number.isInteger(hoveredDot.x) ? hoveredDot.x : hoveredDot.x.toFixed(2)}`}
+              {`${xAxisLabel ?? xLabel ?? "X"}: ${xIsTime ? xElapsedTooltipFmt(hoveredDot.x) : hoveredDot.x.toFixed(2)}`}
             </p>
             <p style={{ color: DATA_COLOR }}>
-              {yAxisLabel ?? yLabel ?? "Y"}: {yIsTime ? yElapsedFmt(hoveredDot.raw) : hoveredDot.raw.toFixed(4)}
+              {yAxisLabel ?? yLabel ?? "Y"}: {yIsTime ? yElapsedTooltipFmt(hoveredDot.raw) : hoveredDot.raw.toFixed(4)}
             </p>
           </div>
         )}
