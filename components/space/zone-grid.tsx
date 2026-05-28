@@ -50,7 +50,7 @@ export function ZoneGrid({
     ...zones.map(z => z.grid_y + z.grid_height)
   )
 
-  const cellSize = Math.max(30, Math.min(60, 480 / gridSize))
+  const cellSize = Math.max(20, Math.min(60, 480 / gridSize))
 
   const handleMouseDown = useCallback((e: React.MouseEvent, zone: Zone) => {
     e.preventDefault()
@@ -175,15 +175,15 @@ export function ZoneGrid({
   }, [zones, cellSize])
 
   return (
-    <div className="overflow-auto max-h-[600px] rounded-lg border border-border">
+    <div className="overflow-auto max-h-[calc(100vh-280px)] rounded-lg border border-border">
       <div
         ref={gridRef}
         className="relative"
         style={{
           width: gridWidth,
           height: gridHeight,
-          minWidth: DEFAULT_GRID_SIZE * 40,
-          minHeight: DEFAULT_GRID_SIZE * 40,
+          minWidth: DEFAULT_GRID_SIZE * 20,
+          minHeight: DEFAULT_GRID_SIZE * 20,
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
