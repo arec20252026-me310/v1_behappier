@@ -183,12 +183,8 @@ export function SpaceHeatmap({
   }, [studies])
 
   useEffect(() => {
-    try {
-      const key = `camera-placements-${space?.id ?? "default"}`
-      const stored = localStorage.getItem(key)
-      if (stored) setCameras(JSON.parse(stored))
-    } catch {}
-  }, [space?.id])
+    setCameras(cameraProp)
+  }, [cameraProp])
 
   useEffect(() => {
     // Use the most recently created completed insight to determine viewed state

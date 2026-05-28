@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Plus, Save, Settings, Upload } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import type { Space, Zone, Camera, CameraPlacement, HACameraMapping } from "@/lib/types"
+import type { Space, Zone, Camera, CameraPlacement, CameraDirection, HACameraMapping } from "@/lib/types"
 import { ZONE_TYPES } from "@/lib/types"
 import { ZoneGrid } from "./zone-grid"
 import { ZonePanel } from "./zone-panel"
@@ -31,49 +31,23 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: 
   const [saving, setSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success">("idle")
 
-  const CAMERA_STORAGE_KEY = `camera-placements-${space?.id ?? "default"}`
-
   const [cameraPlacments, setCameraPlacments] = useState<CameraPlacement[]>(() => {
-    if (typeof window === "undefined") return []
-    try {
-      const stored = localStorage.getItem(`camera-placements-${space?.id ?? "default"}`)
-      return stored ? JSON.parse(stored) : []
-    } catch {
-      return []
-    }
-  })
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(CAMERA_STORAGE_KEY, JSON.stringify(cameraPlacments))
-    } catch {}
-  }, [cameraPlacments, CAMERA_STORAGE_KEY])
-
-  // Keep camera pins in sync with real camera assignments on initial load
-  useEffect(() => {
-    if (!currentSpace || cameras.length === 0) return
-    const cellSize = Math.max(30, Math.min(60, 480 / (currentSpace.grid_resolution || 8)))
-    setCameraPlacments(prev => {
-      const updated = [...prev]
-      for (const cam of cameras) {
-        const zone = zones.find(z => z.id === cam.zone_id)
-        if (!zone) continue
-        const exists = updated.some(p => p.zoneId === cam.zone_id)
-        if (!exists) {
-          updated.push({
-            id: `cam-${cam.zone_id}`,
-            zoneId: cam.zone_id,
-            x: (zone.grid_x + zone.grid_width / 2) * cellSize,
-            y: (zone.grid_y + zone.grid_height / 2) * cellSize,
-            direction: "down",
-            label: cam.name,
-          })
+    const cellSize = Math.max(30, Math.min(60, 480 / (space?.grid_resolution || 8)))
+    return initialCameras
+      .filter(cam => initialZones.some(z => z.id === cam.zone_id))
+      .map(cam => {
+        const zone = initialZones.find(z => z.id === cam.zone_id)!
+        const meta = cam.metadata ?? {}
+        return {
+          id: `cam-${cam.zone_id}`,
+          zoneId: cam.zone_id,
+          x: typeof meta.placement_x === "number" ? meta.placement_x : (zone.grid_x + zone.grid_width / 2) * cellSize,
+          y: typeof meta.placement_y === "number" ? meta.placement_y : (zone.grid_y + zone.grid_height / 2) * cellSize,
+          direction: (typeof meta.placement_direction === "string" ? meta.placement_direction : "down") as CameraDirection,
+          label: cam.name,
         }
-      }
-      return updated
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+      })
+  })
 
   const handleSpaceCreated = (newSpace: Space) => {
     setCurrentSpace(newSpace)
@@ -182,7 +156,11 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: 
         await supabase.from("cameras").delete().eq("id", existing.id)
       }
 
-      // Create real cameras record
+      const cellSize = Math.max(30, Math.min(60, 480 / (currentSpace.grid_resolution || 8)))
+      const initialX = (zone.grid_x + zone.grid_width / 2) * cellSize
+      const initialY = (zone.grid_y + zone.grid_height / 2) * cellSize
+
+      // Create real cameras record, persisting initial placement in metadata
       const { data: newCamera, error } = await supabase
         .from("cameras")
         .insert({
@@ -191,7 +169,12 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: 
           stream_url: null,
           status: "active",
           field_of_view: {},
-          metadata: { ha_entity_id: haCamera.ha_entity_id },
+          metadata: {
+            ha_entity_id: haCamera.ha_entity_id,
+            placement_x: initialX,
+            placement_y: initialY,
+            placement_direction: "down",
+          },
         })
         .select()
         .single()
@@ -205,22 +188,32 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: 
         .eq("id", haCamera.id)
 
       setCameras(prev => [...prev.filter(c => c.zone_id !== zoneId), newCamera])
-
-      // Sync visual pin
-      const cellSize = Math.max(30, Math.min(60, 480 / (currentSpace.grid_resolution || 8)))
       setCameraPlacments(prev => [
         ...prev.filter(p => p.zoneId !== zoneId),
-        {
-          id: `cam-${zoneId}`,
-          zoneId,
-          x: (zone.grid_x + zone.grid_width / 2) * cellSize,
-          y: (zone.grid_y + zone.grid_height / 2) * cellSize,
-          direction: "down",
-          label: haCamera.ha_friendly_name || haCamera.ha_entity_id,
-        },
+        { id: `cam-${zoneId}`, zoneId, x: initialX, y: initialY, direction: "down", label: haCamera.ha_friendly_name || haCamera.ha_entity_id },
       ])
     },
     [zones, cameras, currentSpace, supabase]
+  )
+
+  const handleUpdateCameras = useCallback(
+    async (newPlacements: CameraPlacement[]) => {
+      const directionChanged = newPlacements.some(np => {
+        const old = cameraPlacments.find(op => op.id === np.id)
+        return old && old.direction !== np.direction
+      })
+      setCameraPlacments(newPlacements)
+      if (directionChanged) {
+        for (const p of newPlacements) {
+          const cam = cameras.find(c => c.zone_id === p.zoneId)
+          if (!cam) continue
+          await supabase.from("cameras").update({
+            metadata: { ...cam.metadata, placement_x: p.x, placement_y: p.y, placement_direction: p.direction },
+          }).eq("id", cam.id)
+        }
+      }
+    },
+    [cameraPlacments, cameras, supabase]
   )
 
   const handleRemoveCamera = useCallback(
@@ -254,12 +247,19 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: 
           })
           .eq("id", zone.id)
       }
+      for (const p of cameraPlacments) {
+        const cam = cameras.find(c => c.zone_id === p.zoneId)
+        if (!cam) continue
+        await supabase.from("cameras").update({
+          metadata: { ...cam.metadata, placement_x: p.x, placement_y: p.y, placement_direction: p.direction },
+        }).eq("id", cam.id)
+      }
       setSaveStatus("success")
       setTimeout(() => setSaveStatus("idle"), 2000)
     } catch {
       setSaveStatus("idle")
     }
-  }, [zones, supabase])
+  }, [zones, cameras, cameraPlacments, supabase])
 
   if (!currentSpace) {
     return (
@@ -320,7 +320,7 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: 
               floorPlanUrl={currentSpace.floor_plan_url}
               gridResolution={currentSpace.grid_resolution || 8}
               cameras={cameraPlacments}
-              onUpdateCameras={setCameraPlacments}
+              onUpdateCameras={handleUpdateCameras}
             />
           </CardContent>
         </Card>

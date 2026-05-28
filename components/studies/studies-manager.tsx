@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { FlaskConical, Send, RefreshCw, Bot, AlertCircle, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react"
+import { FloorPlanGrid } from "@/components/space/floor-plan-grid"
 import type { Space, Zone, Metric, BEStudy, Camera } from "@/lib/types"
 import { LiveDetectionFeed, type DetectionRow } from "./live-detection-feed"
 import { useRouter } from "next/navigation"
@@ -171,12 +172,10 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
         : [...f.target_metrics, id],
     }))
 
-  const toggleZone = (id: string) =>
+  const selectZone = (id: string) =>
     setForm(f => ({
       ...f,
-      target_zones: f.target_zones.includes(id)
-        ? f.target_zones.filter(z => z !== id)
-        : [...f.target_zones, id],
+      target_zones: f.target_zones[0] === id ? [] : [id],
     }))
 
   const handleEditStudy = (study: BEStudy) => {
@@ -212,7 +211,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name.trim() || isSubmitting) return
+    if (!form.name.trim() || !form.duration_minutes || form.target_zones.length === 0 || form.target_metrics.length === 0 || isSubmitting) return
     setIsSubmitting(true)
     setError(null)
 
@@ -308,13 +307,14 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Planned Duration</Label>
+                  <Label htmlFor="duration">Planned Duration *</Label>
                   <div className="flex gap-2">
                     <input
                       id="duration"
                       type="number"
                       min={1}
                       placeholder="Minutes"
+                      required
                       value={form.duration_minutes ?? ""}
                       onChange={e => setForm(f => ({
                         ...f,
@@ -353,40 +353,31 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
 
               {zones.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Target Zones</Label>
+                  <Label>Target Zone *</Label>
                   <p className="text-xs text-muted-foreground">
-                    Select which zones this study should focus on. Leave blank to include all zones.
+                    Click a zone on the map to select it.
+                    {form.target_zones[0] && (
+                      <span className="ml-1 font-medium text-foreground">
+                        Selected: {zones.find(z => z.id === form.target_zones[0])?.name}
+                      </span>
+                    )}
                   </p>
-                  <ScrollArea className="h-[130px] rounded border border-border p-3">
-                    <div className="space-y-2">
-                      {zones.map(zone => (
-                        <div key={zone.id} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`zone-${zone.id}`}
-                            checked={form.target_zones.includes(zone.id)}
-                            onCheckedChange={() => toggleZone(zone.id)}
-                          />
-                          <label
-                            htmlFor={`zone-${zone.id}`}
-                            className="text-sm font-medium leading-none cursor-pointer"
-                          >
-                            {zone.name}
-                            {zone.zone_type && (
-                              <span className="text-xs text-muted-foreground ml-2">
-                                ({zone.zone_type.replace(/_/g, " ")})
-                              </span>
-                            )}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                  <div className="w-full max-w-sm">
+                    <FloorPlanGrid
+                      floorPlanUrl={space.floor_plan_url}
+                      zones={zones}
+                      gridResolution={space.grid_resolution ?? 8}
+                      selectedZoneId={form.target_zones[0] ?? null}
+                      onZoneClick={zone => selectZone(zone.id)}
+                      mode="view"
+                    />
+                  </div>
                 </div>
               )}
 
               {metrics.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Metrics to Track</Label>
+                  <Label>Metrics to Track *</Label>
                   <p className="text-xs text-muted-foreground">
                     Selected metrics guide what the behavior monitoring and insights agents prioritize.
                   </p>

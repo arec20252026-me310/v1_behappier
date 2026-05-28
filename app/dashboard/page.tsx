@@ -120,6 +120,24 @@ export default async function DashboardPage() {
     .select("*")
     .order("created_at", { ascending: false })).data ?? [])
 
+  const rawCameras = ((await supabase.from("cameras").select("*")).data ?? []) as {
+    id: string; zone_id: string; name: string; metadata: Record<string, unknown> | null
+  }[]
+  const cameraGridRes = (space as { grid_resolution?: number } | null)?.grid_resolution || 8
+  const cameraCellSize = Math.max(30, Math.min(60, 480 / cameraGridRes))
+  const cameraPlacementsFromDB = rawCameras.map(cam => {
+    const zone = zones.find((z: { id: string; grid_x: number; grid_y: number; grid_width: number; grid_height: number }) => z.id === cam.zone_id)
+    const meta = cam.metadata ?? {}
+    return {
+      id: `cam-${cam.zone_id}`,
+      zoneId: cam.zone_id,
+      x: typeof meta.placement_x === "number" ? meta.placement_x : zone ? (zone.grid_x + zone.grid_width / 2) * cameraCellSize : 0,
+      y: typeof meta.placement_y === "number" ? meta.placement_y : zone ? (zone.grid_y + zone.grid_height / 2) * cameraCellSize : 0,
+      direction: (typeof meta.placement_direction === "string" ? meta.placement_direction : "down") as import("@/lib/types").CameraDirection,
+      label: cam.name,
+    }
+  })
+
   const metrics = ((await supabase
     .from("metrics")
     .select("*")
@@ -255,6 +273,7 @@ export default async function DashboardPage() {
                 insights={[]}
                 space={space}
                 studies={[]}
+                cameras={cameraPlacementsFromDB}
                 livePreviewMetrics={livePreviewMetrics}
                 activeStudies={activeStudies}
                 completedZoneInsights={completedZoneInsights}
