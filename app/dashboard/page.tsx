@@ -81,7 +81,7 @@ export default async function DashboardPage() {
               space={demoSpace}
               studies={[]}
               cameras={hasSpace ? [DEMO_CAMERA_PLACEMENT] : []}
-              livePreviewMetrics={demoLive}
+              livePreviewMetrics={scenario === "study-in-progress" ? null : demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
               activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
