@@ -63,6 +63,7 @@ export default async function StudiesPage() {
           zones={zones}
           metrics={metrics}
           cameras={cameras}
+          demo={demo}
           demoDetectionsByStudy={
             demo && scenario === "study-in-progress"
               ? { [STUDY_ID]: DEMO_DETECTIONS }

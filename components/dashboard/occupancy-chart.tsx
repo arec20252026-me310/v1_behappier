@@ -117,6 +117,7 @@ export function OccupancyChart({
 
     if (demoDetections && allActiveStudies.length > 0) {
       setPerStudyDetections({ [allActiveStudies[0].study_id]: demoDetections })
+      setLastDetectionAt(Date.now())
       return
     }
 

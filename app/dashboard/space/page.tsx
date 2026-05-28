@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { SpaceEditor } from "@/components/space/space-editor"
 import { getDemoScenario } from "@/lib/demo-mode"
-import { DEMO_SPACE, ZONES, CAMERA } from "@/lib/demo-seeds"
+import { DEMO_SPACE, ZONES, CAMERAS } from "@/lib/demo-seeds"
 import type { HACameraMapping } from "@/lib/types"
 
 export const dynamic = 'force-dynamic'
@@ -14,14 +14,14 @@ export default async function SpacePage() {
 
   let space = null
   let zones: typeof ZONES = []
-  let cameras: typeof CAMERA[] = []
+  let cameras: typeof CAMERAS = []
   let haCameras: HACameraMapping[] = []
 
   if (demo) {
     if (scenario !== "blank") {
       space = DEMO_SPACE
       zones = ZONES
-      cameras = [CAMERA]
+      cameras = CAMERAS
     }
   } else {
     const { data: dbSpace } = await supabase.from("spaces").select("*").limit(1).single()
