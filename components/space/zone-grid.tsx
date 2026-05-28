@@ -58,9 +58,10 @@ export function ZoneGrid({
     }
   }, [floorPlanUrl])
 
-  // Measure container width so the grid always fills the available card space
+  // Measure container width and track viewport height so the grid fits without scrolling
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(480)
+  const [viewportHeight, setViewportHeight] = useState(700)
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -69,7 +70,10 @@ export function ZoneGrid({
       if (w && w > 0) setContainerWidth(w)
     })
     observer.observe(el)
-    return () => observer.disconnect()
+    const updateVH = () => setViewportHeight(window.innerHeight)
+    updateVH()
+    window.addEventListener('resize', updateVH)
+    return () => { observer.disconnect(); window.removeEventListener('resize', updateVH) }
   }, [])
 
   // Camera drag state
@@ -85,8 +89,11 @@ export function ZoneGrid({
     ? Math.max(Math.round(gridCols / imgAspectRatio), gridRowsMin)
     : Math.max(gridCols, gridRowsMin)
 
-  // Cell size fills the measured container width
-  const cellSize = Math.max(1, Math.floor(containerWidth / gridCols))
+  // Cell size fits both container width and available viewport height
+  const availableHeight = viewportHeight - 320
+  const maxCellByWidth = Math.floor(containerWidth / gridCols)
+  const maxCellByHeight = gridRows > 0 ? Math.floor(availableHeight / gridRows) : maxCellByWidth
+  const cellSize = Math.max(1, Math.min(maxCellByWidth, maxCellByHeight))
 
   const gridWidth = gridCols * cellSize
   const gridHeight = gridRows * cellSize
