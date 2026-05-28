@@ -58,6 +58,8 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
           <img
             src={url}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
             onError={() => setHasError(true)}
           />
