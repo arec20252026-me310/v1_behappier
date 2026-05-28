@@ -92,6 +92,7 @@ export interface Space {
   floor_plan_url: string | null
   grid_resolution: number
   metadata: Record<string, unknown>
+  is_default: boolean
   created_at: string
   updated_at: string
 }

@@ -5,7 +5,8 @@ import type { DetectionRow } from "@/components/insights/insights-list"
 import { MarkInsightsViewed } from "@/components/insights/mark-insights-viewed"
 import { getDemoScenario } from "@/lib/demo-mode"
 import { isReviewMode } from "@/lib/review-mode"
-import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS } from "@/lib/demo-seeds"
+import { getDefaultSpace } from "@/lib/spaces"
+import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS, DEMO_SPACE } from "@/lib/demo-seeds"
 
 export const dynamic = 'force-dynamic'
 
@@ -15,12 +16,28 @@ export default async function InsightsPage() {
   const review = !demo && await isReviewMode()
   const supabase = await createClient()
 
+  const defaultSpace = demo ? DEMO_SPACE : await getDefaultSpace()
+  const spaceName = defaultSpace?.name ?? undefined
+
+  // For real data, only show insights from studies belonging to the default space
+  let spaceStudyIds: string[] = []
+  if (!demo && defaultSpace) {
+    const { data: spaceStudies } = await supabase
+      .from("BE_studies")
+      .select("study_id")
+      .eq("building_id", defaultSpace.id)
+    spaceStudyIds = (spaceStudies ?? []).map((s: { study_id: string }) => s.study_id)
+  }
+
   const { data: outputs } = demo
     ? { data: (scenario === "study-complete" || scenario === "model-created") ? [BE_INSIGHT_OUTPUT] : [] }
-    : await supabase
-        .from("BE_insight_outputs")
-        .select("*")
-        .order("created_at", { ascending: false })
+    : spaceStudyIds.length > 0
+      ? await supabase
+          .from("BE_insight_outputs")
+          .select("*")
+          .in("study_id", spaceStudyIds)
+          .order("created_at", { ascending: false })
+      : { data: [] }
 
   const studyIds = (outputs ?? []).map((o: { study_id: string }) => o.study_id).filter(Boolean)
 
@@ -90,7 +107,7 @@ export default async function InsightsPage() {
 
       <MarkInsightsViewed />
       <div className="flex-1 p-6 overflow-auto">
-        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} camerasByStudy={camerasByStudy} reviewMode={review} studyDurations={studyDurations} metricDescriptions={metricDescriptions} studyGoals={studyGoals} />
+        <InsightsList outputs={outputs || []} detectionsByStudy={detectionsByStudy} camerasByStudy={camerasByStudy} reviewMode={review} studyDurations={studyDurations} metricDescriptions={metricDescriptions} studyGoals={studyGoals} spaceName={spaceName} />
       </div>
     </div>
   )

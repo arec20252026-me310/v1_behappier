@@ -6,6 +6,7 @@ import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
 import { LatestDetectionCard } from "@/components/dashboard/latest-detection-card"
 import { StudyStatusWatcher } from "@/components/dashboard/study-status-watcher"
 import { getDemoScenario } from "@/lib/demo-mode"
+import { getDefaultSpace } from "@/lib/spaces"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
@@ -21,27 +22,27 @@ export default async function DashboardPage() {
 
   // ── Demo mode: serve hardcoded data per scenario ──────────────────────────
   if (demo) {
-    const hasSpace  = scenario !== "blank"
-    const hasStudy  = scenario === "study-in-progress" || scenario === "study-complete"
-    const hasLive   = scenario === "study-in-progress"
-    const hasInsights = scenario === "study-complete"
+    const hasSpace    = scenario !== "blank"
+    const hasStudy    = scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created"
+    const hasLive     = scenario === "study-in-progress"
+    const hasInsights = scenario === "study-complete" || scenario === "model-created"
+    const showInsightsBadge = scenario === "study-complete"
 
     const demoSpace   = hasSpace ? DEMO_SPACE : null
     const demoZones   = hasSpace ? ZONES : []
-    const demoStudies = hasStudy ? (scenario === "study-in-progress" ? [BE_STUDY_IN_PROGRESS] : []) : []
-    const demoCompleted = hasInsights ? [BE_STUDY_COMPLETE] : []
+    const demoStudies = scenario === "study-in-progress" ? [BE_STUDY_IN_PROGRESS] : []
     const demoInsights  = hasInsights ? [BE_INSIGHT_OUTPUT] : []
     const demoLive      = hasLive ? BE_LIVE_METRICS : null
     const demoCompletedStudy    = hasInsights ? BE_STUDY_COMPLETE : null
-    const demoCompletedInsights = hasInsights ? BE_INSIGHT_OUTPUT : null
-    const latestOutput = demoInsights[0] ?? null
+    const demoCompletedInsights = showInsightsBadge ? BE_INSIGHT_OUTPUT : null
+    const latestOutput = showInsightsBadge ? (demoInsights[0] ?? null) : null
 
     function toArr(v: unknown): unknown[] {
       if (Array.isArray(v)) return v
       if (v === null || v === undefined || v === "") return []
       return [v]
     }
-    const insightsCount = demoInsights.reduce(
+    const insightsCount = showInsightsBadge ? demoInsights.reduce(
       (sum, o) =>
         sum +
         toArr(o.insights).length +
@@ -49,7 +50,7 @@ export default async function DashboardPage() {
         toArr(o.charts).length +
         toArr(o.tables).length,
       0
-    )
+    ) : 0
 
     function withCitation(description: string, ref: string | null): string {
       if (!ref) return description
@@ -72,7 +73,8 @@ export default async function DashboardPage() {
             studiesCount={demoStudies.length}
             insightsCount={insightsCount}
             metricsCount={hasStudy ? DEMO_METRICS.filter(m => m.is_active).length : 0}
-            latestInsightAt={demoInsights[0]?.created_at}
+            latestInsightAt={showInsightsBadge ? demoInsights[0]?.created_at : undefined}
+            isDemo={true}
           />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <SpaceHeatmap
@@ -88,7 +90,8 @@ export default async function DashboardPage() {
               activeStudyStatus={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined}
               activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id : undefined}
               demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
-            tracksOccupancy={scenario === "study-in-progress"}
+              tracksOccupancy={scenario === "study-in-progress"}
+              isDemo={true}
             />
             <div className="flex flex-col gap-6">
               <OccupancyChart
@@ -114,17 +117,18 @@ export default async function DashboardPage() {
   }
 
   // ── Real data ─────────────────────────────────────────────────────────────
-  const space = (await supabase.from("spaces").select("*").limit(1).single()).data
+  const space = await getDefaultSpace()
 
-  const zones = ((await supabase
+  const zones = space ? ((await supabase
     .from("zones")
     .select("*")
-    .order("created_at", { ascending: false })).data ?? [])
+    .eq("space_id", space.id)
+    .order("created_at", { ascending: false })).data ?? []) : []
 
   const rawCameras = ((await supabase.from("cameras").select("*")).data ?? []) as {
     id: string; zone_id: string; name: string; metadata: Record<string, unknown> | null
   }[]
-  const cameraGridRes = (space as { grid_resolution?: number } | null)?.grid_resolution || 8
+  const cameraGridRes = space?.grid_resolution || 8
   const cameraCellSize = Math.max(30, Math.min(60, 480 / cameraGridRes))
   const cameraPlacementsFromDB = rawCameras.map(cam => {
     const zone = zones.find((z: { id: string; grid_x: number; grid_y: number; grid_width: number; grid_height: number }) => z.id === cam.zone_id)
@@ -139,39 +143,46 @@ export default async function DashboardPage() {
     }
   })
 
-  const metrics = ((await supabase
+  const metrics = space ? ((await supabase
     .from("metrics")
     .select("*")
-    .eq("is_active", true)).data ?? [])
+    .eq("space_id", space.id)
+    .eq("is_active", true)).data ?? []) : []
 
-  const beStudies = ((await supabase
+  const beStudies = space ? ((await supabase
     .from("BE_studies")
     .select("*")
+    .eq("building_id", space.id)
     .in("status", ACTIVE_STATUSES)
     .order("created_at", { ascending: false })
-    .limit(5)).data ?? [])
+    .limit(5)).data ?? []) : []
 
-  const beInsights = ((await supabase
+  // Gather all study IDs for this space to filter insights
+  const allSpaceStudyIds: string[] = beStudies.map((s: { study_id: string }) => s.study_id)
+
+  const beInsights = allSpaceStudyIds.length > 0 ? ((await supabase
     .from("BE_insight_outputs")
     .select("*")
+    .in("study_id", allSpaceStudyIds)
     .order("created_at", { ascending: false })
-    .limit(5)).data ?? [])
+    .limit(5)).data ?? []) : []
 
-  const latestOutput = beInsights.find(o => o.output_mode === "final_insights") ?? beInsights[0] ?? null
   const allFetchedStudies = [...beStudies]
 
   let completedStudies: typeof beStudies = []
   let completedStudy = null
   let completedStudyInsights = null
-  const { data: completed } = await supabase
+  const { data: completed } = space ? await supabase
     .from("BE_studies")
     .select("*")
+    .eq("building_id", space.id)
     .eq("status", "complete")
     .order("created_at", { ascending: false })
-    .limit(4)
+    .limit(4) : { data: [] }
   completedStudies = completed ?? []
   completedStudy = completedStudies[0] ?? null
   allFetchedStudies.push(...completedStudies)
+  allSpaceStudyIds.push(...completedStudies.map((s: { study_id: string }) => s.study_id))
 
   if (completedStudy) {
     const { data: studyInsight } = await supabase
@@ -184,6 +195,12 @@ export default async function DashboardPage() {
       .single()
     completedStudyInsights = studyInsight ?? null
   }
+
+  // latestOutput: prefer active-study insights, fall back to most recent completed study
+  const latestOutput = beInsights.find(o => o.output_mode === "final_insights")
+    ?? beInsights[0]
+    ?? completedStudyInsights
+    ?? null
 
   let livePreviewMetrics = null
   const activeStudyIds = beStudies

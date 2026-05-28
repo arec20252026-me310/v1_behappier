@@ -55,6 +55,7 @@ interface SpaceHeatmapProps {
   activeStudyMonitoredZoneId?: string
   demoDetections?: DetectionRow[]
   tracksOccupancy?: boolean
+  isDemo?: boolean
 }
 
 interface BEInsightSelection {
@@ -144,6 +145,7 @@ export function SpaceHeatmap({
   activeStudyMonitoredZoneId,
   demoDetections,
   tracksOccupancy,
+  isDemo = false,
 }: SpaceHeatmapProps) {
   const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
@@ -153,6 +155,19 @@ export function SpaceHeatmap({
   const [isEnlarged, setIsEnlarged] = useState(false)
   // Per-zone occupancy: zoneId → latest count
   const [zoneOccupancies, setZoneOccupancies] = useState<Record<string, number>>({})
+
+  // Track floor plan aspect ratio so zones align with the image under object-contain
+  const [imgAspectRatio, setImgAspectRatio] = useState<number | null>(null)
+  const floorPlanImgRef = useRef<HTMLImageElement>(null)
+  useEffect(() => {
+    const img = floorPlanImgRef.current
+    if (!img || !floorPlanUrl) { setImgAspectRatio(null); return }
+    const apply = (el: HTMLImageElement) => {
+      if (el.naturalWidth && el.naturalHeight) setImgAspectRatio(el.naturalWidth / el.naturalHeight)
+    }
+    if (img.complete) apply(img)
+    else img.addEventListener('load', () => apply(img), { once: true })
+  }, [floorPlanUrl])
 
   // Merge multi-study prop with legacy single-study props
   const allActiveStudies: ActiveStudyEntry[] = useMemo(() => {
@@ -187,6 +202,7 @@ export function SpaceHeatmap({
   }, [cameraProp])
 
   useEffect(() => {
+    if (isDemo) { setInsightsViewed(false); return }
     // Use the most recently created completed insight to determine viewed state
     const latestCreatedAt = allCompletedZoneInsights
       .map(c => c.insights.created_at)
@@ -196,7 +212,7 @@ export function SpaceHeatmap({
     const viewedAt = localStorage.getItem("behappier_insights_viewed_at")
     setInsightsViewed(!!viewedAt && new Date(viewedAt) >= new Date(latestCreatedAt))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allCompletedZoneInsights.map(c => c.insights.created_at).join(",")])
+  }, [isDemo, allCompletedZoneInsights.map(c => c.insights.created_at).join(",")])
 
   // Build study_id → zoneId map and subscribe to all active studies' detections
   const studiesKey = allActiveStudies.map(s => s.study_id).sort().join(",")
@@ -268,7 +284,34 @@ export function SpaceHeatmap({
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   const gridResolution = space?.grid_resolution || 8
   const floorPlanUrl = space?.floor_plan_url
-  const cellPct = 100 / gridResolution
+
+  // Use actual zone extents so zones beyond gridResolution aren't clipped
+  const effectiveCols = zones.length > 0
+    ? Math.max(gridResolution, ...zones.map(z => z.grid_x + z.grid_width))
+    : gridResolution
+  const effectiveRows = zones.length > 0
+    ? Math.max(gridResolution, ...zones.map(z => z.grid_y + z.grid_height))
+    : gridResolution
+  const cellPctX = 100 / effectiveCols
+  const cellPctY = 100 / effectiveRows
+
+  // Fraction of container the image actually occupies (object-contain center may letterbox)
+  const containerAR = effectiveCols / effectiveRows
+  const [imgOffsetXFrac, imgOffsetYFrac] = useMemo(() => {
+    if (!imgAspectRatio) return [0, 0]
+    if (containerAR > imgAspectRatio) {
+      // Container wider → image fills height, horizontal bars
+      return [(1 - imgAspectRatio / containerAR) / 2, 0]
+    }
+    // Container taller → image fills width, vertical bars
+    return [0, (1 - containerAR / imgAspectRatio) / 2]
+  }, [imgAspectRatio, containerAR])
+  const imgWidthFrac = 1 - 2 * imgOffsetXFrac
+  const imgHeightFrac = 1 - 2 * imgOffsetYFrac
+
+  // Effective cell sizes scaled to the image's rendered area
+  const zoneCellPctX = cellPctX * imgWidthFrac
+  const zoneCellPctY = cellPctY * imgHeightFrac
 
   // Zone IDs with unviewed completed insights
   const completedInsightZoneIds = insightsViewed
@@ -347,11 +390,12 @@ export function SpaceHeatmap({
       <div
         className="relative rounded-lg overflow-hidden border border-border"
         style={enlarged
-          ? { height: "calc(88vh - 100px)", width: "calc(88vh - 100px)" }
-          : { width: "100%", aspectRatio: "1 / 1" }}
+          ? { height: "calc(88vh - 100px)", aspectRatio: `${effectiveCols} / ${effectiveRows}` }
+          : { width: "100%", aspectRatio: `${effectiveCols} / ${effectiveRows}` }}
       >
         {floorPlanUrl ? (
           <img
+            ref={!enlarged ? floorPlanImgRef : undefined}
             src={floorPlanUrl}
             alt="Floor plan"
             className="absolute inset-0 w-full h-full object-contain opacity-50"
@@ -369,7 +413,8 @@ export function SpaceHeatmap({
               linear-gradient(to right, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px),
               linear-gradient(to bottom, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px)
             `,
-            backgroundSize: `${cellPct}% ${cellPct}%`,
+            backgroundSize: `${zoneCellPctX}% ${zoneCellPctY}%`,
+            backgroundPosition: `${imgOffsetXFrac * 100}% ${imgOffsetYFrac * 100}%`,
           }}
         />
 
@@ -405,10 +450,10 @@ export function SpaceHeatmap({
                 hasAnyInsight && !liveOccupancy && "zone-flashing"
               )}
               style={{
-                left: `${zone.grid_x * cellPct}%`,
-                top: `${zone.grid_y * cellPct}%`,
-                width: `calc(${zone.grid_width * cellPct}% - 2px)`,
-                height: `calc(${zone.grid_height * cellPct}% - 2px)`,
+                left: `${imgOffsetXFrac * 100 + zone.grid_x * zoneCellPctX}%`,
+                top: `${imgOffsetYFrac * 100 + zone.grid_y * zoneCellPctY}%`,
+                width: `calc(${zone.grid_width * zoneCellPctX}% - 2px)`,
+                height: `calc(${zone.grid_height * zoneCellPctY}% - 2px)`,
                 backgroundColor: bgColor,
                 borderColor,
                 borderWidth: hasAnyInsight || isActiveStudyZone || liveOccupancy !== null ? 2 : 1,
@@ -442,12 +487,17 @@ export function SpaceHeatmap({
 
         {cameras.map((cam) => {
           const builderCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
-          const totalBuilderSize = builderCellSize * gridResolution
+          const totalBuilderWidth = builderCellSize * effectiveCols
+          const totalBuilderHeight = builderCellSize * effectiveRows
           return (
             <div
               key={cam.id}
               className="absolute pointer-events-none"
-              style={{ left: `${(cam.x / totalBuilderSize) * 100}%`, top: `${(cam.y / totalBuilderSize) * 100}%`, zIndex: 20, transform: "translate(-50%, -50%)" }}
+              style={{
+                left: `${imgOffsetXFrac * 100 + (cam.x / totalBuilderWidth) * imgWidthFrac * 100}%`,
+                top: `${imgOffsetYFrac * 100 + (cam.y / totalBuilderHeight) * imgHeightFrac * 100}%`,
+                zIndex: 20, transform: "translate(-50%, -50%)"
+              }}
             >
               <CameraMapIcon direction={cam.direction} size={18} label={cam.label} showLabel={false} />
             </div>

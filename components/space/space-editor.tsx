@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Save, Settings, Upload } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
@@ -17,9 +18,11 @@ interface SpaceEditorProps {
   initialZones: Zone[]
   initialCameras: Camera[]
   haCameras: HACameraMapping[]
+  allSpaces?: Space[]
+  demo?: boolean
 }
 
-export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: SpaceEditorProps) {
+export function SpaceEditor({ space, initialZones, initialCameras, haCameras, allSpaces = [], demo = false }: SpaceEditorProps) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -52,7 +55,7 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: 
   const handleSpaceCreated = (newSpace: Space) => {
     setCurrentSpace(newSpace)
     setShowSetupDialog(false)
-    router.refresh()
+    router.push(`/dashboard/space?space_id=${newSpace.id}`)
   }
 
   const addZone = useCallback(async () => {
@@ -276,7 +279,30 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: 
     : null
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+    <div className="flex flex-col gap-4 h-full">
+      {/* Space switcher bar */}
+      {!demo && allSpaces.length > 0 && (
+        <div className="flex items-center gap-3">
+          <Select
+            value={currentSpace?.id ?? undefined}
+            onValueChange={(id) => router.push(`/dashboard/space?space_id=${id}`)}
+          >
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Select a space…" />
+            </SelectTrigger>
+            <SelectContent>
+              {allSpaces.map(s => (
+                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={() => router.push("/dashboard/space?new=1")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Space
+          </Button>
+        </div>
+      )}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
       <div className="lg:col-span-2">
         <Card className="bg-card border-border h-full">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -346,6 +372,7 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras }: 
         onSpaceCreated={handleSpaceCreated}
         existingSpace={currentSpace}
       />
+    </div>
     </div>
   )
 }
