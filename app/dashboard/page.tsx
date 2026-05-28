@@ -9,7 +9,7 @@ import { getDemoScenario } from "@/lib/demo-mode"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
-  BE_LIVE_METRICS, BE_INSIGHT_OUTPUT, DEMO_DETECTIONS,
+  BE_LIVE_METRICS, BE_INSIGHT_OUTPUT, DEMO_DETECTIONS, DEMO_CAMERA_PLACEMENTS,
 } from "@/lib/demo-seeds"
 
 const ACTIVE_STATUSES = ["running", "analyzing"]
@@ -80,7 +80,8 @@ export default async function DashboardPage() {
               insights={[]}
               space={demoSpace}
               studies={[]}
-              livePreviewMetrics={demoLive}
+              cameras={hasSpace ? DEMO_CAMERA_PLACEMENTS : []}
+              livePreviewMetrics={scenario === "study-in-progress" ? null : demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
               activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
@@ -102,7 +103,7 @@ export default async function DashboardPage() {
                 <LatestDetectionCard
                   studyId={BE_STUDY_IN_PROGRESS.study_id}
                   status={BE_STUDY_IN_PROGRESS.status}
-                  demoDetections={DEMO_DETECTIONS}
+                  demoDetections={DEMO_DETECTIONS.slice(-1)}
                 />
               )}
             </div>
