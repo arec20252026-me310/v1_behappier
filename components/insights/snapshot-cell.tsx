@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { Camera, X } from "lucide-react"
 
 function snapshotUrl(imageId: string, cameraId?: string | null): string {
@@ -21,36 +21,12 @@ interface SnapshotCellProps {
 
 export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps) {
   const [open, setOpen] = useState(false)
+  // Single error state. Image is rendered unconditionally and the browser
+  // loads it. If load fails, we swap to a camera icon placeholder.
   const [hasError, setHasError] = useState(false)
-  // Manual lazy loading via IntersectionObserver. Safari's native loading="lazy"
-  // is unreliable for large lists (1000+ items) - it sometimes never fires the
-  // load. We render the <img> tag only after the cell is visible.
-  const [isVisible, setIsVisible] = useState(false)
-  const containerRef = useRef<HTMLButtonElement>(null)
 
   const url = imageId ? snapshotUrl(imageId, cameraId) : null
-  const showImage = !!url && !hasError && isVisible
-
-  useEffect(() => {
-    if (!url) return
-    const el = containerRef.current
-    if (!el) return
-    // Generous rootMargin (2000px) means we eagerly load images that are within
-    // ~3 viewport heights of being visible. With pagination at 30 rows × 36px
-    // height = 1080px, this covers the entire current page on any screen size,
-    // even small browser windows, without waiting for a scroll event.
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: "2000px" }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [url])
+  const showImage = !!url && !hasError
 
   const handleClick = () => {
     if (!showImage) return
@@ -62,7 +38,6 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
     <>
       {/* Thumbnail */}
       <button
-        ref={containerRef}
         onClick={handleClick}
         className={`relative w-12 h-9 rounded overflow-hidden border flex items-center justify-center transition-colors ${
           showImage
@@ -72,14 +47,15 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
         disabled={!showImage}
         title={showImage ? "Click to enlarge" : "No snapshot"}
       >
-        {/* Camera icon placeholder shown when the image hasn't loaded (either
-            not yet visible, errored, or missing url). */}
+        {/* When url is missing or image failed to load, show a camera icon. */}
         {!showImage && (
           <Camera className="h-3 w-3 text-muted-foreground/30" />
         )}
-        {/* Only render the <img> tag after the cell is visible. This prevents
-            the browser from queuing up 1000+ image requests on initial render. */}
-        {url && isVisible && (
+        {/* When we have a url, render the image unconditionally. With pagination
+            (30 rows per page) and the collapsed-by-default detection log, only
+            ~30 images are ever in the DOM at once, which the browser can load
+            without issue. */}
+        {url && (
           <img
             src={url}
             alt=""
