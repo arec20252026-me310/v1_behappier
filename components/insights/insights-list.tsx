@@ -300,7 +300,8 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                     )
                   })}
                 </div>
-              )}
+                )
+              })()}
             </CardContent>
           </Card>
         ))}
