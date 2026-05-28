@@ -40,6 +40,23 @@ export function ZoneGrid({
 
   // Track floor plan image aspect ratio so the grid canvas matches the image shape
   const [imgAspectRatio, setImgAspectRatio] = useState<number | null>(null)
+  const floorPlanImgRef = useRef<HTMLImageElement>(null)
+
+  // Handle both fresh loads and cached images (cached images may not fire onLoad)
+  useEffect(() => {
+    const img = floorPlanImgRef.current
+    if (!img) return
+    const apply = (el: HTMLImageElement) => {
+      if (el.naturalWidth && el.naturalHeight) {
+        setImgAspectRatio(el.naturalWidth / el.naturalHeight)
+      }
+    }
+    if (img.complete) {
+      apply(img)
+    } else {
+      img.addEventListener('load', () => apply(img), { once: true })
+    }
+  }, [floorPlanUrl])
 
   // Measure container width so the grid always fills the available card space
   const containerRef = useRef<HTMLDivElement>(null)
@@ -199,20 +216,15 @@ export function ZoneGrid({
         onMouseLeave={handleMouseUp}
         onClick={() => { setSelectedCamera(null) }}
       >
-        {/* Floor plan background — object-fill since canvas matches image aspect ratio */}
+        {/* Floor plan background — object-contain so it looks correct even before aspect ratio is measured */}
         {floorPlanUrl ? (
           <img
+            ref={floorPlanImgRef}
             src={floorPlanUrl}
             alt="Floor plan"
-            className="absolute inset-0 w-full h-full object-fill opacity-50"
-            style={{ pointerEvents: 'none' }}
+            className="absolute inset-0 w-full h-full object-contain opacity-50"
+            style={{ pointerEvents: 'none', objectPosition: 'top left' }}
             crossOrigin="anonymous"
-            onLoad={(e) => {
-              const img = e.currentTarget
-              if (img.naturalWidth && img.naturalHeight) {
-                setImgAspectRatio(img.naturalWidth / img.naturalHeight)
-              }
-            }}
           />
         ) : (
           <div className="absolute inset-0 bg-secondary/30" />
