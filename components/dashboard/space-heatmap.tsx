@@ -156,6 +156,19 @@ export function SpaceHeatmap({
   // Per-zone occupancy: zoneId → latest count
   const [zoneOccupancies, setZoneOccupancies] = useState<Record<string, number>>({})
 
+  // Track floor plan aspect ratio so zones align with the image under object-contain
+  const [imgAspectRatio, setImgAspectRatio] = useState<number | null>(null)
+  const floorPlanImgRef = useRef<HTMLImageElement>(null)
+  useEffect(() => {
+    const img = floorPlanImgRef.current
+    if (!img || !floorPlanUrl) { setImgAspectRatio(null); return }
+    const apply = (el: HTMLImageElement) => {
+      if (el.naturalWidth && el.naturalHeight) setImgAspectRatio(el.naturalWidth / el.naturalHeight)
+    }
+    if (img.complete) apply(img)
+    else img.addEventListener('load', () => apply(img), { once: true })
+  }, [floorPlanUrl])
+
   // Merge multi-study prop with legacy single-study props
   const allActiveStudies: ActiveStudyEntry[] = useMemo(() => {
     if (activeStudiesProp && activeStudiesProp.length > 0) return activeStudiesProp
@@ -282,6 +295,24 @@ export function SpaceHeatmap({
   const cellPctX = 100 / effectiveCols
   const cellPctY = 100 / effectiveRows
 
+  // Fraction of container the image actually occupies (object-contain center may letterbox)
+  const containerAR = effectiveCols / effectiveRows
+  const [imgOffsetXFrac, imgOffsetYFrac] = useMemo(() => {
+    if (!imgAspectRatio) return [0, 0]
+    if (containerAR > imgAspectRatio) {
+      // Container wider → image fills height, horizontal bars
+      return [(1 - imgAspectRatio / containerAR) / 2, 0]
+    }
+    // Container taller → image fills width, vertical bars
+    return [0, (1 - containerAR / imgAspectRatio) / 2]
+  }, [imgAspectRatio, containerAR])
+  const imgWidthFrac = 1 - 2 * imgOffsetXFrac
+  const imgHeightFrac = 1 - 2 * imgOffsetYFrac
+
+  // Effective cell sizes scaled to the image's rendered area
+  const zoneCellPctX = cellPctX * imgWidthFrac
+  const zoneCellPctY = cellPctY * imgHeightFrac
+
   // Zone IDs with unviewed completed insights
   const completedInsightZoneIds = insightsViewed
     ? new Set<string>()
@@ -364,6 +395,7 @@ export function SpaceHeatmap({
       >
         {floorPlanUrl ? (
           <img
+            ref={!enlarged ? floorPlanImgRef : undefined}
             src={floorPlanUrl}
             alt="Floor plan"
             className="absolute inset-0 w-full h-full object-contain opacity-50"
@@ -381,7 +413,8 @@ export function SpaceHeatmap({
               linear-gradient(to right, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px),
               linear-gradient(to bottom, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px)
             `,
-            backgroundSize: `${cellPctX}% ${cellPctY}%`,
+            backgroundSize: `${zoneCellPctX}% ${zoneCellPctY}%`,
+            backgroundPosition: `${imgOffsetXFrac * 100}% ${imgOffsetYFrac * 100}%`,
           }}
         />
 
@@ -417,10 +450,10 @@ export function SpaceHeatmap({
                 hasAnyInsight && !liveOccupancy && "zone-flashing"
               )}
               style={{
-                left: `${zone.grid_x * cellPctX}%`,
-                top: `${zone.grid_y * cellPctY}%`,
-                width: `calc(${zone.grid_width * cellPctX}% - 2px)`,
-                height: `calc(${zone.grid_height * cellPctY}% - 2px)`,
+                left: `${imgOffsetXFrac * 100 + zone.grid_x * zoneCellPctX}%`,
+                top: `${imgOffsetYFrac * 100 + zone.grid_y * zoneCellPctY}%`,
+                width: `calc(${zone.grid_width * zoneCellPctX}% - 2px)`,
+                height: `calc(${zone.grid_height * zoneCellPctY}% - 2px)`,
                 backgroundColor: bgColor,
                 borderColor,
                 borderWidth: hasAnyInsight || isActiveStudyZone || liveOccupancy !== null ? 2 : 1,
@@ -460,7 +493,11 @@ export function SpaceHeatmap({
             <div
               key={cam.id}
               className="absolute pointer-events-none"
-              style={{ left: `${(cam.x / totalBuilderWidth) * 100}%`, top: `${(cam.y / totalBuilderHeight) * 100}%`, zIndex: 20, transform: "translate(-50%, -50%)" }}
+              style={{
+                left: `${imgOffsetXFrac * 100 + (cam.x / totalBuilderWidth) * imgWidthFrac * 100}%`,
+                top: `${imgOffsetYFrac * 100 + (cam.y / totalBuilderHeight) * imgHeightFrac * 100}%`,
+                zIndex: 20, transform: "translate(-50%, -50%)"
+              }}
             >
               <CameraMapIcon direction={cam.direction} size={18} label={cam.label} showLabel={false} />
             </div>

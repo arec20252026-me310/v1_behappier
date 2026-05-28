@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { ModelsManager } from "@/components/models/models-manager"
 import { getDemoScenario } from "@/lib/demo-mode"
+import { getDefaultSpace } from "@/lib/spaces"
 import {
   DEMO_MODEL_DATASET, DEMO_FIT_ENTRIES, STUDY_ID,
   DEMO_BEHAVIOR_DATASET, DEMO_SENSOR_DATASET, DEMO_MERGED_DATASET,
@@ -22,17 +23,17 @@ export default async function ModelsPage() {
   const isDemo = scenario !== null
 
   const supabase = await createClient()
+  const space = isDemo ? null : await getDefaultSpace()
 
-  // Studies dropdown
-  // blank / space-ready / study-in-progress: none
-  // study-complete / model-created: one demo study
+  // Studies dropdown — filtered to the default space
   const studies = isDemo
     ? (scenario === "study-complete" || scenario === "model-created" ? [makeDemoStudy()] : [])
-    : ((await supabase
+    : space ? ((await supabase
         .from("BE_studies")
         .select("study_id, study_goal, status, created_at, metadata")
+        .eq("building_id", space.id)
         .order("created_at", { ascending: false })
-        .limit(20)).data ?? [])
+        .limit(20)).data ?? []) : []
 
   // Saved datasets — only model-created shows a pre-saved entry
   const datasets = isDemo
