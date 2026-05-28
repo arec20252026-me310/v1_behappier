@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useCallback, useEffect } from "react"
+import { useRef, useState, useCallback, useEffect, useMemo } from "react"
 import type { Zone, CameraPlacement, CameraDirection } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { CameraMapIcon } from "./camera-map-icon"
@@ -98,6 +98,20 @@ export function ZoneGrid({
   const gridWidth = gridCols * cellSize
   const gridHeight = gridRows * cellSize
 
+  // Offset where the image actually starts when centered with object-contain
+  const [imgOffsetX, imgOffsetY] = useMemo(() => {
+    if (!imgAspectRatio || gridWidth === 0 || gridHeight === 0) return [0, 0]
+    const containerAR = gridWidth / gridHeight
+    if (containerAR > imgAspectRatio) {
+      // Container wider than image → fills height, horizontal bars left/right
+      const renderedWidth = gridHeight * imgAspectRatio
+      return [(gridWidth - renderedWidth) / 2, 0]
+    }
+    // Container taller than image → fills width, vertical bars top/bottom
+    const renderedHeight = gridWidth / imgAspectRatio
+    return [0, (gridHeight - renderedHeight) / 2]
+  }, [imgAspectRatio, gridWidth, gridHeight])
+
   const handleMouseDown = useCallback((e: React.MouseEvent, zone: Zone) => {
     e.preventDefault()
     e.stopPropagation()
@@ -192,22 +206,22 @@ export function ZoneGrid({
   }, [])
 
   const getCameraZone = useCallback((cam: CameraPlacement) => {
-    const gridX = cam.x / cellSize
-    const gridY = cam.y / cellSize
+    const gridX = (cam.x - imgOffsetX) / cellSize
+    const gridY = (cam.y - imgOffsetY) / cellSize
     return zones.find(z =>
       gridX >= z.grid_x && gridX < z.grid_x + z.grid_width &&
       gridY >= z.grid_y && gridY < z.grid_y + z.grid_height
     )
-  }, [zones, cellSize])
+  }, [zones, cellSize, imgOffsetX, imgOffsetY])
 
   const getZoneCenter = useCallback((zoneId: string) => {
     const zone = zones.find(z => z.id === zoneId)
     if (!zone) return null
     return {
-      x: (zone.grid_x + zone.grid_width / 2) * cellSize,
-      y: (zone.grid_y + zone.grid_height / 2) * cellSize,
+      x: (zone.grid_x + zone.grid_width / 2) * cellSize + imgOffsetX,
+      y: (zone.grid_y + zone.grid_height / 2) * cellSize + imgOffsetY,
     }
-  }, [zones, cellSize])
+  }, [zones, cellSize, imgOffsetX, imgOffsetY])
 
   return (
     <div ref={containerRef} className="overflow-auto max-h-[calc(100vh-280px)] rounded-lg border border-border">
@@ -230,7 +244,7 @@ export function ZoneGrid({
             src={floorPlanUrl}
             alt="Floor plan"
             className="absolute inset-0 w-full h-full object-contain opacity-50"
-            style={{ pointerEvents: 'none', objectPosition: 'top left' }}
+            style={{ pointerEvents: 'none' }}
             crossOrigin="anonymous"
           />
         ) : (
@@ -288,8 +302,8 @@ export function ZoneGrid({
               resizing === zone.id && "opacity-80"
             )}
             style={{
-              left: zone.grid_x * cellSize,
-              top: zone.grid_y * cellSize,
+              left: zone.grid_x * cellSize + imgOffsetX,
+              top: zone.grid_y * cellSize + imgOffsetY,
               width: zone.grid_width * cellSize - 2,
               height: zone.grid_height * cellSize - 2,
               backgroundColor: `${zone.color}66`,
@@ -352,8 +366,8 @@ export function ZoneGrid({
             return (
               <g key={`link-${cam.id}`}>
                 <line
-                  x1={cam.x}
-                  y1={cam.y}
+                  x1={cam.x + imgOffsetX}
+                  y1={cam.y + imgOffsetY}
                   x2={center.x}
                   y2={center.y}
                   stroke="rgba(99,179,237,0.5)"
@@ -362,8 +376,8 @@ export function ZoneGrid({
                   markerEnd="url(#arrowhead)"
                 />
                 <text
-                  x={(cam.x + center.x) / 2}
-                  y={(cam.y + center.y) / 2 - 4}
+                  x={(cam.x + imgOffsetX + center.x) / 2}
+                  y={(cam.y + imgOffsetY + center.y) / 2 - 4}
                   textAnchor="middle"
                   fontSize={8}
                   fill="rgba(99,179,237,0.9)"
@@ -388,8 +402,8 @@ export function ZoneGrid({
                 draggingCamera === cam.id && "opacity-90"
               )}
               style={{
-                left: cam.x,
-                top: cam.y,
+                left: cam.x + imgOffsetX,
+                top: cam.y + imgOffsetY,
                 zIndex: isCamSelected ? 30 : 20,
                 transform: "translate(-50%, -50%)",
               }}
