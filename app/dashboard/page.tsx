@@ -9,7 +9,7 @@ import { getDemoScenario } from "@/lib/demo-mode"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
-  BE_LIVE_METRICS, BE_INSIGHT_OUTPUT, DEMO_DETECTIONS,
+  BE_LIVE_METRICS, BE_INSIGHT_OUTPUT, DEMO_DETECTIONS, DEMO_CAMERA_PLACEMENT,
 } from "@/lib/demo-seeds"
 
 const ACTIVE_STATUSES = ["running", "analyzing"]
@@ -80,6 +80,7 @@ export default async function DashboardPage() {
               insights={[]}
               space={demoSpace}
               studies={[]}
+              cameras={hasSpace ? [DEMO_CAMERA_PLACEMENT] : []}
               livePreviewMetrics={demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}

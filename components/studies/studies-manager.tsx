@@ -54,6 +54,7 @@ interface StudiesManagerProps {
   metrics: Metric[]
   cameras?: Camera[]
   demoDetectionsByStudy?: Record<string, DetectionRow[]>
+  demo?: boolean
 }
 
 interface N8nResponse {
@@ -113,7 +114,7 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
     .join("\n")
 }
 
-export function StudiesManager({ space, initialStudies, zones, metrics, cameras = [], demoDetectionsByStudy }: StudiesManagerProps) {
+export function StudiesManager({ space, initialStudies, zones, metrics, cameras = [], demoDetectionsByStudy, demo = false }: StudiesManagerProps) {
   const router = useRouter()
   const sessionId = useRef<string>(crypto.randomUUID())
   const studies = initialStudies
@@ -277,10 +278,12 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
           </Button>
-          <Button size="sm" onClick={() => setShowForm(v => !v)} className="gap-1">
-            {showForm ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            New Study
-          </Button>
+          {!demo && (
+            <Button size="sm" onClick={() => setShowForm(v => !v)} className="gap-1">
+              {showForm ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              New Study
+            </Button>
+          )}
         </div>
       </div>
 

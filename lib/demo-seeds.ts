@@ -62,6 +62,8 @@ export const ZONES = [
 ]
 
 // ── Camera ───────────────────────────────────────────────────────────────────
+// Kitchen zone (grid_x:6, grid_y:1, grid_width:6, grid_height:3) at cellSize=30 (res=20)
+// center: x=(6+3)*30=270, y=(1+1.5)*30=75
 export const CAMERA = {
   id: CAMERA_ID,
   zone_id: KITCHEN_ID,
@@ -69,9 +71,18 @@ export const CAMERA = {
   stream_url: null,
   status: "active" as const,
   field_of_view: {},
-  metadata: { ha_entity_id: "camera.loft_camera_fluent" },
+  metadata: { ha_entity_id: "camera.loft_camera_fluent", placement_x: 270, placement_y: 75, placement_direction: "down" },
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",
+}
+
+export const DEMO_CAMERA_PLACEMENT = {
+  id: `cam-${KITCHEN_ID}`,
+  zoneId: KITCHEN_ID,
+  x: 270,
+  y: 75,
+  direction: "down" as import("@/lib/types").CameraDirection,
+  label: "Loft Camera Fluent (Motion)",
 }
 
 // ── BE_studies ───────────────────────────────────────────────────────────────
@@ -82,18 +93,20 @@ const BE_STUDY_BASE = {
   building_id: SPACE_ID,
   user_id: null,
   session_id: null,
-  study_goal: "There is not much entry and exit in the loft. I expect a few people to be working together in the space. I want to track the number of occupants in the space over time. Camera will be facing one work station in the loft work area",
+  study_goal: "Monitor the Kitchen zone for occupancy patterns, collaboration activity, and slip/fall risk during a morning session. Camera faces the kitchen work counter and seating area.",
   study_plan: {},
   task_graph: {},
   graph_plan: {},
   metadata: {
+    study_name: "Kitchen Morning Safety & Usage",
     monitored_zone_id: KITCHEN_ID,
+    target_zones: [KITCHEN_ID],
   },
   live_preview_status: null,
-  started_at: "2026-05-05T22:12:13.530645+00:00",
-  duration_seconds: 300,
-  created_at: "2026-05-06T05:49:34.949181+00:00",
-  updated_at: "2026-05-06T05:49:34.949181+00:00",
+  started_at: "2026-05-05T10:00:00.000000+00:00",
+  duration_seconds: 720,
+  created_at: "2026-05-05T09:59:45.000000+00:00",
+  updated_at: "2026-05-05T10:12:00.000000+00:00",
 }
 
 export const BE_STUDY_IN_PROGRESS = {
@@ -128,93 +141,88 @@ export const BE_LIVE_METRICS = {
 }
 
 // ── BE_behavior_detections (demo) ────────────────────────────────────────────
+// Occupancy builds up, Collaboration Index follows, Slip/Fall Risk spikes at the end.
 export const DEMO_DETECTIONS = [
-  {
-    timestamp_pt: "2026-05-05 22:12:36 PDT",
-    detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }],
-    notes: "Two people seated at laptops, working quietly.",
-  },
-  {
-    timestamp_pt: "2026-05-05 22:13:08 PDT",
-    detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }],
-    notes: "Both occupants still present, one has stood up briefly.",
-  },
-  {
-    timestamp_pt: "2026-05-05 22:13:49 PDT",
-    detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }],
-    notes: "A third person has entered and joined the group around the table.",
-  },
-  {
-    timestamp_pt: "2026-05-05 22:14:35 PDT",
-    detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }],
-    notes: "Three people engaged in conversation, gesturing at a shared screen.",
-  },
+  { timestamp_pt: "2026-05-05 10:00:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Two people working quietly at the counter." },
+  { timestamp_pt: "2026-05-05 10:00:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 2, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Light conversation, both occupants engaged." },
+  { timestamp_pt: "2026-05-05 10:01:40 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 4, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Third person enters, joins the counter area." },
+  { timestamp_pt: "2026-05-05 10:02:30 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 5, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Group discussion forming around shared materials." },
+  { timestamp_pt: "2026-05-05 10:03:20 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 6, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Fourth person joins. Active whiteboard session visible." },
+  { timestamp_pt: "2026-05-05 10:04:10 PDT", detected_behaviors: [{ name: "Occupancy", value: 5, unit: "count" }, { name: "Collaboration Index", value: 7, unit: "score" }, { name: "Slip/Fall Risk", value: 2, unit: "score" }], notes: "Fifth person arrives. Zone at peak activity." },
+  { timestamp_pt: "2026-05-05 10:05:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 5, unit: "count" }, { name: "Collaboration Index", value: 8, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "High collaboration — all five occupants interacting." },
+  { timestamp_pt: "2026-05-05 10:05:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 5, unit: "count" }, { name: "Collaboration Index", value: 7, unit: "score" }, { name: "Slip/Fall Risk", value: 2, unit: "score" }], notes: "Still busy. One person moving toward the sink area." },
+  { timestamp_pt: "2026-05-05 10:06:40 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 6, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "One person has left. Remaining group winding down." },
+  { timestamp_pt: "2026-05-05 10:07:30 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 4, unit: "score" }, { name: "Slip/Fall Risk", value: 2, unit: "score" }], notes: "Three people remain. Activity decreasing." },
+  { timestamp_pt: "2026-05-05 10:08:20 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 3, unit: "score" }, { name: "Slip/Fall Risk", value: 2, unit: "score" }], notes: "Quieter — two seated, one standing near counter." },
+  { timestamp_pt: "2026-05-05 10:09:10 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 2, unit: "score" }, { name: "Slip/Fall Risk", value: 3, unit: "score" }], notes: "Two occupants. Slight floor anomaly detected near sink." },
+  { timestamp_pt: "2026-05-05 10:10:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk", value: 3, unit: "score" }], notes: "Two people still present. Risk signal persisting." },
+  { timestamp_pt: "2026-05-05 10:10:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk", value: 8, unit: "score" }], notes: "Slip/fall risk rising sharply — possible liquid on floor." },
+  { timestamp_pt: "2026-05-05 10:11:40 PDT", detected_behaviors: [{ name: "Occupancy", value: 1, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk", value: 9, unit: "score" }], notes: "Critical: water spillage on kitchen floor. Immediate cleanup required." },
 ]
 
 // ── BE_insight_outputs ────────────────────────────────────────────────────────
-// Real data from study_1778019133385 (Supabase id: 9ecd5e0f-83bc-4e73-8f4e-55d55dbc6be3).
+const _DET_LABELS = ["10:00:00","10:00:50","10:01:40","10:02:30","10:03:20","10:04:10","10:05:00","10:05:50","10:06:40","10:07:30","10:08:20","10:09:10","10:10:00","10:10:50","10:11:40"]
+const _OCC_VALS   = [2,2,3,3,4,5,5,5,4,3,3,2,2,2,1]
+const _COLLAB_VALS= [1,2,4,5,6,7,8,7,6,4,3,2,1,1,1]
+const _RISK_VALS  = [1,1,1,1,1,2,1,2,1,2,2,3,3,8,9]
+
 export const BE_INSIGHT_OUTPUT = {
   id: SEED_INSIGHT_ID,
   study_id: STUDY_ID,
   output_mode: "final_insights" as const,
   status: "complete",
-  created_at: "2026-05-05T22:17:29.098Z",
+  created_at: "2026-05-05T10:17:29.098Z",
   dashboard_summary:
-    "The study focused on monitoring utilization rates and foot traffic in a workspace environment. " +
-    "The data indicates consistent utilization with occasional foot traffic, suggesting the space is " +
-    "actively used for work or study purposes.",
+    "The Kitchen Morning Safety & Usage study monitored occupancy, collaboration, and slip/fall risk over 12 minutes. " +
+    "The space saw peak activity mid-session (up to 5 occupants, collaboration index 8) before winding down. " +
+    "A critical safety event was detected at 10:10–10:11: slip/fall risk spiked to 9, consistent with a liquid spill on the kitchen floor. " +
+    "Immediate corrective action was recommended.",
   charts: [
     {
       chart_id: "chart_1",
       chart_type: "line",
-      title: "Utilization Rate Over Time",
-      data: {
-        labels: ["22:12:13","22:12:36","22:12:54","22:13:08","22:13:22","22:13:37","22:13:49","22:14:03","22:14:18","22:14:35","22:14:48","22:15:03","22:16:03","22:16:19","22:16:35","22:16:49","22:17:03"],
-        values: [0.95,0.9,0.9,0.95,0.9,0.9,0.9,0.9,0.9,0.9,0.95,0.9,0.85,0.9,0.9,null,0.9],
-      },
+      title: "Occupancy Over Time",
+      data: { labels: _DET_LABELS, values: _OCC_VALS },
     },
     {
       chart_id: "chart_2",
       chart_type: "line",
-      title: "Foot Traffic Count Over Time",
-      data: {
-        labels: ["22:12:13","22:12:36","22:12:54","22:13:08","22:13:22","22:13:37","22:13:49","22:14:03","22:14:18","22:14:35","22:14:48","22:15:03","22:16:03","22:16:19","22:16:35","22:16:49","22:17:03"],
-        values: [0.1,0.8,0.8,0.7,0.1,0.8,0.6,0.1,0.1,0,0.3,0.9,0.75,0.9,0.85,null,0.7],
-      },
+      title: "Collaboration Index Over Time",
+      data: { labels: _DET_LABELS, values: _COLLAB_VALS },
+    },
+    {
+      chart_id: "chart_3",
+      chart_type: "line",
+      title: "Slip/Fall Risk Over Time",
+      data: { labels: _DET_LABELS, values: _RISK_VALS },
     },
   ],
   tables: [
     {
       table_id: "table_1",
-      title: "Detection Log Summary",
-      columns: ["Timestamp", "Utilization Rate", "Foot Traffic Count", "Notes"],
-      rows: [
-        ["22:12:13","0.95","0.1","Two occupants seated using laptops."],
-        ["22:12:36","0.9","0.8","Two individuals seated, active utilization."],
-        ["22:12:54","0.9","0.8","Two people seated using a laptop and conversing."],
-        ["22:13:08","0.95","0.7","Two occupants engaged with a laptop."],
-        ["22:13:22","0.9","0.1","Two occupants working on a laptop."],
-        ["22:13:37","0.9","0.8","Two people interacting around a laptop."],
-        ["22:13:49","0.9","0.6","Two people engaged in work-related activity."],
-        ["22:14:03","0.9","0.1","Two individuals actively engaged with a laptop."],
-        ["22:14:18","0.9","0.1","Two occupants engaged with a laptop."],
-        ["22:14:35","0.9","0","Two individuals in workspace, conversing."],
-        ["22:14:48","0.95","0.3","Two occupants seated in a study or meeting room."],
-        ["22:15:03","0.9","0.9","Room appears empty, no occupants."],
-        ["22:16:03","0.85","0.75","One person standing near the table."],
-        ["22:16:19","0.9","0.9","One person present, engaged at the table."],
-        ["22:16:35","0.9","0.85","Two occupants with laptops, one arriving."],
-        ["22:16:49",null,null,"parse_failed"],
-        ["22:17:03","0.9","0.7","Two occupants seated, actively using laptops."],
-      ],
+      title: "Detection Log",
+      columns: ["Timestamp", "Occupancy", "Collaboration Index", "Slip/Fall Risk", "Notes"],
+      rows: DEMO_DETECTIONS.map(d => [
+        d.timestamp_pt.split(" ")[1],
+        String(d.detected_behaviors.find(b => b.name === "Occupancy")?.value ?? ""),
+        String(d.detected_behaviors.find(b => b.name === "Collaboration Index")?.value ?? ""),
+        String(d.detected_behaviors.find(b => b.name === "Slip/Fall Risk")?.value ?? ""),
+        d.notes,
+      ]),
     },
   ],
-  insights:
-    "The workspace is consistently utilized with a high utilization rate, often above 0.9. " +
-    "Foot traffic is less frequent but noticeable at certain times, indicating periods of higher activity.",
-  recommendations:
-    "Consider optimizing the workspace layout to accommodate peak utilization and foot traffic times. " +
-    "Implement scheduling or booking systems to manage space usage effectively during high-demand periods.",
+  insights: [
+    "Occupancy peaked at 5 people between 10:04 and 10:06, indicating the kitchen is a high-demand gathering point during the morning session.",
+    "Collaboration Index tracked closely with occupancy, reaching a maximum score of 8 — suggesting the kitchen drives spontaneous group interactions.",
+    "Slip/Fall Risk remained low (1–3) for the first 10 minutes but spiked sharply to 8–9 in the final two readings, indicating an acute hazard event.",
+    "The combination of declining occupancy and rising slip/fall risk in the final minutes suggests occupants may have caused or noticed a spill and begun vacating the area.",
+  ],
+  recommendations: [
+    "Post a floor hazard alert protocol near the kitchen and ensure cleaning supplies are accessible within the zone.",
+    "Install a floor moisture sensor or floor-level camera angle to enable earlier detection of liquid spills.",
+    "Consider adding a slip-resistant mat in front of the sink and counter areas, which were the most active zones during peak occupancy.",
+    "Schedule a mid-morning cleaning check (around 10:00–10:15) to coincide with peak kitchen activity identified in this study.",
+  ],
 }
 
 // ── Models demo (model-created scenario) ─────────────────────────────────────
