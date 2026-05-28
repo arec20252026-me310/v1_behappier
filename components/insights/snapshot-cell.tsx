@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Camera, X } from "lucide-react"
 
 function snapshotUrl(imageId: string, cameraId?: string | null): string {
@@ -21,13 +21,33 @@ interface SnapshotCellProps {
 
 export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps) {
   const [open, setOpen] = useState(false)
-  // Track ONLY the explicit error state. Default is "show the image and let
-  // the browser handle loading". Previously we tracked "loading" too, but the
-  // onLoad event was being missed for cached images, leaving the state stuck.
   const [hasError, setHasError] = useState(false)
+  // Manual lazy loading via IntersectionObserver. Safari's native loading="lazy"
+  // is unreliable for large lists (1000+ items) - it sometimes never fires the
+  // load. We render the <img> tag only after the cell is visible.
+  const [isVisible, setIsVisible] = useState(false)
+  const containerRef = useRef<HTMLButtonElement>(null)
 
   const url = imageId ? snapshotUrl(imageId, cameraId) : null
-  const showImage = !!url && !hasError
+  const showImage = !!url && !hasError && isVisible
+
+  useEffect(() => {
+    if (!url) return
+    const el = containerRef.current
+    if (!el) return
+    // Generous rootMargin so images start loading before they scroll into view
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: "200px" }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [url])
 
   const handleClick = () => {
     if (!showImage) return
@@ -39,6 +59,7 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
     <>
       {/* Thumbnail */}
       <button
+        ref={containerRef}
         onClick={handleClick}
         className={`relative w-12 h-9 rounded overflow-hidden border flex items-center justify-center transition-colors ${
           showImage
@@ -48,17 +69,17 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
         disabled={!showImage}
         title={showImage ? "Click to enlarge" : "No snapshot"}
       >
-        {/* Camera icon shown only when there's no url, or when the image
-            errored out. While loading, the icon is hidden so users see the
-            image as soon as it renders. */}
+        {/* Camera icon placeholder shown when the image hasn't loaded (either
+            not yet visible, errored, or missing url). */}
         {!showImage && (
           <Camera className="h-3 w-3 text-muted-foreground/30" />
         )}
-        {url && (
+        {/* Only render the <img> tag after the cell is visible. This prevents
+            the browser from queuing up 1000+ image requests on initial render. */}
+        {url && isVisible && (
           <img
             src={url}
             alt=""
-            loading="lazy"
             decoding="async"
             className="w-full h-full object-cover"
             onError={() => setHasError(true)}
