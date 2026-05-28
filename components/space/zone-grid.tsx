@@ -89,8 +89,11 @@ export function ZoneGrid({
     ? Math.max(Math.round(gridCols / imgAspectRatio), gridRowsMin)
     : Math.max(gridCols, gridRowsMin)
 
-  // Cell size fills the container width; container clips height with overflow-auto
-  const cellSize = Math.max(1, Math.floor(containerWidth / gridCols))
+  // Cell size is the average of width-fit and height-fit — zoomed in but not overflowing
+  const maxCellByWidth = Math.floor(containerWidth / gridCols)
+  const availableHeight = viewportHeight - 320
+  const maxCellByHeight = gridRows > 0 ? Math.floor(availableHeight / gridRows) : maxCellByWidth
+  const cellSize = Math.max(1, Math.floor((maxCellByWidth + maxCellByHeight) / 2))
 
   const gridWidth = gridCols * cellSize
   const gridHeight = gridRows * cellSize
