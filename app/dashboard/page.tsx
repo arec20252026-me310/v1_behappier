@@ -103,7 +103,7 @@ export default async function DashboardPage() {
                 <LatestDetectionCard
                   studyId={BE_STUDY_IN_PROGRESS.study_id}
                   status={BE_STUDY_IN_PROGRESS.status}
-                  demoDetections={DEMO_DETECTIONS}
+                  demoDetections={DEMO_DETECTIONS.slice(-1)}
                 />
               )}
             </div>
