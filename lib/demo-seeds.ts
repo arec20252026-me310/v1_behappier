@@ -13,7 +13,13 @@ export const SPACE_ID   = "e8d9c195-0ae8-41ed-b03f-034ce91dd3c4"
 export const HA_MAP_ID  = "bf7ba38c-9bb5-43c9-b099-f3b293285efc"
 export const CAMERA_ID  = "8a425334-aafb-4d8a-9bd2-737e73eed13b"
 export const KITCHEN_ID = "4a1fd84a-8805-49c2-b6bc-6552519ad18b"
+export const TEAM2_ID   = "57ba4211-be1f-49b5-bf1a-b70314aa6e25"
+export const TEAM4_ID   = "0a3a375b-125a-4924-8d6b-a8a6325d9066"
 export const STUDY_ID   = "study_1778019133385"
+
+export const CAMERA_2_ID = "a5fcfe9d-4290-42ab-924b-9adcd0e0e950"
+export const CAMERA_1_ID = "25707986-d989-45ec-9a92-409d7162832c"
+export const CAMERA_3_ID = "d8651b9d-898d-4989-bb5f-e28a942e5647"
 
 // Synthetic UUIDs for seed-created rows (deletable without touching real rows)
 export const SEED_BE_STUDY_ID   = "00000000-0000-0000-0000-000000000001"
@@ -61,29 +67,52 @@ export const ZONES = [
   { id: "7a42add1-dc7b-4aab-866b-55d69d7cdad6", space_id: SPACE_ID, name: "Electronics Space", zone_type: "workspace", grid_x: 7,  grid_y: 16, grid_width: 5, grid_height: 4, color: "#10B981", capacity: 10, metadata: {}, ...TS },
 ]
 
-// ── Camera ───────────────────────────────────────────────────────────────────
-// Kitchen zone (grid_x:6, grid_y:1, grid_width:6, grid_height:3) at cellSize=30 (res=20)
-// center: x=(6+3)*30=270, y=(1+1.5)*30=75
+// ── Cameras ──────────────────────────────────────────────────────────────────
+// Placements copied from cameras.metadata in Supabase (real DB rows).
 export const CAMERA = {
-  id: CAMERA_ID,
+  id: CAMERA_2_ID,
   zone_id: KITCHEN_ID,
-  name: "Loft Camera Fluent (Motion)",
+  name: "camera_2",
   stream_url: null,
   status: "active" as const,
   field_of_view: {},
-  metadata: { ha_entity_id: "camera.loft_camera_fluent", placement_x: 270, placement_y: 75, placement_direction: "down" },
+  metadata: { ha_entity_id: "camera_2", placement_x: 285, placement_y: 402, placement_direction: "up" },
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",
 }
 
-export const DEMO_CAMERA_PLACEMENT = {
-  id: `cam-${KITCHEN_ID}`,
-  zoneId: KITCHEN_ID,
-  x: 270,
-  y: 75,
-  direction: "down" as import("@/lib/types").CameraDirection,
-  label: "Loft Camera Fluent (Motion)",
-}
+export const CAMERAS = [
+  CAMERA,
+  {
+    id: CAMERA_1_ID,
+    zone_id: TEAM2_ID,
+    name: "camera_1",
+    stream_url: null,
+    status: "active" as const,
+    field_of_view: {},
+    metadata: { ha_entity_id: "camera_1", placement_x: 78, placement_y: 296, placement_direction: "right" },
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: CAMERA_3_ID,
+    zone_id: TEAM4_ID,
+    name: "camera_3",
+    stream_url: null,
+    status: "active" as const,
+    field_of_view: {},
+    metadata: { ha_entity_id: "camera_3", placement_x: 287, placement_y: 430, placement_direction: "left" },
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+]
+
+type CameraDir = import("@/lib/types").CameraDirection
+export const DEMO_CAMERA_PLACEMENTS: import("@/lib/types").CameraPlacement[] = [
+  { id: `cam-${KITCHEN_ID}`, zoneId: KITCHEN_ID, x: 285, y: 402, direction: "up"    as CameraDir, label: "camera_2" },
+  { id: `cam-${TEAM2_ID}`,   zoneId: TEAM2_ID,   x: 78,  y: 296, direction: "right" as CameraDir, label: "camera_1" },
+  { id: `cam-${TEAM4_ID}`,   zoneId: TEAM4_ID,   x: 287, y: 430, direction: "left"  as CameraDir, label: "camera_3" },
+]
 
 // ── BE_studies ───────────────────────────────────────────────────────────────
 // metadata.monitored_zone_id tells the heatmap which zone to highlight
