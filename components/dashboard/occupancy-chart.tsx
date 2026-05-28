@@ -194,7 +194,7 @@ export function OccupancyChart({
       return (
         <TimeSeriesChart
           series={fallbackSeries}
-          height={enlarged ? 500 : 350}
+          height={enlarged ? "calc(88vh - 110px)" : 350}
           studyDurationMs={studyDurationMs}
           xAxisLabel="Timestamp"
           yAxisLabel={fallbackSeries.length === 1 ? fallbackSeries[0].title : undefined}
@@ -210,7 +210,7 @@ export function OccupancyChart({
           const detections = perStudyDetections[study_id] ?? []
           const liveSeries = buildLiveSeries(detections)
           const chartHeight = enlarged
-            ? 300
+            ? `calc((88vh - 110px) / ${allActiveStudies.length})`
             : Math.max(140, Math.floor(220 / allActiveStudies.length))
 
           return (
@@ -263,44 +263,47 @@ export function OccupancyChart({
       </Card>
 
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
-        <DialogContent className="max-w-[92vw] w-[92vw] h-[88vh] flex flex-col p-4 gap-0 overflow-hidden">
-          <DialogHeader className="shrink-0 pb-3">
-            <div className="flex items-center gap-2">
-              <DialogTitle className="text-base font-medium">Occupancy Over Time</DialogTitle>
-              {isLive && (
-                <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
-                  {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
-                </Badge>
+        <DialogContent className="sm:max-w-[92vw] w-[92vw] h-[88vh] p-0 gap-0 overflow-hidden">
+          <div className="flex flex-col h-full p-4">
+            <DialogHeader className="shrink-0 pb-3">
+              <div className="flex items-center gap-2">
+                <DialogTitle className="text-base font-medium">Occupancy Over Time</DialogTitle>
+                {isLive && (
+                  <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
+                    {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
+                  </Badge>
+                )}
+              </div>
+              <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
+              {/* Left: chart(s) — 60% width when live, full width otherwise */}
+              <div className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-y-auto`}>
+                {renderCharts(true)}
+              </div>
+              {/* Right: detections */}
+              {isLive && allActiveStudies.length > 0 && (
+                <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
+                  {allActiveStudies.map((s, idx) => (
+                    <div key={s.study_id} className={idx > 0 ? "pt-4 border-t border-border" : ""}>
+                      {allActiveStudies.length > 1 && (
+                        <p className="text-[10px] font-mono text-muted-foreground/60 mb-1 truncate">
+                          Study {idx + 1}: {s.study_id}
+                        </p>
+                      )}
+                      <p className="text-base font-medium text-muted-foreground uppercase tracking-wide mb-3">Latest Detection</p>
+                      <LiveDetectionFeed
+                        studyId={s.study_id}
+                        status={s.status}
+                        limit={1}
+                        demoDetections={idx === 0 ? demoDetections : undefined}
+                        large
+                      />
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-            <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
-            {/* Left: chart(s) */}
-            <div className="flex-1 min-w-0 overflow-y-auto">
-              {renderCharts(true)}
-            </div>
-            {/* Right: detections */}
-            {isLive && allActiveStudies.length > 0 && (
-              <div className="w-72 shrink-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
-                {allActiveStudies.map((s, idx) => (
-                  <div key={s.study_id} className={idx > 0 ? "pt-4 border-t border-border" : ""}>
-                    {allActiveStudies.length > 1 && (
-                      <p className="text-[10px] font-mono text-muted-foreground/60 mb-1 truncate">
-                        Study {idx + 1}: {s.study_id}
-                      </p>
-                    )}
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Latest Detection</p>
-                    <LiveDetectionFeed
-                      studyId={s.study_id}
-                      status={s.status}
-                      limit={1}
-                      demoDetections={idx === 0 ? demoDetections : undefined}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>

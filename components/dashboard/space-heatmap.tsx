@@ -501,35 +501,38 @@ export function SpaceHeatmap({
 
       {/* Enlarge Dialog */}
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
-        <DialogContent className="max-w-[92vw] w-[92vw] h-[88vh] flex flex-col p-4 gap-0 overflow-hidden">
-          <DialogHeader className="shrink-0 pb-3">
-            <DialogTitle className="text-base font-medium">Occupancy Heatmap</DialogTitle>
-            <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
-            {/* Left: grid is self-sized via calc height */}
-            <div className="shrink-0">
-              {renderGrid(true)}
-            </div>
-            {/* Right: study detections */}
-            {allActiveStudies.length > 0 && (
-              <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
-                {allActiveStudies.map((s) => (
-                  <div key={s.study_id}>
-                    {allActiveStudies.length > 1 && (
-                      <p className="text-[10px] font-mono text-muted-foreground mb-1 truncate">{s.study_id}</p>
-                    )}
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Latest Detection</p>
-                    <LiveDetectionFeed
-                      studyId={s.study_id}
-                      status={s.status}
-                      limit={1}
-                      demoDetections={demoDetections}
-                    />
-                  </div>
-                ))}
+        <DialogContent className="sm:max-w-[92vw] w-[92vw] h-[88vh] p-0 gap-0 overflow-hidden">
+          <div className="flex flex-col h-full p-4">
+            <DialogHeader className="shrink-0 pb-3">
+              <DialogTitle className="text-base font-medium">Occupancy Heatmap</DialogTitle>
+              <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
+            </DialogHeader>
+            <div className={cn("flex-1 min-h-0 flex flex-row gap-6 overflow-hidden", allActiveStudies.length === 0 && "justify-center")}>
+              {/* Left: square grid */}
+              <div className="shrink-0">
+                {renderGrid(true)}
               </div>
-            )}
+              {/* Right: study detections (only when a study is running) */}
+              {allActiveStudies.length > 0 && (
+                <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
+                  {allActiveStudies.map((s) => (
+                    <div key={s.study_id}>
+                      {allActiveStudies.length > 1 && (
+                        <p className="text-[10px] font-mono text-muted-foreground mb-1 truncate">{s.study_id}</p>
+                      )}
+                      <p className="text-base font-medium text-muted-foreground uppercase tracking-wide mb-3">Latest Detection</p>
+                      <LiveDetectionFeed
+                        studyId={s.study_id}
+                        status={s.status}
+                        limit={1}
+                        demoDetections={demoDetections}
+                        large
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

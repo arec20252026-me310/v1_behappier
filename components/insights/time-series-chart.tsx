@@ -83,7 +83,7 @@ export interface ChartSeries {
 
 interface TimeSeriesChartProps {
   series: ChartSeries[]
-  height?: number
+  height?: number | string
   studyDurationMs?: number
   xAxisLabel?: string
   yAxisLabel?: string
