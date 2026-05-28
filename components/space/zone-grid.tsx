@@ -41,6 +41,20 @@ export function ZoneGrid({
   // Track floor plan image aspect ratio so the grid canvas matches the image shape
   const [imgAspectRatio, setImgAspectRatio] = useState<number | null>(null)
 
+  // Measure container width so the grid always fills the available card space
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(480)
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const observer = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width
+      if (w && w > 0) setContainerWidth(w)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   // Camera drag state
   const [draggingCamera, setDraggingCamera] = useState<string | null>(null)
   const [selectedCamera, setSelectedCamera] = useState<string | null>(null)
@@ -54,8 +68,8 @@ export function ZoneGrid({
     ? Math.max(Math.round(gridCols / imgAspectRatio), gridRowsMin)
     : Math.max(gridCols, gridRowsMin)
 
-  // Cell size is based on column count so the width stays manageable
-  const cellSize = Math.max(20, Math.min(60, 480 / gridCols))
+  // Cell size fills the measured container width
+  const cellSize = Math.max(1, Math.floor(containerWidth / gridCols))
 
   const gridWidth = gridCols * cellSize
   const gridHeight = gridRows * cellSize
@@ -172,15 +186,13 @@ export function ZoneGrid({
   }, [zones, cellSize])
 
   return (
-    <div className="overflow-auto max-h-[calc(100vh-280px)] rounded-lg border border-border">
+    <div ref={containerRef} className="overflow-auto max-h-[calc(100vh-280px)] rounded-lg border border-border">
       <div
         ref={gridRef}
         className="relative"
         style={{
           width: gridWidth,
           height: gridHeight,
-          minWidth: DEFAULT_GRID_SIZE * 20,
-          minHeight: DEFAULT_GRID_SIZE * 20,
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
