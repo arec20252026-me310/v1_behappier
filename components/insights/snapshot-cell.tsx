@@ -35,7 +35,10 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
     if (!url) return
     const el = containerRef.current
     if (!el) return
-    // Generous rootMargin so images start loading before they scroll into view
+    // Generous rootMargin (2000px) means we eagerly load images that are within
+    // ~3 viewport heights of being visible. With pagination at 30 rows × 36px
+    // height = 1080px, this covers the entire current page on any screen size,
+    // even small browser windows, without waiting for a scroll event.
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -43,7 +46,7 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
           observer.disconnect()
         }
       },
-      { rootMargin: "200px" }
+      { rootMargin: "2000px" }
     )
     observer.observe(el)
     return () => observer.disconnect()
