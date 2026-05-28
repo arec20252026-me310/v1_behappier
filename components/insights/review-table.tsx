@@ -39,10 +39,21 @@ type Verdict = "correct" | "incorrect"
 // evaluations[detectionId][behaviorName] = verdict
 type Evaluations = Record<string, Record<string, Verdict>>
 
+const PAGE_SIZE = 30
+
 export function ReviewTable({ columns, rows, detections, title, cameraId }: ReviewTableProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(null)
   const [evaluations, setEvaluations] = useState<Evaluations>({})
+  const [page, setPage] = useState(0)
   const supabase = useRef(createClient()).current
+
+  // Reset to first page if the row set changes (e.g. study switched)
+  useEffect(() => { setPage(0) }, [rows.length])
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const pageStart = page * PAGE_SIZE
+  const pageEnd = Math.min(pageStart + PAGE_SIZE, rows.length)
+  const pageRows = rows.slice(pageStart, pageEnd)
 
   // Load persisted evaluations from Supabase on mount
   useEffect(() => {
@@ -194,7 +205,8 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, ri) => {
+              {pageRows.map((row, pageRi) => {
+                const ri = pageStart + pageRi
                 const det = getRowDetection(ri)
                 const behaviorName = behaviorColIdx >= 0 ? row[behaviorColIdx] : null
                 const verdict = det && behaviorName ? evaluations[det.id]?.[behaviorName] : undefined
@@ -233,6 +245,48 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
             </tbody>
           </table>
         </div>
+
+        {/* Pagination controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between gap-2 pt-1 text-xs">
+            <p className="text-muted-foreground">
+              Showing {pageStart + 1}–{pageEnd} of {rows.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(0)}
+                disabled={page === 0}
+                className="px-2 py-1 rounded border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                « First
+              </button>
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-2 py-1 rounded border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ‹ Prev
+              </button>
+              <span className="px-2 text-muted-foreground">
+                Page {page + 1} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="px-2 py-1 rounded border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next ›
+              </button>
+              <button
+                onClick={() => setPage(totalPages - 1)}
+                disabled={page >= totalPages - 1}
+                className="px-2 py-1 rounded border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Last »
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Accuracy summary — shown as soon as any behavior is evaluated */}
         {accuracySummary.length > 0 && (
