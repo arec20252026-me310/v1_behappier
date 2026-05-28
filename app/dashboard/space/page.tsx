@@ -67,6 +67,7 @@ export default async function SpacePage({ searchParams }: { searchParams: Promis
 
       <div className="flex-1 p-6 overflow-auto">
         <SpaceEditor
+          key={space?.id ?? "new"}
           space={space}
           initialZones={zones}
           initialCameras={cameras || []}
