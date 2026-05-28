@@ -8,9 +8,13 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
 function snapshotUrl(imageId: string, cameraId?: string | null): string {
-  const folder = cameraId ?? "camera_loft_camera_fluent"
-  const path = `snapshots/${folder}/${imageId}.jpg`
-  return `/api/snapshot?path=${encodeURIComponent(path)}`
+  // If cameraId is known, build the direct path. If missing, fall back to
+  // image_id-only lookup so the API can auto-search camera folders.
+  if (cameraId) {
+    const path = `snapshots/${cameraId}/${imageId}.jpg`
+    return `/api/snapshot?path=${encodeURIComponent(path)}`
+  }
+  return `/api/snapshot?image_id=${encodeURIComponent(imageId)}`
 }
 
 // Each snapshot produces one row per behavior metric, so rows are not 1:1 with detections.

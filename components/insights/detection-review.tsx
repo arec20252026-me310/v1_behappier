@@ -25,9 +25,8 @@ interface DetectionReviewProps {
 }
 
 function snapshotUrl(imageId: string): string {
-  // Path convention: snapshots/camera_loft_camera_fluent/{image_id}.jpg
-  const path = `snapshots/camera_loft_camera_fluent/${imageId}.jpg`
-  return `/api/snapshot?path=${encodeURIComponent(path)}`
+  // Camera is unknown at this layer; let the API auto-search camera folders.
+  return `/api/snapshot?image_id=${encodeURIComponent(imageId)}`
 }
 
 export function DetectionReview({ detections, studyId }: DetectionReviewProps) {

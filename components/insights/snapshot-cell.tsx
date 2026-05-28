@@ -4,9 +4,13 @@ import { useState } from "react"
 import { Camera, X } from "lucide-react"
 
 function snapshotUrl(imageId: string, cameraId?: string | null): string {
-  const folder = cameraId ?? "camera_loft_camera_fluent"
-  const path = `snapshots/${folder}/${imageId}.jpg`
-  return `/api/snapshot?path=${encodeURIComponent(path)}`
+  // If cameraId is known, build the direct path. If it's missing (older studies
+  // pre-camera_id metadata), pass only image_id and let the API auto-search.
+  if (cameraId) {
+    const path = `snapshots/${cameraId}/${imageId}.jpg`
+    return `/api/snapshot?path=${encodeURIComponent(path)}`
+  }
+  return `/api/snapshot?image_id=${encodeURIComponent(imageId)}`
 }
 
 interface SnapshotCellProps {
