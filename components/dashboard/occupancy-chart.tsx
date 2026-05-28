@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -86,6 +85,8 @@ export function OccupancyChart({
 }: OccupancyChartProps) {
   const [perStudyDetections, setPerStudyDetections] = useState<Record<string, DetectionRow[]>>({})
   const [isEnlarged, setIsEnlarged] = useState(false)
+  const [lastDetectionAt, setLastDetectionAt] = useState<number | null>(null)
+  const [agoText, setAgoText] = useState<string | null>(null)
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
   // Merge legacy single-study prop with multi-study prop
@@ -97,6 +98,18 @@ export function OccupancyChart({
 
   const studiesKey = allActiveStudies.map(s => s.study_id).sort().join(",")
   const isLive = allActiveStudies.length > 0
+
+  // Update "X ago" label every second while live
+  useEffect(() => {
+    if (!isLive || lastDetectionAt === null) { setAgoText(null); return }
+    const update = () => {
+      const s = Math.floor((Date.now() - lastDetectionAt) / 1000)
+      setAgoText(s < 60 ? `${s}s ago` : `${Math.floor(s / 60)}m ago`)
+    }
+    update()
+    const id = setInterval(update, 1000)
+    return () => clearInterval(id)
+  }, [isLive, lastDetectionAt])
 
   useEffect(() => {
     setPerStudyDetections({})
@@ -113,12 +126,19 @@ export function OccupancyChart({
     allActiveStudies.forEach(({ study_id }) => {
       supabase
         .from("BE_behavior_detections")
-        .select("timestamp_pt, detected_behaviors, notes")
+        .select("timestamp_pt, detected_behaviors, notes, timestamp")
         .eq("study_id", study_id)
         .order("timestamp", { ascending: true })
         .limit(200)
         .then(({ data }) => {
-          if (data) setPerStudyDetections(prev => ({ ...prev, [study_id]: data as DetectionRow[] }))
+          if (data && data.length > 0) {
+            setPerStudyDetections(prev => ({ ...prev, [study_id]: data as DetectionRow[] }))
+            const lastTs = (data as (DetectionRow & { timestamp: string })[]).at(-1)?.timestamp
+            if (lastTs) {
+              const t = new Date(lastTs).getTime()
+              if (isFinite(t)) setLastDetectionAt(prev => prev === null || t > prev ? t : prev)
+            }
+          }
         })
     })
 
@@ -132,6 +152,7 @@ export function OccupancyChart({
             ...prev,
             [studyId]: [...(prev[studyId] ?? []), payload.new as DetectionRow],
           }))
+          setLastDetectionAt(Date.now())
         })
       .subscribe()
 
@@ -148,7 +169,7 @@ export function OccupancyChart({
     return (
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5">
-          <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
+          <CardTitle className="text-base font-medium">Most Recent Study</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -170,10 +191,7 @@ export function OccupancyChart({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
-            <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
-              {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
-            </Badge>
+            <CardTitle className="text-base font-medium">Current Study</CardTitle>
           </div>
           <Link href="/dashboard/insights"><Button variant="ghost" size="sm" className="text-xs">View All</Button></Link>
         </CardHeader>
@@ -204,19 +222,23 @@ export function OccupancyChart({
       )
     }
 
+    const n = allActiveStudies.length
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col">
         {allActiveStudies.map(({ study_id }, idx) => {
           const detections = perStudyDetections[study_id] ?? []
           const liveSeries = buildLiveSeries(detections)
+          // Enlarged: 90px chrome per subplot (buttons+scrubber+stats+gaps) + 20px label + 80px fixed overhead
+          // Compact (dashboard): no chrome, just chart canvas
           const chartHeight = enlarged
-            ? `calc((88vh - 110px) / ${allActiveStudies.length})`
-            : Math.max(140, Math.floor(220 / allActiveStudies.length))
+            ? `calc((88vh - ${80 + n * 90 + (n - 1) * 4}px) / ${n})`
+            : n === 1 ? 200 : n === 2 ? 180 : 150
+          const isCompact = !enlarged && n > 1
 
           return (
-            <div key={study_id}>
-              {allActiveStudies.length > 1 && (
-                <p className="text-[10px] font-mono text-muted-foreground/60 mb-1 truncate">
+            <div key={study_id} className={idx > 0 && n > 1 ? "border-t border-border/50 pt-1 mt-1" : ""}>
+              {n > 1 && (
+                <p className="text-[10px] font-mono text-muted-foreground/60 mb-0.5 truncate">
                   Study {idx + 1}: {study_id}
                 </p>
               )}
@@ -233,6 +255,7 @@ export function OccupancyChart({
                   yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
                   seriesDescriptions={metricDescriptions}
                   isLive={true}
+                  compact={isCompact}
                 />
               )}
             </div>
@@ -244,14 +267,12 @@ export function OccupancyChart({
 
   return (
     <>
-      <Card className="bg-card border-border pt-2 pb-4">
-        <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">Occupancy Over Time</CardTitle>
-            {isLive && (
-              <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
-                {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
-              </Badge>
+      <Card className={`bg-card border-border pt-2 ${isLive && allActiveStudies.length >= 3 ? "pb-1" : "pb-4"}`}>
+        <CardHeader className={`flex flex-row items-center justify-between ${isLive && allActiveStudies.length >= 3 ? "pb-0.5" : "pb-1.5"}`}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <CardTitle className="text-base font-medium">{isLive ? "Current Study" : "Most Recent Study"}</CardTitle>
+            {isLive && agoText && (
+              <span className="text-xs text-muted-foreground font-normal">Last detection {agoText}</span>
             )}
           </div>
           <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => setIsEnlarged(true)}>
@@ -259,7 +280,7 @@ export function OccupancyChart({
             Enlarge
           </Button>
         </CardHeader>
-        <CardContent>{renderCharts(false)}</CardContent>
+        <CardContent className={isLive && allActiveStudies.length >= 3 ? "px-6 py-0 pb-1" : ""}>{renderCharts(false)}</CardContent>
       </Card>
 
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
@@ -267,37 +288,36 @@ export function OccupancyChart({
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-base font-medium">Occupancy Over Time</DialogTitle>
-                {isLive && (
-                  <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
-                    {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
-                  </Badge>
-                )}
+                <DialogTitle className="text-base font-medium">{isLive ? "Current Study" : "Most Recent Study"}</DialogTitle>
               </div>
               <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
             </DialogHeader>
             <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
               {/* Left: chart(s) — 60% width when live, full width otherwise */}
-              <div className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-y-auto`}>
+              <div className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-hidden`}>
                 {renderCharts(true)}
               </div>
               {/* Right: detections */}
               {isLive && allActiveStudies.length > 0 && (
-                <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-y-auto flex flex-col gap-4">
+                <div className={`flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col ${allActiveStudies.length >= 3 ? "gap-0 justify-between" : "gap-4"}`}>
                   {allActiveStudies.map((s, idx) => (
-                    <div key={s.study_id} className={idx > 0 ? "pt-4 border-t border-border" : ""}>
+                    <div
+                      key={s.study_id}
+                      className={`flex flex-col ${allActiveStudies.length >= 3 ? "flex-1 min-h-0 overflow-hidden" : ""} ${idx > 0 ? `border-t border-border ${allActiveStudies.length >= 3 ? "pt-2" : "pt-4"}` : ""}`}
+                    >
                       {allActiveStudies.length > 1 && (
-                        <p className="text-[10px] font-mono text-muted-foreground/60 mb-1 truncate">
+                        <p className="text-[10px] font-mono text-muted-foreground/60 mb-0.5 truncate">
                           Study {idx + 1}: {s.study_id}
                         </p>
                       )}
-                      <p className="text-base font-medium text-muted-foreground uppercase tracking-wide mb-3">Latest Detection</p>
+                      <p className={`font-medium text-muted-foreground uppercase tracking-wide ${allActiveStudies.length >= 3 ? "text-xs mb-1" : "text-base mb-3"}`}>Latest Detection</p>
                       <LiveDetectionFeed
                         studyId={s.study_id}
                         status={s.status}
                         limit={1}
                         demoDetections={idx === 0 ? demoDetections : undefined}
                         large
+                        studyCount={allActiveStudies.length}
                       />
                     </div>
                   ))}

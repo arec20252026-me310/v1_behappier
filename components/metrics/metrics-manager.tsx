@@ -176,7 +176,7 @@ export function MetricsManager({ space, initialMetrics }: MetricsManagerProps) {
                                 value={rubricDraft}
                                 onChange={e => setRubricDraft(e.target.value)}
                                 placeholder="Describe how to calculate this metric from a snapshot…"
-                                rows={3}
+                                rows={6}
                                 className="w-full text-xs px-2 py-1.5 rounded border border-border bg-background text-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
                               />
                               <div className="flex gap-1">
@@ -189,20 +189,23 @@ export function MetricsManager({ space, initialMetrics }: MetricsManagerProps) {
                               </div>
                             </div>
                           ) : (
-                            <button
-                              onClick={() => startEditRubric(metric)}
-                              className="flex items-start gap-1 group w-full text-left"
-                            >
+                            <div className="flex items-start gap-1.5 group">
                               {metric.rubric ? (
-                                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
                                   <span className="font-medium text-foreground/60">Rubric: </span>{metric.rubric}
                                 </p>
                               ) : (
-                                <p className="text-xs text-muted-foreground/50 italic flex items-center gap-1">
-                                  <Pencil className="h-3 w-3" /> Add scoring rubric…
-                                </p>
+                                <p className="text-xs text-muted-foreground/50 italic flex-1">No rubric set</p>
                               )}
-                            </button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                                onClick={() => startEditRubric(metric)}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </div>

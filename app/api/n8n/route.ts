@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
       session_id: (body.session_id as string) ?? null,
       status: "draft",
       current_stage: "draft",
+      created_at: new Date().toISOString(),
       ...studyFields,
     })
 
@@ -147,7 +148,7 @@ export async function POST(req: NextRequest) {
 
     await supabase
       .from("BE_studies")
-      .update({ status: "running" })
+      .update({ status: "running", started_at: new Date().toISOString() })
       .eq("study_id", study_id)
 
     const data = await response.json().catch(() => ({}))

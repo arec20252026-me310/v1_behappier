@@ -321,7 +321,7 @@ export function SpaceHeatmap({
   }
 
   // Any zone has unviewed completed insights and no live data is running
-  const hasAnyCompletedInsights = completedInsightZoneIds.size > 0 && !livePreviewMetrics && allActiveStudies.length === 0
+  const hasAnyCompletedInsights = completedInsightZoneIds.size > 0 && !livePreviewMetrics
 
   // Any running study active
   const hasAnyRunningStudy = allActiveStudies.length > 0 && !livePreviewMetrics
@@ -466,7 +466,7 @@ export function SpaceHeatmap({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">Occupancy Heatmap</CardTitle>
+            <CardTitle className="text-base font-medium">Occupancy Map</CardTitle>
             {hasAnyRunningStudy && (
               <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
                 {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
@@ -504,7 +504,7 @@ export function SpaceHeatmap({
         <DialogContent className="sm:max-w-[92vw] w-[92vw] h-[88vh] p-0 gap-0 overflow-hidden">
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
-              <DialogTitle className="text-base font-medium">Occupancy Heatmap</DialogTitle>
+              <DialogTitle className="text-base font-medium">Occupancy Map</DialogTitle>
               <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
             </DialogHeader>
             <div className={cn("flex-1 min-h-0 flex flex-row gap-6 overflow-hidden", allActiveStudies.length === 0 && "justify-center")}>
@@ -527,6 +527,7 @@ export function SpaceHeatmap({
                         limit={1}
                         demoDetections={demoDetections}
                         large
+                        studyCount={allActiveStudies.length}
                       />
                     </div>
                   ))}

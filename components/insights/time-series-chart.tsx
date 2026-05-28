@@ -89,6 +89,7 @@ interface TimeSeriesChartProps {
   yAxisLabel?: string
   seriesDescriptions?: Record<string, string>
   isLive?: boolean
+  compact?: boolean
 }
 
 function lookupDescription(title: string, descriptions: Record<string, string>): string | undefined {
@@ -235,7 +236,7 @@ const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
 
-export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive }: TimeSeriesChartProps) {
+export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive, compact = false }: TimeSeriesChartProps) {
   const effectiveYAxisLabel = yAxisLabel ?? (series.length > 1 ? "Multiple behaviors" : undefined)
   const allData = mergeSeriesData(series)
   const total = allData.length
@@ -505,7 +506,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
       )}
 
       {/* Preset duration buttons */}
-      {total > 0 && (
+      {!compact && total > 0 && (
         <div className="flex items-center gap-1 px-1">
           {visiblePresets.map(preset => {
             const isActive = activePreset === preset.label
@@ -598,7 +599,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
       </div>
 
       {/* Scrubber */}
-      {total > 0 && (
+      {!compact && total > 0 && (
         <div className="px-1 space-y-1">
           <div
             ref={scrubberRef}
