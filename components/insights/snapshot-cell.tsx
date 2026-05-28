@@ -28,26 +28,16 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
   const url = imageId ? snapshotUrl(imageId, cameraId) : null
   const hasImage = !!url && imgStatus === "loaded"
 
-  // Safari/SSR race: image may already be cached/loaded before React's onLoad
-  // event handler is attached, so the event is lost and state stays "loading"
-  // forever. Poll img.complete a few times after mount to catch this case.
+  // Safari/SSR race: image may already be cached/loaded before React attaches
+  // onLoad, so the event is lost. After mount, check once if the image is
+  // already complete. If not, the onLoad/onError handlers will fire normally.
   useEffect(() => {
     if (!url) return
-    let cancelled = false
-    const check = () => {
-      if (cancelled) return
-      const img = imgRef.current
-      if (!img) return
-      if (img.complete) {
-        if (img.naturalWidth > 0) setImgStatus("loaded")
-        else setImgStatus("error")
-        return
-      }
-      // Not yet loaded; check again on the next animation frame.
-      requestAnimationFrame(check)
+    const img = imgRef.current
+    if (img && img.complete) {
+      if (img.naturalWidth > 0) setImgStatus("loaded")
+      else setImgStatus("error")
     }
-    check()
-    return () => { cancelled = true }
   }, [url])
 
   const handleClick = () => {
