@@ -27,13 +27,65 @@ export const SEED_LIVE_ID       = "00000000-0000-0000-0000-000000000002"
 export const SEED_INSIGHT_ID    = "00000000-0000-0000-0000-000000000003"
 
 // ── Metrics ──────────────────────────────────────────────────────────────────
+const _TS_M = { created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" }
+
 export const DEMO_METRICS = [
-  { id: "713b847b-ff24-48e9-a3bb-7223c358357c", space_id: SPACE_ID, name: "Seating Comfort Score",  description: "Availability and usage patterns of seating areas",          category: "comfort"            as const, unit: "score",      calculation_method: null, rubric: null, literature_reference: "Whyte, W. (1980). The Social Life of Small Urban Spaces", is_active: true,  ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
-  { id: "a5aa0843-aae4-4609-a5d2-282971fad5c4", space_id: SPACE_ID, name: "Collaboration Index",    description: "Frequency and duration of group formations",               category: "social_interaction" as const, unit: "score",      calculation_method: null, rubric: null, literature_reference: "Allen, T. (1977). Managing the Flow of Technology",          is_active: true,  ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
-  { id: "b6d5e887-7645-48a8-89b1-3edbc6ac49e6", space_id: SPACE_ID, name: "Foot Traffic Count",     description: "Number of people entering/exiting a zone",                 category: "traffic_flow"       as const, unit: "count",      calculation_method: null, rubric: null, literature_reference: "Whyte, W. (1980). The Social Life of Small Urban Spaces", is_active: true,  ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
-  { id: "a2f25409-e598-415a-93ae-f140d2998ef6", space_id: SPACE_ID, name: "Peak Occupancy",         description: "Maximum number of occupants at any given time",             category: "utilization"        as const, unit: "count",      calculation_method: null, rubric: null, literature_reference: "Hillier, B. (2007). Space is the Machine",                   is_active: false, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
-  { id: "27ddd347-8024-46eb-808a-ab1515a5b502", space_id: SPACE_ID, name: "Utilization Rate",       description: "Percentage of capacity being used over time",              category: "utilization"        as const, unit: "percentage", calculation_method: null, rubric: null, literature_reference: "Duffy, F. (1997). The New Office",                          is_active: true,  ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
-  { id: "7e859061-3a9f-44b3-88f0-4a515a06d535", space_id: SPACE_ID, name: "Occupancy",              description: "Number of people present within the observed area at a given instant", category: "utilization" as const, unit: "count",      calculation_method: null, rubric: null, literature_reference: "Fruin, J.J. (1971). Pedestrian Planning and Design. Metropolitan Association of Urban Designers and Environmental Planners.", is_active: true, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  {
+    id: "7e859061-3a9f-44b3-88f0-4a515a06d535", space_id: SPACE_ID,
+    name: "Occupancy", description: "Number of people present within the observed area at a given instant",
+    category: "utilization" as const, unit: "count", calculation_method: null,
+    rubric: "Count every person visible within the observed area regardless of activity (seated, standing, walking). Include partially visible people if more than half their body is in frame. Score = total headcount. Score 0 if no people are present.",
+    literature_reference: "Fruin, J.J. (1971). Pedestrian Planning and Design. Metropolitan Association of Urban Designers and Environmental Planners.",
+    is_active: true, ..._TS_M,
+  },
+  {
+    id: "78222152-f9ca-4433-b77b-f8af7f4532d3", space_id: SPACE_ID,
+    name: "Collaboration Index", description: "Active collaborative clusters of 2 or more people within conversational distance, weighted by group size",
+    category: "social_interaction" as const, unit: "score", calculation_method: null,
+    rubric: "Score = (T2 × 1.0 + T1 × 0.5) / N, rounded to 2 decimals.\nN = visible persons. T2 = persons in Tier 2. T1 = persons in Tier 1.\nT0 contributes 0. If N = 0, score = 0.00.\n\nTIER 0 (withdrawn): headphones/earbuds in use, back fully turned to everyone else, alone at separate furniture, or single visible person.\nTIER 1 (co-present, not interacting): at shared furniture with others, no interaction signals.\nTIER 2 (engaged): visibly speaking, mutual orientation, shared screen/whiteboard with active interaction, or gesturing toward another person.",
+    literature_reference: "Allen, T. (1977). Managing the Flow of Technology",
+    is_active: true, ..._TS_M,
+  },
+  {
+    id: "14328a8c-5689-4d9d-817d-7ec97139023c", space_id: SPACE_ID,
+    name: "Slip/Fall Risk Index", description: "Detection of wet floors, obstacles, or hazardous conditions",
+    category: "safety" as const, unit: "score", calculation_method: null,
+    rubric: "Scan visible floor and walking surfaces for hazards: wet floor signs, spills or puddles, cords or cables across pathways, cluttered walkways, loose mats, or damaged flooring. Score: 0 = no hazards visible; 1-3 = minor hazards in low-traffic areas; 4-6 = moderate hazards in trafficked areas; 7-9 = significant hazards in main walkways; 10 = severe hazards creating immediate risk. Score = single whole number on this 0-10 scale.",
+    literature_reference: "OSHA Walking-Working Surfaces Standard (2017)",
+    is_active: true, ..._TS_M,
+  },
+  {
+    id: "713b847b-ff24-48e9-a3bb-7223c358357c", space_id: SPACE_ID,
+    name: "Seating Comfort Score", description: "Availability and usage patterns of seating areas",
+    category: "comfort" as const, unit: "score", calculation_method: null,
+    rubric: "Count total visible seats or seating surfaces (chairs, benches, stools, couches). Count how many are occupied. Note comfort workarounds: people perching on non-seat surfaces or standing near empty seats. Score = round((occupied seats / total seats) × 10) to the nearest whole number. If all seats are full and people are standing or perching nearby, score = 10. Score 0 if no seating is visible or all seating is blocked.",
+    literature_reference: "Whyte, W. (1980). The Social Life of Small Urban Spaces",
+    is_active: false, ..._TS_M,
+  },
+  {
+    id: "b6d5e887-7645-48a8-89b1-3edbc6ac49e6", space_id: SPACE_ID,
+    name: "Foot Traffic Count", description: "Number of people entering/exiting a zone",
+    category: "traffic_flow" as const, unit: "count", calculation_method: null,
+    rubric: "Count the number of people who appear to be actively walking, entering, or exiting the space. Do not count people who are seated, stationary, or clearly paused. Score = total count of people visibly in motion. Score 0 if no one is moving.",
+    literature_reference: "Whyte, W. (1980). The Social Life of Small Urban Spaces",
+    is_active: false, ..._TS_M,
+  },
+  {
+    id: "27ddd347-8024-46eb-808a-ab1515a5b502", space_id: SPACE_ID,
+    name: "Utilization Rate", description: "Percentage of capacity being used over time",
+    category: "utilization" as const, unit: "percentage", calculation_method: null,
+    rubric: "Count all people currently present in the observed area (seated, standing, or moving). Divide by the zone stated capacity and multiply by 100, then round to the nearest whole number. If capacity is unknown, estimate from the number of workstations or seats visible in frame. Score = round((headcount / zone capacity) × 100). Score 0 if no people are present.",
+    literature_reference: "Duffy, F. (1997). The New Office",
+    is_active: false, ..._TS_M,
+  },
+  {
+    id: "a2f25409-e598-415a-93ae-f140d2998ef6", space_id: SPACE_ID,
+    name: "Peak Occupancy", description: "Maximum number of occupants at any given time",
+    category: "utilization" as const, unit: "count", calculation_method: null,
+    rubric: "Count every visible person in the observed area (seated, standing, or moving). Include partially visible people if their presence can be reasonably confirmed. This snapshot value is recorded each interval; the peak is the maximum headcount observed across all snapshots in the study. Score = total headcount in this snapshot.",
+    literature_reference: "Hillier, B. (2007). Space is the Machine",
+    is_active: false, ..._TS_M,
+  },
 ]
 
 // ── Space ────────────────────────────────────────────────────────────────────
@@ -172,21 +224,21 @@ export const BE_LIVE_METRICS = {
 // ── BE_behavior_detections (demo) ────────────────────────────────────────────
 // Occupancy builds up, Collaboration Index follows, Slip/Fall Risk spikes at the end.
 export const DEMO_DETECTIONS = [
-  { timestamp_pt: "2026-05-05 10:00:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Two people working quietly at the counter." },
-  { timestamp_pt: "2026-05-05 10:00:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 2, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Light conversation, both occupants engaged." },
-  { timestamp_pt: "2026-05-05 10:01:40 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 4, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Third person enters, joins the counter area." },
-  { timestamp_pt: "2026-05-05 10:02:30 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 5, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Group discussion forming around shared materials." },
-  { timestamp_pt: "2026-05-05 10:03:20 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 6, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "Fourth person joins. Active whiteboard session visible." },
-  { timestamp_pt: "2026-05-05 10:04:10 PDT", detected_behaviors: [{ name: "Occupancy", value: 5, unit: "count" }, { name: "Collaboration Index", value: 7, unit: "score" }, { name: "Slip/Fall Risk", value: 2, unit: "score" }], notes: "Fifth person arrives. Zone at peak activity." },
-  { timestamp_pt: "2026-05-05 10:05:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 5, unit: "count" }, { name: "Collaboration Index", value: 8, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "High collaboration — all five occupants interacting." },
-  { timestamp_pt: "2026-05-05 10:05:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 5, unit: "count" }, { name: "Collaboration Index", value: 7, unit: "score" }, { name: "Slip/Fall Risk", value: 2, unit: "score" }], notes: "Still busy. One person moving toward the sink area." },
-  { timestamp_pt: "2026-05-05 10:06:40 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 6, unit: "score" }, { name: "Slip/Fall Risk", value: 1, unit: "score" }], notes: "One person has left. Remaining group winding down." },
-  { timestamp_pt: "2026-05-05 10:07:30 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 4, unit: "score" }, { name: "Slip/Fall Risk", value: 2, unit: "score" }], notes: "Three people remain. Activity decreasing." },
-  { timestamp_pt: "2026-05-05 10:08:20 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 3, unit: "score" }, { name: "Slip/Fall Risk", value: 2, unit: "score" }], notes: "Quieter — two seated, one standing near counter." },
-  { timestamp_pt: "2026-05-05 10:09:10 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 2, unit: "score" }, { name: "Slip/Fall Risk", value: 3, unit: "score" }], notes: "Two occupants. Slight floor anomaly detected near sink." },
-  { timestamp_pt: "2026-05-05 10:10:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk", value: 3, unit: "score" }], notes: "Two people still present. Risk signal persisting." },
-  { timestamp_pt: "2026-05-05 10:10:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk", value: 8, unit: "score" }], notes: "2 persons present. Left: person standing at counter near sink, body facing away, picking up items. Right: person moving toward exit, back to camera. Wet surface visible on floor near sink base — approximately 0.5m² coverage, consistent with liquid spill. Neither occupant visibly oriented to the hazard. Slip/fall risk elevated — occupant path crosses wet zone." },
-  { timestamp_pt: "2026-05-05 10:11:40 PDT", detected_behaviors: [{ name: "Occupancy", value: 1, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk", value: 9, unit: "score" }], notes: "1 person remaining in kitchen zone. Second occupant has exited frame. Remaining person standing at counter, body oriented away from sink, unaware of floor hazard. Wet surface now covers approximately 0.8m² near sink and adjacent walkway — visible sheen on floor consistent with water spillage. Person's likely exit path crosses the wet zone directly. No slip-resistant mat present. Slip/fall risk: critical — immediate cleanup and area alert required." },
+  { timestamp_pt: "2026-05-05 10:00:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk Index", value: 1, unit: "score" }], notes: "Two people working quietly at the counter." },
+  { timestamp_pt: "2026-05-05 10:00:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 2, unit: "score" }, { name: "Slip/Fall Risk Index", value: 1, unit: "score" }], notes: "Light conversation, both occupants engaged." },
+  { timestamp_pt: "2026-05-05 10:01:40 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 4, unit: "score" }, { name: "Slip/Fall Risk Index", value: 1, unit: "score" }], notes: "Third person enters, joins the counter area." },
+  { timestamp_pt: "2026-05-05 10:02:30 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 5, unit: "score" }, { name: "Slip/Fall Risk Index", value: 1, unit: "score" }], notes: "Group discussion forming around shared materials." },
+  { timestamp_pt: "2026-05-05 10:03:20 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 6, unit: "score" }, { name: "Slip/Fall Risk Index", value: 1, unit: "score" }], notes: "Fourth person joins. Active whiteboard session visible." },
+  { timestamp_pt: "2026-05-05 10:04:10 PDT", detected_behaviors: [{ name: "Occupancy", value: 5, unit: "count" }, { name: "Collaboration Index", value: 7, unit: "score" }, { name: "Slip/Fall Risk Index", value: 2, unit: "score" }], notes: "Fifth person arrives. Zone at peak activity." },
+  { timestamp_pt: "2026-05-05 10:05:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 5, unit: "count" }, { name: "Collaboration Index", value: 8, unit: "score" }, { name: "Slip/Fall Risk Index", value: 1, unit: "score" }], notes: "High collaboration — all five occupants interacting." },
+  { timestamp_pt: "2026-05-05 10:05:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 5, unit: "count" }, { name: "Collaboration Index", value: 7, unit: "score" }, { name: "Slip/Fall Risk Index", value: 2, unit: "score" }], notes: "Still busy. One person moving toward the sink area." },
+  { timestamp_pt: "2026-05-05 10:06:40 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 6, unit: "score" }, { name: "Slip/Fall Risk Index", value: 1, unit: "score" }], notes: "One person has left. Remaining group winding down." },
+  { timestamp_pt: "2026-05-05 10:07:30 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 4, unit: "score" }, { name: "Slip/Fall Risk Index", value: 2, unit: "score" }], notes: "Three people remain. Activity decreasing." },
+  { timestamp_pt: "2026-05-05 10:08:20 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 3, unit: "score" }, { name: "Slip/Fall Risk Index", value: 2, unit: "score" }], notes: "Quieter — two seated, one standing near counter." },
+  { timestamp_pt: "2026-05-05 10:09:10 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 2, unit: "score" }, { name: "Slip/Fall Risk Index", value: 3, unit: "score" }], notes: "Two occupants. Slight floor anomaly detected near sink." },
+  { timestamp_pt: "2026-05-05 10:10:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk Index", value: 3, unit: "score" }], notes: "Two people still present. Risk signal persisting." },
+  { timestamp_pt: "2026-05-05 10:10:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk Index", value: 8, unit: "score" }], notes: "2 persons present. Left: person standing at counter near sink, body facing away, picking up items. Right: person moving toward exit, back to camera. Wet surface visible on floor near sink base — approximately 0.5m² coverage, consistent with liquid spill. Neither occupant visibly oriented to the hazard. Slip/fall risk elevated — occupant path crosses wet zone." },
+  { timestamp_pt: "2026-05-05 10:11:40 PDT", detected_behaviors: [{ name: "Occupancy", value: 1, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }, { name: "Slip/Fall Risk Index", value: 9, unit: "score" }], notes: "1 person remaining in kitchen zone. Second occupant has exited frame. Remaining person standing at counter, body oriented away from sink, unaware of floor hazard. Wet surface now covers approximately 0.8m² near sink and adjacent walkway — visible sheen on floor consistent with water spillage. Person's likely exit path crosses the wet zone directly. No slip-resistant mat present. Slip/fall risk: critical — immediate cleanup and area alert required." },
 ]
 
 // ── BE_insight_outputs ────────────────────────────────────────────────────────
@@ -222,7 +274,7 @@ export const BE_INSIGHT_OUTPUT = {
     {
       chart_id: "chart_3",
       chart_type: "line",
-      title: "Slip/Fall Risk Over Time",
+      title: "Slip/Fall Risk Index Over Time",
       data: { labels: _DET_LABELS, values: _RISK_VALS },
     },
   ],
@@ -230,7 +282,7 @@ export const BE_INSIGHT_OUTPUT = {
     {
       table_id: "table_1",
       title: "Detection Log",
-      columns: ["Timestamp", "Occupancy", "Collaboration Index", "Slip/Fall Risk", "Notes"],
+      columns: ["Timestamp", "Occupancy", "Collaboration Index", "Slip/Fall Risk Index", "Notes"],
       rows: DEMO_DETECTIONS.map(d => [
         d.timestamp_pt.split(" ")[1],
         String(d.detected_behaviors.find(b => b.name === "Occupancy")?.value ?? ""),
