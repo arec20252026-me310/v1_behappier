@@ -167,7 +167,6 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(5)).data ?? []) : []
 
-  const latestOutput = beInsights.find(o => o.output_mode === "final_insights") ?? beInsights[0] ?? null
   const allFetchedStudies = [...beStudies]
 
   let completedStudies: typeof beStudies = []
@@ -196,6 +195,12 @@ export default async function DashboardPage() {
       .single()
     completedStudyInsights = studyInsight ?? null
   }
+
+  // latestOutput: prefer active-study insights, fall back to most recent completed study
+  const latestOutput = beInsights.find(o => o.output_mode === "final_insights")
+    ?? beInsights[0]
+    ?? completedStudyInsights
+    ?? null
 
   let livePreviewMetrics = null
   const activeStudyIds = beStudies
@@ -248,7 +253,7 @@ export default async function DashboardPage() {
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         <MetricCards
           zonesCount={zones.length}
-          studiesCount={beStudies.length}
+          studiesCount={beStudies.length + completedStudies.length}
           insightsCount={insightsCount}
           metricsCount={metrics.length}
           latestInsightAt={beInsights[0]?.created_at}

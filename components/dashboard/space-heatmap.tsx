@@ -271,7 +271,16 @@ export function SpaceHeatmap({
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   const gridResolution = space?.grid_resolution || 8
   const floorPlanUrl = space?.floor_plan_url
-  const cellPct = 100 / gridResolution
+
+  // Use actual zone extents so zones beyond gridResolution aren't clipped
+  const effectiveCols = zones.length > 0
+    ? Math.max(gridResolution, ...zones.map(z => z.grid_x + z.grid_width))
+    : gridResolution
+  const effectiveRows = zones.length > 0
+    ? Math.max(gridResolution, ...zones.map(z => z.grid_y + z.grid_height))
+    : gridResolution
+  const cellPctX = 100 / effectiveCols
+  const cellPctY = 100 / effectiveRows
 
   // Zone IDs with unviewed completed insights
   const completedInsightZoneIds = insightsViewed
@@ -350,8 +359,8 @@ export function SpaceHeatmap({
       <div
         className="relative rounded-lg overflow-hidden border border-border"
         style={enlarged
-          ? { height: "calc(88vh - 100px)", width: "calc(88vh - 100px)" }
-          : { width: "100%", aspectRatio: "1 / 1" }}
+          ? { height: "calc(88vh - 100px)", aspectRatio: `${effectiveCols} / ${effectiveRows}` }
+          : { width: "100%", aspectRatio: `${effectiveCols} / ${effectiveRows}` }}
       >
         {floorPlanUrl ? (
           <img
@@ -372,7 +381,7 @@ export function SpaceHeatmap({
               linear-gradient(to right, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px),
               linear-gradient(to bottom, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px)
             `,
-            backgroundSize: `${cellPct}% ${cellPct}%`,
+            backgroundSize: `${cellPctX}% ${cellPctY}%`,
           }}
         />
 
@@ -408,10 +417,10 @@ export function SpaceHeatmap({
                 hasAnyInsight && !liveOccupancy && "zone-flashing"
               )}
               style={{
-                left: `${zone.grid_x * cellPct}%`,
-                top: `${zone.grid_y * cellPct}%`,
-                width: `calc(${zone.grid_width * cellPct}% - 2px)`,
-                height: `calc(${zone.grid_height * cellPct}% - 2px)`,
+                left: `${zone.grid_x * cellPctX}%`,
+                top: `${zone.grid_y * cellPctY}%`,
+                width: `calc(${zone.grid_width * cellPctX}% - 2px)`,
+                height: `calc(${zone.grid_height * cellPctY}% - 2px)`,
                 backgroundColor: bgColor,
                 borderColor,
                 borderWidth: hasAnyInsight || isActiveStudyZone || liveOccupancy !== null ? 2 : 1,
@@ -445,12 +454,13 @@ export function SpaceHeatmap({
 
         {cameras.map((cam) => {
           const builderCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
-          const totalBuilderSize = builderCellSize * gridResolution
+          const totalBuilderWidth = builderCellSize * effectiveCols
+          const totalBuilderHeight = builderCellSize * effectiveRows
           return (
             <div
               key={cam.id}
               className="absolute pointer-events-none"
-              style={{ left: `${(cam.x / totalBuilderSize) * 100}%`, top: `${(cam.y / totalBuilderSize) * 100}%`, zIndex: 20, transform: "translate(-50%, -50%)" }}
+              style={{ left: `${(cam.x / totalBuilderWidth) * 100}%`, top: `${(cam.y / totalBuilderHeight) * 100}%`, zIndex: 20, transform: "translate(-50%, -50%)" }}
             >
               <CameraMapIcon direction={cam.direction} size={18} label={cam.label} showLabel={false} />
             </div>
