@@ -253,7 +253,7 @@ export default async function DashboardPage() {
       <div className="flex-1 p-6 space-y-6 overflow-auto">
         <MetricCards
           zonesCount={zones.length}
-          studiesCount={beStudies.length + completedStudies.length}
+          studiesCount={beStudies.length}
           insightsCount={insightsCount}
           metricsCount={metrics.length}
           latestInsightAt={beInsights[0]?.created_at}
