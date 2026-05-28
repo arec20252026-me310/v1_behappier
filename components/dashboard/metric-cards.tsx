@@ -11,12 +11,14 @@ interface MetricCardsProps {
   insightsCount: number
   metricsCount: number
   latestInsightAt?: string
+  isDemo?: boolean
 }
 
-export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCount, latestInsightAt }: MetricCardsProps) {
+export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCount, latestInsightAt, isDemo = false }: MetricCardsProps) {
   const [newInsightsCount, setNewInsightsCount] = useState(insightsCount)
 
   useEffect(() => {
+    if (isDemo) { setNewInsightsCount(insightsCount); return }
     if (!latestInsightAt) { setNewInsightsCount(0); return }
     const viewedAt = localStorage.getItem("behappier_insights_viewed_at")
     if (viewedAt && new Date(viewedAt) >= new Date(latestInsightAt)) {
@@ -24,7 +26,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
     } else {
       setNewInsightsCount(insightsCount)
     }
-  }, [latestInsightAt, insightsCount])
+  }, [isDemo, latestInsightAt, insightsCount])
 
   const cards = [
     {

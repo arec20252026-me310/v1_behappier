@@ -28,6 +28,7 @@ interface InsightsListProps {
   studyDurations?: Record<string, number>
   metricDescriptions?: Record<string, string>
   studyGoals?: Record<string, string>
+  spaceName?: string
 }
 
 function toText(v: unknown): string {
@@ -83,7 +84,7 @@ function studyLabel(studyId: string): string {
   return studyId
 }
 
-export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy = {}, reviewMode = false, studyDurations = {}, metricDescriptions, studyGoals = {} }: InsightsListProps) {
+export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy = {}, reviewMode = false, studyDurations = {}, metricDescriptions, studyGoals = {}, spaceName }: InsightsListProps) {
   // Only one Detection Log section is expanded at a time. Closed sections
   // skip rendering their ReviewTable entirely — this is crucial because each
   // ReviewTable creates dozens of <img> snapshot cells. With 60+ studies, all
@@ -126,6 +127,9 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                 <h3 className="text-sm font-semibold text-foreground leading-snug">
                   {studyGoals[output.study_id] || studyLabel(output.study_id)}
                 </h3>
+                {spaceName && (
+                  <p className="text-xs text-muted-foreground/70 mt-0.5">{spaceName}</p>
+                )}
                 <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                   {output.study_id}
                 </p>

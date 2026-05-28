@@ -1,7 +1,7 @@
 "use client"
 
-import { disableDemoMode, advanceDemoScenario } from "@/app/actions/demo"
-import { EyeOff, ChevronRight } from "lucide-react"
+import { disableDemoMode, advanceDemoScenario, reverseDemoScenario } from "@/app/actions/demo"
+import { EyeOff, ChevronLeft, ChevronRight } from "lucide-react"
 import type { DemoScenario } from "@/lib/demo-mode"
 
 const SCENARIO_LABELS: Record<DemoScenario, string> = {
@@ -19,6 +19,13 @@ const NEXT_LABELS: Partial<Record<DemoScenario, string>> = {
   "study-complete": "Model Created",
 }
 
+const PREV_LABELS: Partial<Record<DemoScenario, string>> = {
+  "space-ready": "Blank",
+  "study-in-progress": "Space Configured",
+  "study-complete": "Study Running",
+  "model-created": "Study Complete",
+}
+
 interface DemoBannerProps {
   scenario: DemoScenario
 }
@@ -32,6 +39,17 @@ export function DemoBanner({ scenario }: DemoBannerProps) {
         <span className="text-yellow-400/60 hidden sm:inline">— {SCENARIO_LABELS[scenario]} scenario</span>
       </div>
       <div className="flex items-center gap-2">
+        {PREV_LABELS[scenario] && (
+          <form action={reverseDemoScenario.bind(null, scenario)}>
+            <button
+              type="submit"
+              className="flex items-center gap-1 text-xs px-3 py-1 rounded border border-yellow-500/60 hover:border-yellow-400 hover:text-yellow-200 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors whitespace-nowrap font-medium"
+            >
+              <ChevronLeft className="h-3 w-3" />
+              {PREV_LABELS[scenario]}
+            </button>
+          </form>
+        )}
         {NEXT_LABELS[scenario] && (
           <form action={advanceDemoScenario.bind(null, scenario)}>
             <button

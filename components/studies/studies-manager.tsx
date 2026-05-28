@@ -55,6 +55,7 @@ interface StudiesManagerProps {
   cameras?: Camera[]
   demoDetectionsByStudy?: Record<string, DetectionRow[]>
   demo?: boolean
+  spaceName?: string
 }
 
 interface N8nResponse {
@@ -114,7 +115,7 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
     .join("\n")
 }
 
-export function StudiesManager({ space, initialStudies, zones, metrics, cameras = [], demoDetectionsByStudy, demo = false }: StudiesManagerProps) {
+export function StudiesManager({ space, initialStudies, zones, metrics, cameras = [], demoDetectionsByStudy, demo = false, spaceName }: StudiesManagerProps) {
   const router = useRouter()
   const sessionId = useRef<string>(crypto.randomUUID())
   const studies = initialStudies
@@ -475,6 +476,9 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                       <p className="text-xs text-muted-foreground font-mono mt-0.5" title={study.study_id}>
                         {study.study_id.replace(/^study_/, "ID ")}
                       </p>
+                      {spaceName && (
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">{spaceName}</p>
+                      )}
                       {study.study_goal && (
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{study.study_goal}</p>
                       )}

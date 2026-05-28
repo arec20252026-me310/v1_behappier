@@ -4,11 +4,15 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import type { DemoScenario } from "@/lib/demo-mode"
 
+function scenarioRedirect(scenario: DemoScenario): string {
+  return scenario === "model-created" ? "/dashboard/models" : "/dashboard"
+}
+
 export async function enableDemoMode(scenario: DemoScenario = "blank") {
   const cookieStore = await cookies()
   cookieStore.set("demo_mode", scenario, { path: "/", httpOnly: false })
   cookieStore.delete("review_mode")
-  redirect("/dashboard")
+  redirect(scenarioRedirect(scenario))
 }
 
 export async function disableDemoMode() {
@@ -24,5 +28,13 @@ export async function advanceDemoScenario(current: DemoScenario) {
   if (!next) return
   const cookieStore = await cookies()
   cookieStore.set("demo_mode", next, { path: "/", httpOnly: false })
-  redirect("/dashboard")
+  redirect(scenarioRedirect(next))
+}
+
+export async function reverseDemoScenario(current: DemoScenario) {
+  const prev = DEMO_ORDER[DEMO_ORDER.indexOf(current) - 1]
+  if (!prev) return
+  const cookieStore = await cookies()
+  cookieStore.set("demo_mode", prev, { path: "/", httpOnly: false })
+  redirect(scenarioRedirect(prev))
 }

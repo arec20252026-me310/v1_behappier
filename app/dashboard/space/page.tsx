@@ -2,30 +2,41 @@ import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { SpaceEditor } from "@/components/space/space-editor"
 import { getDemoScenario } from "@/lib/demo-mode"
+import { getAllSpaces, getDefaultSpace } from "@/lib/spaces"
 import { DEMO_SPACE, ZONES, CAMERAS } from "@/lib/demo-seeds"
-import type { HACameraMapping } from "@/lib/types"
+import type { HACameraMapping, Space, Zone, Camera } from "@/lib/types"
 
 export const dynamic = 'force-dynamic'
 
-export default async function SpacePage() {
+export default async function SpacePage({ searchParams }: { searchParams: Promise<{ space_id?: string; new?: string }> }) {
   const scenario = await getDemoScenario()
   const demo = scenario !== null
   const supabase = await createClient()
+  const params = await searchParams
 
-  let space = null
-  let zones: typeof ZONES = []
-  let cameras: typeof CAMERAS = []
+  let space: Space | null = null
+  let zones: Zone[] = []
+  let cameras: Camera[] = []
   let haCameras: HACameraMapping[] = []
+  let allSpaces: Space[] = []
 
   if (demo) {
     if (scenario !== "blank") {
-      space = DEMO_SPACE
-      zones = ZONES
-      cameras = CAMERAS
+      space = DEMO_SPACE as Space
+      zones = ZONES as Zone[]
+      cameras = CAMERAS as Camera[]
     }
+    allSpaces = scenario !== "blank" ? [DEMO_SPACE as Space] : []
   } else {
-    const { data: dbSpace } = await supabase.from("spaces").select("*").limit(1).single()
-    space = dbSpace
+    allSpaces = await getAllSpaces()
+
+    if (params.new === "1") {
+      space = null
+    } else if (params.space_id) {
+      space = allSpaces.find(s => s.id === params.space_id) ?? await getDefaultSpace()
+    } else {
+      space = await getDefaultSpace()
+    }
 
     if (space) {
       const { data } = await supabase
@@ -33,11 +44,11 @@ export default async function SpacePage() {
         .select("*")
         .eq("space_id", space.id)
         .order("created_at", { ascending: true })
-      zones = data || []
+      zones = (data as Zone[]) || []
     }
 
     const { data: dbCameras } = await supabase.from("cameras").select("*")
-    cameras = dbCameras || []
+    cameras = (dbCameras as Camera[]) || []
 
     const { data: dbHaCameras } = await supabase
       .from("ha_camera_mappings")
@@ -60,6 +71,8 @@ export default async function SpacePage() {
           initialZones={zones}
           initialCameras={cameras || []}
           haCameras={haCameras || []}
+          allSpaces={allSpaces}
+          demo={demo}
         />
       </div>
     </div>

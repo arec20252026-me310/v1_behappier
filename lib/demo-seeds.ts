@@ -1,5 +1,5 @@
 /**
- * Demo scenario seed data — ME310 Loft space.
+ * Demo scenario seed data — Peterson Loft space.
  *
  * Zone-to-insight linkage uses BE_studies.metadata.monitored_zone_id so
  * the heatmap can highlight the correct zone without any schema changes.
@@ -91,7 +91,7 @@ export const DEMO_METRICS = [
 // ── Space ────────────────────────────────────────────────────────────────────
 export const DEMO_SPACE = {
   id: SPACE_ID,
-  name: "ME310 Loft",
+  name: "Peterson Loft",
   description: "Stanford ME310 design studio space",
   address: null,
   total_area_sqft: null,
@@ -99,6 +99,7 @@ export const DEMO_SPACE = {
   floor_plan_url: "/api/file?pathname=floor-plans%2F1776921523908.png",
   grid_resolution: 20,
   metadata: {},
+  is_default: true,
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",
 }
@@ -179,7 +180,7 @@ const BE_STUDY_BASE = {
   task_graph: {},
   graph_plan: {},
   metadata: {
-    study_name: "Kitchen Morning Safety & Usage",
+    study_name: "Peterson Building Occupancy Study",
     monitored_zone_id: KITCHEN_ID,
     target_zones: [KITCHEN_ID],
   },
@@ -254,7 +255,7 @@ export const BE_INSIGHT_OUTPUT = {
   status: "complete",
   created_at: "2026-05-05T10:17:29.098Z",
   dashboard_summary:
-    "The Kitchen Morning Safety & Usage study monitored occupancy, collaboration, and slip/fall risk over 12 minutes. " +
+    "The Peterson Building Occupancy Study monitored occupancy, collaboration, and slip/fall risk over 12 minutes. " +
     "The space saw peak activity mid-session (up to 5 occupants, collaboration index 8) before winding down. " +
     "A critical safety event was detected at 10:10–10:11: slip/fall risk spiked to 9, consistent with a liquid spill on the kitchen floor. " +
     "Immediate corrective action was recommended.",

@@ -55,6 +55,7 @@ interface SpaceHeatmapProps {
   activeStudyMonitoredZoneId?: string
   demoDetections?: DetectionRow[]
   tracksOccupancy?: boolean
+  isDemo?: boolean
 }
 
 interface BEInsightSelection {
@@ -144,6 +145,7 @@ export function SpaceHeatmap({
   activeStudyMonitoredZoneId,
   demoDetections,
   tracksOccupancy,
+  isDemo = false,
 }: SpaceHeatmapProps) {
   const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
@@ -187,6 +189,7 @@ export function SpaceHeatmap({
   }, [cameraProp])
 
   useEffect(() => {
+    if (isDemo) { setInsightsViewed(false); return }
     // Use the most recently created completed insight to determine viewed state
     const latestCreatedAt = allCompletedZoneInsights
       .map(c => c.insights.created_at)
@@ -196,7 +199,7 @@ export function SpaceHeatmap({
     const viewedAt = localStorage.getItem("behappier_insights_viewed_at")
     setInsightsViewed(!!viewedAt && new Date(viewedAt) >= new Date(latestCreatedAt))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allCompletedZoneInsights.map(c => c.insights.created_at).join(",")])
+  }, [isDemo, allCompletedZoneInsights.map(c => c.insights.created_at).join(",")])
 
   // Build study_id → zoneId map and subscribe to all active studies' detections
   const studiesKey = allActiveStudies.map(s => s.study_id).sort().join(",")

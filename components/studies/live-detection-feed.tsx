@@ -20,12 +20,12 @@ interface LiveDetectionFeedProps {
 }
 
 export function LiveDetectionFeed({ studyId, status, limit = 4, demoDetections, large = false, studyCount = 1 }: LiveDetectionFeedProps) {
-  const [detections, setDetections] = useState<DetectionRow[]>(demoDetections ?? [])
+  const [detections, setDetections] = useState<DetectionRow[]>(demoDetections ? demoDetections.slice(-limit) : [])
   const instanceId = useId()
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
   useEffect(() => {
-    if (demoDetections) return
+    if (demoDetections) { setDetections(demoDetections.slice(-limit)); return }
 
     const supabase = createClient()
 
@@ -66,22 +66,22 @@ export function LiveDetectionFeed({ studyId, status, limit = 4, demoDetections, 
   }, [studyId, status, limit, demoDetections])
 
   const behaviorSize = large
-    ? studyCount >= 3 ? "text-2xl" : studyCount === 2 ? "text-3xl" : "text-5xl"
+    ? studyCount >= 3 ? "text-base" : studyCount === 2 ? "text-3xl" : "text-5xl"
     : "text-foreground/70"
   const timestampSize = large
-    ? studyCount >= 3 ? "text-sm" : studyCount === 2 ? "text-base" : "text-lg"
+    ? studyCount >= 3 ? "text-xs" : studyCount === 2 ? "text-base" : "text-lg"
     : ""
   const notesSize = large
-    ? studyCount >= 3 ? "text-base" : studyCount === 2 ? "text-lg" : "text-2xl"
+    ? studyCount >= 3 ? "text-xs" : studyCount === 2 ? "text-lg" : "text-2xl"
     : ""
   const spacing = large
-    ? studyCount >= 3 ? "space-y-2" : studyCount === 2 ? "space-y-4" : "space-y-6"
+    ? studyCount >= 3 ? "space-y-1" : studyCount === 2 ? "space-y-4" : "space-y-6"
     : "space-y-1.5"
   const waitingSize = large
-    ? studyCount >= 3 ? "text-base" : studyCount === 2 ? "text-xl" : "text-2xl"
+    ? studyCount >= 3 ? "text-sm" : studyCount === 2 ? "text-xl" : "text-2xl"
     : "text-xs"
   const iconSize = large
-    ? studyCount >= 3 ? "h-4 w-4" : "h-7 w-7"
+    ? studyCount >= 3 ? "h-3.5 w-3.5" : "h-7 w-7"
     : "h-3 w-3"
 
   if (detections.length === 0) {
