@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Camera, X } from "lucide-react"
 
 function snapshotUrl(imageId: string, cameraId?: string | null): string {
@@ -23,9 +23,21 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
   const [open, setOpen] = useState(false)
   // Start in "loading" so the camera icon shows until the image confirms success
   const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">("loading")
+  const imgRef = useRef<HTMLImageElement>(null)
 
   const url = imageId ? snapshotUrl(imageId, cameraId) : null
   const hasImage = !!url && imgStatus === "loaded"
+
+  // Safari/SSR race: image may already be cached/loaded before onLoad fires.
+  // After mount, check if the image is already complete and update status.
+  useEffect(() => {
+    if (!url) return
+    const img = imgRef.current
+    if (img && img.complete) {
+      if (img.naturalWidth > 0) setImgStatus("loaded")
+      else setImgStatus("error")
+    }
+  }, [url])
 
   const handleClick = () => {
     if (!hasImage) return
@@ -46,11 +58,17 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
         disabled={!hasImage}
         title={hasImage ? "Click to enlarge" : "No snapshot"}
       >
+        {/* Image must remain in the DOM (not display:none) so the browser
+            actually fetches it and fires onLoad. Use opacity to hide it while
+            loading, and overlay the camera icon during loading/error. */}
         {url && (
           <img
+            ref={imgRef}
             src={url}
             alt=""
-            className={`w-full h-full object-cover ${imgStatus === "loaded" ? "" : "hidden"}`}
+            className={`w-full h-full object-cover transition-opacity ${
+              imgStatus === "loaded" ? "opacity-100" : "opacity-0 absolute"
+            }`}
             onLoad={() => setImgStatus("loaded")}
             onError={() => setImgStatus("error")}
           />
