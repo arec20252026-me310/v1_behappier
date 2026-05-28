@@ -3,30 +3,19 @@
 import { useState } from "react"
 import { Camera, X } from "lucide-react"
 
-function snapshotUrl(imageId: string, cameraId?: string | null): string {
-  // If cameraId is known, build the direct path. If it's missing (older studies
-  // pre-camera_id metadata), pass only image_id and let the API auto-search.
-  if (cameraId) {
-    const path = `snapshots/${cameraId}/${imageId}.jpg`
-    return `/api/snapshot?path=${encodeURIComponent(path)}`
-  }
-  return `/api/snapshot?image_id=${encodeURIComponent(imageId)}`
-}
-
 interface SnapshotCellProps {
-  imageId?: string | null
-  cameraId?: string | null
+  // The pre-generated signed URL for this image, or null if no snapshot is
+  // available (e.g. detection from a non-review-mode study, or signed URL
+  // generation failed).
+  signedUrl?: string | null
   onExpand?: () => void
 }
 
-export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps) {
+export function SnapshotCell({ signedUrl, onExpand }: SnapshotCellProps) {
   const [open, setOpen] = useState(false)
-  // Single error state. Image is rendered unconditionally and the browser
-  // loads it. If load fails, we swap to a camera icon placeholder.
   const [hasError, setHasError] = useState(false)
 
-  const url = imageId ? snapshotUrl(imageId, cameraId) : null
-  const showImage = !!url && !hasError
+  const showImage = !!signedUrl && !hasError
 
   const handleClick = () => {
     if (!showImage) return
@@ -47,17 +36,12 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
         disabled={!showImage}
         title={showImage ? "Click to enlarge" : "No snapshot"}
       >
-        {/* When url is missing or image failed to load, show a camera icon. */}
         {!showImage && (
           <Camera className="h-3 w-3 text-muted-foreground/30" />
         )}
-        {/* When we have a url, render the image unconditionally. With pagination
-            (30 rows per page) and the collapsed-by-default detection log, only
-            ~30 images are ever in the DOM at once, which the browser can load
-            without issue. */}
-        {url && (
+        {signedUrl && (
           <img
-            src={url}
+            src={signedUrl}
             alt=""
             decoding="async"
             className="w-full h-full object-cover"
@@ -66,8 +50,8 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
         )}
       </button>
 
-      {/* Standalone lightbox (used when no onExpand is provided) */}
-      {!onExpand && open && url && (
+      {/* Standalone lightbox (only used when no onExpand handler is provided) */}
+      {!onExpand && open && signedUrl && (
         <div
           className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-6"
           onClick={() => setOpen(false)}
@@ -79,7 +63,7 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
             <X className="h-6 w-6" />
           </button>
           <img
-            src={url}
+            src={signedUrl}
             alt="Snapshot"
             className="max-w-full max-h-full rounded-lg object-contain shadow-2xl"
             onClick={e => e.stopPropagation()}
