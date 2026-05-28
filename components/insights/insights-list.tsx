@@ -1,8 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Lightbulb, Target, BarChart3, Table2 } from "lucide-react"
+import { Lightbulb, Target, BarChart3, Table2, ChevronDown, ChevronRight } from "lucide-react"
 import type { BEInsightOutput } from "@/lib/types"
 import { formatDistanceToNow } from "date-fns"
 import { DynamicChart } from "./dynamic-chart"
@@ -83,6 +84,12 @@ function studyLabel(studyId: string): string {
 }
 
 export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy = {}, reviewMode = false, studyDurations = {}, metricDescriptions, studyGoals = {} }: InsightsListProps) {
+  // Only one Detection Log section is expanded at a time. Closed sections
+  // skip rendering their ReviewTable entirely — this is crucial because each
+  // ReviewTable creates dozens of <img> snapshot cells. With 60+ studies, all
+  // expanded at once means 1000+ image tags + IntersectionObservers, which
+  // overloads Safari and Vercel. Single-open keeps the DOM small and fast.
+  const [openLogStudyId, setOpenLogStudyId] = useState<string | null>(null)
   const normalized = outputs.map(normalizeOutput)
   if (normalized.length === 0) {
     return (
@@ -222,16 +229,26 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                 )
               })()}
 
-              {/* Tables */}
-              {output.tables.length > 0 && (
+              {/* Tables — Detection Log is collapsible. Only one can be open
+                  at a time across the page, to avoid mounting 1000+ image cells. */}
+              {output.tables.length > 0 && (() => {
+                const isOpen = openLogStudyId === output.study_id
+                return (
                 <div className="space-y-4 pt-2 border-t border-border">
-                  <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setOpenLogStudyId(isOpen ? null : output.study_id)}
+                    className="flex items-center gap-1.5 w-full text-left hover:opacity-80 transition-opacity"
+                  >
+                    {isOpen
+                      ? <ChevronDown className="h-3.5 w-3.5 text-chart-3" />
+                      : <ChevronRight className="h-3.5 w-3.5 text-chart-3" />}
                     <Table2 className="h-3.5 w-3.5 text-chart-3" />
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Detection Log
+                      Detection Log {!isOpen && <span className="text-muted-foreground/60">(click to expand)</span>}
                     </p>
-                  </div>
-                  {output.tables.map((table, i) => {
+                  </button>
+                  {isOpen && output.tables.map((table, i) => {
                     const t = table as Record<string, unknown>
                     const columns = t.columns as string[]
                     const rows = t.rows as string[][]
