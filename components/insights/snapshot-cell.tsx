@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { Camera, X } from "lucide-react"
 
 function snapshotUrl(imageId: string, cameraId?: string | null): string {
@@ -21,36 +21,16 @@ interface SnapshotCellProps {
 
 export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps) {
   const [open, setOpen] = useState(false)
-  // Start in "loading" so the camera icon shows until the image confirms success
-  const [imgStatus, setImgStatus] = useState<"loading" | "loaded" | "error">("loading")
-  const imgRef = useRef<HTMLImageElement>(null)
+  // Track ONLY the explicit error state. Default is "show the image and let
+  // the browser handle loading". Previously we tracked "loading" too, but the
+  // onLoad event was being missed for cached images, leaving the state stuck.
+  const [hasError, setHasError] = useState(false)
 
   const url = imageId ? snapshotUrl(imageId, cameraId) : null
-  const hasImage = !!url && imgStatus === "loaded"
-
-  // Race: image may complete before React attaches onLoad, so the event is
-  // lost and status stays "loading" forever. Check immediately after mount
-  // and again after a short delay to catch images that finished loading
-  // during the brief window between <img> render and useEffect commit.
-  useEffect(() => {
-    if (!url) return
-    const check = () => {
-      const img = imgRef.current
-      if (!img) return false
-      if (img.complete) {
-        if (img.naturalWidth > 0) setImgStatus("loaded")
-        else setImgStatus("error")
-        return true
-      }
-      return false
-    }
-    if (check()) return
-    const t = setTimeout(check, 100)
-    return () => clearTimeout(t)
-  }, [url])
+  const showImage = !!url && !hasError
 
   const handleClick = () => {
-    if (!hasImage) return
+    if (!showImage) return
     if (onExpand) onExpand()
     else setOpen(true)
   }
@@ -60,31 +40,27 @@ export function SnapshotCell({ imageId, cameraId, onExpand }: SnapshotCellProps)
       {/* Thumbnail */}
       <button
         onClick={handleClick}
-        className={`w-12 h-9 rounded overflow-hidden border flex items-center justify-center transition-colors ${
-          hasImage
+        className={`relative w-12 h-9 rounded overflow-hidden border flex items-center justify-center transition-colors ${
+          showImage
             ? "border-border hover:border-primary/60 cursor-zoom-in"
             : "border-border/40 cursor-default bg-muted/30"
         }`}
-        disabled={!hasImage}
-        title={hasImage ? "Click to enlarge" : "No snapshot"}
+        disabled={!showImage}
+        title={showImage ? "Click to enlarge" : "No snapshot"}
       >
-        {/* Image must remain in the DOM (not display:none) so the browser
-            actually fetches it and fires onLoad. Use opacity to hide it while
-            loading, and overlay the camera icon during loading/error. */}
+        {/* Camera icon shown only when there's no url, or when the image
+            errored out. While loading, the icon is hidden so users see the
+            image as soon as it renders. */}
+        {!showImage && (
+          <Camera className="h-3 w-3 text-muted-foreground/30" />
+        )}
         {url && (
           <img
-            ref={imgRef}
             src={url}
             alt=""
-            className={`w-full h-full object-cover transition-opacity ${
-              imgStatus === "loaded" ? "opacity-100" : "opacity-0 absolute"
-            }`}
-            onLoad={() => setImgStatus("loaded")}
-            onError={() => setImgStatus("error")}
+            className="w-full h-full object-cover"
+            onError={() => setHasError(true)}
           />
-        )}
-        {imgStatus !== "loaded" && (
-          <Camera className="h-3 w-3 text-muted-foreground/30" />
         )}
       </button>
 
