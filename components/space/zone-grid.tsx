@@ -224,7 +224,7 @@ export function ZoneGrid({
   }, [zones, cellSize, imgOffsetX, imgOffsetY])
 
   return (
-    <div ref={containerRef} className="overflow-auto max-h-[calc(100vh-280px)] rounded-lg border border-border">
+    <div ref={containerRef} className="overflow-auto max-h-[calc(100vh-280px)] rounded-lg border border-border flex justify-center">
       <div
         ref={gridRef}
         className="relative"
