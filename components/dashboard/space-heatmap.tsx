@@ -524,7 +524,7 @@ export function SpaceHeatmap({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">Occupancy Map</CardTitle>
+            <CardTitle className="text-xl font-medium">Occupancy Map</CardTitle>
             {hasAnyRunningStudy && allActiveStudies.some(s => s.status === "running" || s.status === "analyzing") && (
               <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
                 {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}

@@ -192,7 +192,7 @@ export function OccupancyChart({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">Current Study</CardTitle>
+            <CardTitle className="text-xl font-medium">Current Study</CardTitle>
           </div>
           <Link href="/dashboard/insights"><Button variant="ghost" size="sm" className="text-xs">View All</Button></Link>
         </CardHeader>
