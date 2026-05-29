@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from "react"
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Tooltip as UITooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Info } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const SERIES_COLORS = [
   "oklch(0.60 0.17 22)",   // red

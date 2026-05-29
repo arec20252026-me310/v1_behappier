@@ -75,12 +75,12 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
             <CardContent className="px-3 py-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-base text-muted-foreground">{card.title}</p>
+                  <p className="text-base text-foreground/70 font-medium">{card.title}</p>
                   <p className="text-4xl font-semibold text-foreground mt-0.5">{card.value}</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     {card.trend === "up" && <TrendingUp className="h-4 w-4 text-success" />}
                     {card.trend === "down" && <TrendingDown className="h-4 w-4 text-destructive" />}
-                    <span className="text-base text-muted-foreground">{card.change}</span>
+                    <span className="text-base text-foreground/70">{card.change}</span>
                   </div>
                 </div>
                 <div className={`p-3 rounded-lg bg-muted/40 ${card.color}`}>
