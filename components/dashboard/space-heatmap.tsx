@@ -388,7 +388,7 @@ export function SpaceHeatmap({
       <div
         className="relative rounded-lg overflow-hidden border border-border mx-auto"
         style={enlarged
-          ? { width: `min(72vw, calc((88vh - 100px) * ${(effectiveCols / effectiveRows).toFixed(6)}))`, aspectRatio: `${effectiveCols} / ${effectiveRows}` }
+          ? { width: `min(55vw, calc((88vh - 100px) * ${(effectiveCols / effectiveRows).toFixed(6)}))`, aspectRatio: `${effectiveCols} / ${effectiveRows}` }
           : { width: gridResolution <= 20 ? "80%" : "100%", aspectRatio: `${effectiveCols} / ${effectiveRows}` }}
       >
         {floorPlanUrl ? (
