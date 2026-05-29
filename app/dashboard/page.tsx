@@ -125,7 +125,11 @@ export default async function DashboardPage() {
     .eq("space_id", space.id)
     .order("created_at", { ascending: false })).data ?? []) : []
 
-  const rawCameras = ((await supabase.from("cameras").select("*")).data ?? []) as {
+  const zoneIds = zones.map((z: { id: string }) => z.id)
+  const rawCameras = (zoneIds.length > 0 ? ((await supabase
+    .from("cameras")
+    .select("*")
+    .in("zone_id", zoneIds)).data ?? []) : []) as {
     id: string; zone_id: string; name: string; metadata: Record<string, unknown> | null
   }[]
   const cameraGridRes = space?.grid_resolution || 8
