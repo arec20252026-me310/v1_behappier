@@ -72,7 +72,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
       {cards.map((card) => (
         <Link key={card.title} href={card.href}>
           <Card className="bg-card border-border hover:bg-secondary/30 transition-colors cursor-pointer !py-0 !gap-0">
-            <CardContent className="px-3 py-1.5">
+            <CardContent className="px-3 py-2.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-base text-foreground/70 font-medium leading-tight">{card.title}</p>
