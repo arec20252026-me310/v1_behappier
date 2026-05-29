@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { MetricsManager } from "@/components/metrics/metrics-manager"
-import { getDemoScenario } from "@/lib/demo-mode"
+import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { getDefaultSpace } from "@/lib/spaces"
-import { DEMO_SPACE, DEMO_METRICS } from "@/lib/demo-seeds"
+import { DEMO_SPACE, DEMO_LGQ_SPACE, DEMO_METRICS, LGQ_SPACE_ID } from "@/lib/demo-seeds"
 import type { Metric } from "@/lib/types"
 
 export default async function MetricsPage() {
@@ -13,13 +13,17 @@ export default async function MetricsPage() {
 
   const hasSpace  = demo && scenario !== "blank"
   const hasStudy  = demo && (scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created")
+
+  const demoSpaceId = demo ? await getDemoSpaceId() : null
+  const isLGQ = demoSpaceId === LGQ_SPACE_ID
+
   const space = demo
-    ? (hasSpace ? DEMO_SPACE : null)
+    ? (hasSpace ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE) : null)
     : await getDefaultSpace()
 
   let metrics: Metric[] = []
-  if (demo) {
-    metrics = hasStudy ? (DEMO_METRICS as Metric[]) : []
+  if (demo && hasStudy && !isLGQ) {
+    metrics = DEMO_METRICS as Metric[]
   } else if (space) {
     const { data } = await supabase
       .from('metrics')
