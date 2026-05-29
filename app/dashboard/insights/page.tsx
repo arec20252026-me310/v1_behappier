@@ -3,10 +3,10 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { InsightsList } from "@/components/insights/insights-list"
 import type { DetectionRow } from "@/components/insights/insights-list"
 import { MarkInsightsViewed } from "@/components/insights/mark-insights-viewed"
-import { getDemoScenario } from "@/lib/demo-mode"
+import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { isReviewMode } from "@/lib/review-mode"
 import { getDefaultSpace } from "@/lib/spaces"
-import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS, DEMO_SPACE } from "@/lib/demo-seeds"
+import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS, DEMO_SPACE, DEMO_LGQ_SPACE, LGQ_SPACE_ID } from "@/lib/demo-seeds"
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +16,10 @@ export default async function InsightsPage() {
   const review = !demo && await isReviewMode()
   const supabase = await createClient()
 
-  const defaultSpace = demo ? DEMO_SPACE : await getDefaultSpace()
+  const demoSpaceId = await getDemoSpaceId()
+  const isLGQ = demoSpaceId === LGQ_SPACE_ID
+
+  const defaultSpace = demo ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE) : await getDefaultSpace()
   const spaceName = defaultSpace?.name ?? undefined
 
   // For real data, only show insights from studies belonging to the default space
@@ -30,7 +33,7 @@ export default async function InsightsPage() {
   }
 
   const { data: outputs } = demo
-    ? { data: (scenario === "study-complete" || scenario === "model-created") ? [BE_INSIGHT_OUTPUT] : [] }
+    ? { data: (!isLGQ && (scenario === "study-complete" || scenario === "model-created")) ? [BE_INSIGHT_OUTPUT] : [] }
     : spaceStudyIds.length > 0
       ? await supabase
           .from("BE_insight_outputs")
@@ -44,7 +47,7 @@ export default async function InsightsPage() {
   let studyDurations: Record<string, number> = {}
   let studyGoals: Record<string, string> = {}
   let camerasByStudy: Record<string, string> = {}
-  if (demo && (scenario === "study-complete" || scenario === "model-created")) {
+  if (demo && !isLGQ && (scenario === "study-complete" || scenario === "model-created")) {
     studyDurations = { [BE_STUDY_COMPLETE.study_id]: BE_STUDY_COMPLETE.duration_seconds * 1000 }
     const demoName = (BE_STUDY_COMPLETE.metadata as Record<string, unknown>)?.study_name
     if (typeof demoName === "string" && demoName) studyGoals[BE_STUDY_COMPLETE.study_id] = demoName
