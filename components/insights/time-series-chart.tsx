@@ -15,10 +15,10 @@ const SERIES_COLORS = [
 ]
 
 const TOOLTIP_STYLE: React.CSSProperties = {
-  backgroundColor: "oklch(0.17 0.01 260)",
-  border: "1px solid oklch(0.28 0.01 260)",
+  backgroundColor: "var(--chart-tooltip-bg)",
+  border: "1px solid var(--chart-tooltip-border)",
   borderRadius: "0.5rem",
-  color: "oklch(0.95 0 0)",
+  color: "var(--chart-tooltip-text)",
   fontSize: 11,
   padding: "6px 10px",
 }

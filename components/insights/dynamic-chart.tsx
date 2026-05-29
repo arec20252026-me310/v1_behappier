@@ -12,16 +12,13 @@ const COLORS = {
   bar:        "oklch(0.60 0.18 148)",  // --chart-2 (green)
   grid:       "oklch(0.28 0.01 260)",  // approx --border
   axis:       "var(--chart-axis)",      // dark in light mode, slate-500 in dark mode
-  tooltipBg:  "oklch(0.17 0.01 260)", // --card (dark)
-  tooltipBdr: "oklch(0.28 0.01 260)",
-  tooltipTxt: "oklch(0.95 0 0)",       // --foreground (dark)
 }
 
 const TOOLTIP_STYLE = {
-  backgroundColor: COLORS.tooltipBg,
-  border: `1px solid ${COLORS.tooltipBdr}`,
+  backgroundColor: "var(--chart-tooltip-bg)",
+  border: "1px solid var(--chart-tooltip-border)",
   borderRadius: "0.5rem",
-  color: COLORS.tooltipTxt,
+  color: "var(--chart-tooltip-text)",
   fontSize: 11,
 }
 

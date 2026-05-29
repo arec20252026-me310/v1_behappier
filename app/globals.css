@@ -49,6 +49,11 @@
   /* Chart axis / tick / label text */
   --chart-axis: #374151;
 
+  /* Chart hover tooltips */
+  --chart-tooltip-bg: oklch(1 0 0);
+  --chart-tooltip-border: oklch(0.84 0.012 240);
+  --chart-tooltip-text: oklch(0.13 0.02 245);
+
   /* Camera map icon */
   --cam-cone-fill: rgba(37,99,235,0.20);
   --cam-cone-stroke: rgba(37,99,235,0.55);
@@ -106,6 +111,11 @@
 
   /* Chart axis / tick / label text */
   --chart-axis: #64748b;
+
+  /* Chart hover tooltips */
+  --chart-tooltip-bg: oklch(0.17 0.01 260);
+  --chart-tooltip-border: oklch(0.28 0.01 260);
+  --chart-tooltip-text: oklch(0.95 0 0);
 
   /* Camera map icon */
   --cam-cone-fill: rgba(99,179,237,0.18);

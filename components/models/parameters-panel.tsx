@@ -100,15 +100,15 @@ export function ParametersPanel({ fitResult, onSave, onExportJson, isSaving }: P
               <LineChart data={lossData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
                 <XAxis
                   dataKey="epoch"
-                  tick={{ fill: "#6b7280", fontSize: 9 }}
-                  axisLine={{ stroke: "#374151" }}
+                  tick={{ fill: "var(--chart-axis)", fontSize: 9 }}
+                  axisLine={{ stroke: "var(--chart-axis)" }}
                   tickLine={false}
                   tickCount={5}
-                  label={{ value: "Epoch", position: "insideBottom", offset: -2, fill: "#6b7280", fontSize: 9 }}
+                  label={{ value: "Epoch", position: "insideBottom", offset: -2, fill: "var(--chart-axis)", fontSize: 9 }}
                 />
                 <YAxis
-                  tick={{ fill: "#6b7280", fontSize: 9 }}
-                  axisLine={{ stroke: "#374151" }}
+                  tick={{ fill: "var(--chart-axis)", fontSize: 9 }}
+                  axisLine={{ stroke: "var(--chart-axis)" }}
                   tickLine={false}
                   width={40}
                   tickFormatter={(v: number) => v.toExponential(1)}
@@ -119,12 +119,12 @@ export function ParametersPanel({ fitResult, onSave, onExportJson, isSaving }: P
                     const { epoch, loss } = payload[0].payload as { epoch: number; loss: number }
                     return (
                       <div style={{
-                        background: "oklch(0.17 0.01 260)",
-                        border: "1px solid oklch(0.28 0.01 260)",
+                        background: "var(--chart-tooltip-bg)",
+                        border: "1px solid var(--chart-tooltip-border)",
                         borderRadius: "0.375rem",
                         padding: "4px 8px",
                         fontSize: 10,
-                        color: "oklch(0.95 0 0)",
+                        color: "var(--chart-tooltip-text)",
                       }}>
                         Epoch {epoch}: {loss.toExponential(3)}
                       </div>
