@@ -94,7 +94,7 @@ export function ZoneGrid({
   const availableHeight = viewportHeight - 320
   const maxCellByHeight = gridRows > 0 ? Math.floor(availableHeight / gridRows) : maxCellByWidth
   // Small grids (low resolution) produce oversized cells — scale back
-  const zoomFactor = gridResolution <= 20 ? 0.52 : 1.0
+  const zoomFactor = gridResolution <= 20 ? 0.80 : 1.0
   const cellSize = Math.max(1, Math.floor((maxCellByWidth + maxCellByHeight) / 2 * zoomFactor))
 
   const gridWidth = gridCols * cellSize
