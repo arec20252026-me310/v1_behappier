@@ -247,7 +247,7 @@ export function ZoneGrid({
             ref={floorPlanImgRef}
             src={floorPlanUrl}
             alt="Floor plan"
-            className="absolute inset-0 w-full h-full object-contain opacity-50"
+            className="absolute inset-0 w-full h-full object-contain opacity-80 dark:opacity-50"
             style={{ pointerEvents: 'none' }}
             crossOrigin="anonymous"
           />
@@ -318,10 +318,9 @@ export function ZoneGrid({
           >
             <div className="p-1 h-full flex flex-col overflow-hidden">
               <span
-                className="text-[10px] font-medium truncate leading-tight"
+                className="text-[10px] font-semibold truncate leading-tight text-white"
                 style={{
-                  color: zone.color,
-                  textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                  textShadow: '-1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.8)'
                 }}
               >
                 {zone.name}
