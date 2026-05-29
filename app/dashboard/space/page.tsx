@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { SpaceEditor } from "@/components/space/space-editor"
-import { getDemoScenario } from "@/lib/demo-mode"
+import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { getAllSpaces, getDefaultSpace } from "@/lib/spaces"
 import { DEMO_SPACE, ZONES, CAMERAS, DEMO_LGQ_SPACE, ZONES_LGQ, CAMERAS_LGQ, LGQ_SPACE_ID } from "@/lib/demo-seeds"
 import type { HACameraMapping, Space, Zone, Camera } from "@/lib/types"
@@ -23,7 +23,9 @@ export default async function SpacePage({ searchParams }: { searchParams: Promis
   if (demo) {
     allSpaces = scenario !== "blank" ? [DEMO_SPACE as Space, DEMO_LGQ_SPACE as Space] : []
     if (scenario !== "blank") {
-      const isLGQ = params.space_id === LGQ_SPACE_ID
+      const cookieSpaceId = await getDemoSpaceId()
+      const activeSpaceId = params.space_id ?? cookieSpaceId ?? null
+      const isLGQ = activeSpaceId === LGQ_SPACE_ID
       space = isLGQ ? DEMO_LGQ_SPACE as Space : DEMO_SPACE as Space
       zones = isLGQ ? ZONES_LGQ as Zone[] : ZONES as Zone[]
       cameras = isLGQ ? CAMERAS_LGQ as Camera[] : CAMERAS as Camera[]
