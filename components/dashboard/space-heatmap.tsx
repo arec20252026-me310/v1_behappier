@@ -290,14 +290,14 @@ export function SpaceHeatmap({
   const effectiveCols = zones.length > 0
     ? Math.max(gridResolution, ...zones.map(z => z.grid_x + z.grid_width))
     : gridResolution
+  // Mirror zone-grid.tsx exactly: rowsMin is zone extents only (not clamped to gridResolution)
+  // so that a wide floor plan (e.g. AR=2) doesn't get overridden to square by gridResolution
   const effectiveRowsMin = zones.length > 0
-    ? Math.max(gridResolution, ...zones.map(z => z.grid_y + z.grid_height))
-    : gridResolution
-  // Match the space builder: derive rows from the floor plan AR so the container
-  // shape matches what was shown when zones were placed (zone-grid.tsx line 88-90)
+    ? Math.max(1, ...zones.map(z => z.grid_y + z.grid_height))
+    : 1
   const effectiveRows = imgAspectRatio
     ? Math.max(Math.round(effectiveCols / imgAspectRatio), effectiveRowsMin)
-    : effectiveRowsMin
+    : Math.max(effectiveCols, effectiveRowsMin)
   const cellPctX = 100 / effectiveCols
   const cellPctY = 100 / effectiveRows
 
