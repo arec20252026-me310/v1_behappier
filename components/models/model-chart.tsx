@@ -41,7 +41,7 @@ interface ModelChartProps {
   yAxisLabel?: string
 }
 
-const DATA_COLOR = "var(--chart-1)"
+const DATA_COLOR = "var(--chart-scatter)"
 
 export const FIT_COLORS = [
   "#f59e0b",

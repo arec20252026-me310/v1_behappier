@@ -49,6 +49,9 @@
   /* Chart axis / tick / label text */
   --chart-axis: #374151;
 
+  /* Scatter plot data dots */
+  --chart-scatter: oklch(0.35 0.18 22);
+
   /* Chart hover tooltips */
   --chart-tooltip-bg: oklch(1 0 0);
   --chart-tooltip-border: oklch(0.84 0.012 240);
@@ -111,6 +114,9 @@
 
   /* Chart axis / tick / label text */
   --chart-axis: #64748b;
+
+  /* Scatter plot data dots */
+  --chart-scatter: oklch(0.62 0.17 22);
 
   /* Chart hover tooltips */
   --chart-tooltip-bg: oklch(0.17 0.01 260);
