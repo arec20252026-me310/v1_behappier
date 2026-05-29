@@ -367,7 +367,7 @@ export function SpaceHeatmap({
   const renderGrid = (enlarged: boolean) => (
     <div>
       {/* Legend */}
-      <div className="flex items-center gap-4 mb-2 text-xs flex-wrap">
+      <div className={cn("flex items-center gap-4 mb-2 flex-wrap", enlarged ? "text-base" : "text-xs")}>
         {livePreviewMetrics ? (
           <>
             <span className="text-muted-foreground">Occupancy:</span>
@@ -463,17 +463,17 @@ export function SpaceHeatmap({
             >
               <div className="p-1 h-full flex flex-col justify-between text-foreground">
                 <div className="flex items-center gap-1">
-                  <span className={cn("font-medium truncate leading-tight", enlarged ? "text-base" : "text-[10px]")} style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+                  <span className={cn("font-medium truncate leading-tight", enlarged ? "text-xl" : "text-[10px]")} style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                     {zone.name}
                   </span>
                 </div>
                 {liveCount !== null && tracksOccupancy !== false && (
                   <div className="flex items-center justify-center flex-1">
                     <div className="relative inline-flex items-center justify-center">
-                      <div className="absolute w-10 h-10 rounded-full bg-white/25 animate-ping" />
-                      <div className="relative w-9 h-9 rounded-full bg-white/20 border border-white/60 flex flex-col items-center justify-center shadow-lg gap-0">
-                        <Users className="h-3 w-3 text-white mb-0.5" />
-                        <span className="text-[11px] font-bold text-white leading-none">{liveCount}</span>
+                      <div className={cn("absolute rounded-full bg-white/25 animate-ping", enlarged ? "w-16 h-16" : "w-10 h-10")} />
+                      <div className={cn("relative rounded-full bg-white/20 border border-white/60 flex flex-col items-center justify-center shadow-lg gap-0", enlarged ? "w-14 h-14" : "w-9 h-9")}>
+                        <Users className={cn("text-white mb-0.5", enlarged ? "h-5 w-5" : "h-3 w-3")} />
+                        <span className={cn("font-bold text-white leading-none", enlarged ? "text-xl" : "text-[11px]")}>{liveCount}</span>
                       </div>
                     </div>
                   </div>
@@ -562,7 +562,7 @@ export function SpaceHeatmap({
         <DialogContent className="sm:max-w-[92vw] w-[92vw] h-[88vh] p-0 gap-0 overflow-hidden">
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
-              <DialogTitle className="text-base font-medium">Occupancy Map</DialogTitle>
+              <DialogTitle className="text-2xl font-medium">Occupancy Map</DialogTitle>
               <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
             </DialogHeader>
             <div className={cn("flex-1 min-h-0 flex flex-row gap-6 overflow-hidden", allActiveStudies.length === 0 && "justify-center")}>
@@ -578,7 +578,7 @@ export function SpaceHeatmap({
                       {allActiveStudies.length > 1 && (
                         <p className="text-[10px] font-mono text-muted-foreground mb-1 truncate">{s.study_id}</p>
                       )}
-                      <p className="text-base font-medium text-muted-foreground uppercase tracking-wide mb-3">Latest Detection</p>
+                      <p className="text-2xl font-medium text-muted-foreground uppercase tracking-wide mb-3">Latest Detection</p>
                       <LiveDetectionFeed
                         studyId={s.study_id}
                         status={s.status}

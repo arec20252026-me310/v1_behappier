@@ -90,6 +90,7 @@ interface TimeSeriesChartProps {
   seriesDescriptions?: Record<string, string>
   isLive?: boolean
   compact?: boolean
+  enlarged?: boolean
 }
 
 function lookupDescription(title: string, descriptions: Record<string, string>): string | undefined {
@@ -236,7 +237,7 @@ const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
 
-export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive, compact = false }: TimeSeriesChartProps) {
+export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive, compact = false, enlarged = false }: TimeSeriesChartProps) {
   const effectiveYAxisLabel = yAxisLabel ?? (series.length > 1 ? "Multiple behaviors" : undefined)
   const allData = mergeSeriesData(series)
   const total = allData.length
@@ -485,7 +486,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                       borderColor: SERIES_COLORS[i % SERIES_COLORS.length],
                     }}
                   />
-                  <span className="text-xs" style={{ color: hidden.has(s.title) ? "oklch(0.5 0 0)" : "oklch(0.75 0 0)" }}>
+                  <span className={enlarged ? "text-sm" : "text-xs"} style={{ color: hidden.has(s.title) ? "oklch(0.5 0 0)" : "oklch(0.75 0 0)" }}>
                     {s.title}
                   </span>
                 </label>
@@ -515,8 +516,8 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 key={preset.label}
                 onClick={() => applyPreset(preset)}
                 style={{
-                  fontSize: 10,
-                  padding: "2px 7px",
+                  fontSize: enlarged ? 13 : 10,
+                  padding: enlarged ? "4px 10px" : "2px 7px",
                   borderRadius: "9999px",
                   border: `1px solid ${isActive ? "oklch(0.55 0.12 200)" : "oklch(0.30 0.01 260)"}`,
                   background: isActive ? "oklch(0.30 0.10 200)" : "transparent",
@@ -551,8 +552,8 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
-            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "#9ca3af", fontSize: 11 } : undefined} />
-            <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} width={52} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "#9ca3af", fontSize: 11 } : undefined} />
+            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "#9ca3af", fontSize: enlarged ? 14 : 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "#9ca3af", fontSize: enlarged ? 15 : 11 } : undefined} />
+            <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "#9ca3af", fontSize: enlarged ? 14 : 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} width={enlarged ? 64 : 52} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "#9ca3af", fontSize: enlarged ? 15 : 11 } : undefined} />
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
