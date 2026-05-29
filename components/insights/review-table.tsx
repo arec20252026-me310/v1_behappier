@@ -45,6 +45,9 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
   // signedUrlByDetectionId — populated lazily, per page, from Supabase Storage.
   // Signed URLs are valid for 1 hour; we don't bother refreshing on this view.
   const [signedUrlByDetectionId, setSignedUrlByDetectionId] = useState<Record<string, string>>({})
+  // Track which detection IDs we've already fetched (or are fetching) to avoid
+  // re-triggering the effect every time signedUrlByDetectionId state updates.
+  const fetchedIdsRef = useRef<Set<string>>(new Set())
   const supabase = useRef(createClient()).current
 
   // Reset to first page if the row set changes (e.g. study switched)
@@ -102,11 +105,15 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
       if (d) pageDetections.push(d)
     }
     // Pairs of (detection_id, storage_path) for cells we still need a URL for.
+    // Use fetchedIdsRef (not signedUrlByDetectionId state) to avoid re-triggering
+    // this effect on every state update, which caused a race condition where the
+    // cleanup `cancelled = true` would fire before the async result was applied.
     const todo: { detectionId: string; path: string }[] = []
     for (const d of pageDetections) {
-      if (signedUrlByDetectionId[d.id]) continue
+      if (fetchedIdsRef.current.has(d.id)) continue
       const path = storagePathFor(d.image_id, cameraId)
       if (!path) continue
+      fetchedIdsRef.current.add(d.id)
       todo.push({ detectionId: d.id, path })
     }
     if (todo.length === 0) return
@@ -126,7 +133,7 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
         }
       })
     return () => { cancelled = true }
-  }, [page, pageStart, pageEnd, cameraId, getRowDetection, signedUrlByDetectionId, supabase])
+  }, [page, pageStart, pageEnd, cameraId, getRowDetection, supabase])
 
   // Unique snapshot count (detections represented in the table)
   const uniqueDetectionCount = useMemo(() => {
