@@ -156,6 +156,8 @@ export function SpaceHeatmap({
   // Per-zone occupancy: zoneId → latest count
   const [zoneOccupancies, setZoneOccupancies] = useState<Record<string, number>>({})
 
+  const floorPlanUrl = space?.floor_plan_url
+
   // Track floor plan aspect ratio so zones align with the image under object-contain
   const [imgAspectRatio, setImgAspectRatio] = useState<number | null>(null)
   const floorPlanImgRef = useRef<HTMLImageElement>(null)
@@ -283,7 +285,6 @@ export function SpaceHeatmap({
 
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   const gridResolution = space?.grid_resolution || 8
-  const floorPlanUrl = space?.floor_plan_url
 
   // Use actual zone extents so zones beyond gridResolution aren't clipped
   const effectiveCols = zones.length > 0
