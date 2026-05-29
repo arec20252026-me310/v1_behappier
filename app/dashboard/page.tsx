@@ -12,7 +12,7 @@ import {
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
   BE_LIVE_METRICS, BE_INSIGHT_OUTPUT, DEMO_DETECTIONS, DEMO_CAMERA_PLACEMENTS,
   DEMO_LGQ_SPACE, ZONES_LGQ, DEMO_CAMERA_PLACEMENTS_LGQ, LGQ_SPACE_ID,
-  DEMO_METRICS_LGQ, BE_STUDY_IN_PROGRESS_LGQ, BE_STUDY_COMPLETE_LGQ, BE_LIVE_METRICS_LGQ, DEMO_DETECTIONS_LGQ,
+  DEMO_METRICS_LGQ, BE_STUDY_IN_PROGRESS_LGQ, BE_STUDY_COMPLETE_LGQ, BE_LIVE_METRICS_LGQ, DEMO_DETECTIONS_LGQ, BE_INSIGHT_OUTPUT_LGQ,
 } from "@/lib/demo-seeds"
 
 const ACTIVE_STATUSES = ["running", "analyzing"]
@@ -30,8 +30,8 @@ export default async function DashboardPage() {
     const hasSpace    = scenario !== "blank"
     const hasStudy    = scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created"
     const hasLive     = scenario === "study-in-progress"
-    const hasInsights = !isLGQ && (scenario === "study-complete" || scenario === "model-created")
-    const showInsightsBadge = !isLGQ && scenario === "study-complete"
+    const hasInsights = scenario === "study-complete" || scenario === "model-created"
+    const showInsightsBadge = scenario === "study-complete"
 
     const demoSpace   = hasSpace ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE) : null
     const demoZones   = hasSpace ? (isLGQ ? ZONES_LGQ : ZONES) : []
@@ -40,14 +40,14 @@ export default async function DashboardPage() {
       : (scenario === "study-complete" || scenario === "model-created")
         ? [isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE]
         : []
-    const demoInsights  = hasInsights ? [BE_INSIGHT_OUTPUT] : []
+    const demoInsights  = hasInsights ? [isLGQ ? BE_INSIGHT_OUTPUT_LGQ : BE_INSIGHT_OUTPUT] : []
     const demoLive      = hasLive ? (isLGQ ? BE_LIVE_METRICS_LGQ : BE_LIVE_METRICS) : null
     const demoCompletedStudy    = hasStudy && scenario !== "study-in-progress" ? (isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE) : null
     // LGQ shows study data (zone highlight + detection feed) in all hasStudy scenarios
     const lgqDisplayStudy = isLGQ && hasStudy
       ? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS_LGQ : BE_STUDY_COMPLETE_LGQ)
       : null
-    const demoCompletedInsights = showInsightsBadge ? BE_INSIGHT_OUTPUT : null
+    const demoCompletedInsights = showInsightsBadge ? (isLGQ ? BE_INSIGHT_OUTPUT_LGQ : BE_INSIGHT_OUTPUT) : null
     const latestOutput = showInsightsBadge ? (demoInsights[0] ?? null) : null
 
     // For LGQ, fetch real metric count from Supabase (behaviors tab does the same)
@@ -82,7 +82,7 @@ export default async function DashboardPage() {
       return `${description} — ${cited}`
     }
     const demoMetricDescriptions: Record<string, string> = Object.fromEntries(
-      DEMO_METRICS.map(m => [m.name, withCitation(m.description, m.literature_reference)])
+      (isLGQ ? DEMO_METRICS_LGQ : DEMO_METRICS).map(m => [m.name, withCitation(m.description, m.literature_reference)])
     )
 
     return (
@@ -94,7 +94,7 @@ export default async function DashboardPage() {
         <div className="flex-1 p-6 space-y-6 overflow-auto">
           <MetricCards
             zonesCount={demoZones.length}
-            studiesCount={demoStudies.length}
+            studiesCount={hasLive ? demoStudies.length : 0}
             insightsCount={insightsCount}
             metricsCount={hasStudy ? (isLGQ ? lgqActiveMetricsCount : DEMO_METRICS.filter(m => m.is_active).length) : 0}
             latestInsightAt={showInsightsBadge ? demoInsights[0]?.created_at : undefined}

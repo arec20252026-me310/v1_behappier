@@ -207,6 +207,7 @@ export const DEMO_CAMERA_PLACEMENTS_LGQ: import("@/lib/types").CameraPlacement[]
 export const LGQ_CONF_ROOM_ID = "56239f1a-4645-4ad2-adaf-8aaaf6b34e92"
 export const LGQ_STUDY_ID = "study_lgq_001"
 export const SEED_BE_STUDY_LGQ_ID = "00000000-0000-0000-0000-000000000011"
+export const SEED_LGQ_INSIGHT_ID  = "00000000-0000-0000-0000-000000000013"
 
 export const DEMO_METRICS_LGQ = [
   {
@@ -236,9 +237,9 @@ const BE_STUDY_BASE_LGQ = {
   },
   live_preview_status: null,
   started_at: "2026-05-28T14:00:00.000000+00:00",
-  duration_seconds: 60,
+  duration_seconds: 480,
   created_at: "2026-05-28T13:59:45.000000+00:00",
-  updated_at: "2026-05-28T14:01:00.000000+00:00",
+  updated_at: "2026-05-28T14:08:00.000000+00:00",
 }
 
 export const BE_STUDY_IN_PROGRESS_LGQ = {
@@ -255,7 +256,15 @@ export const BE_STUDY_COMPLETE_LGQ = {
 }
 
 export const DEMO_DETECTIONS_LGQ = [
-  { timestamp_pt: "2026-05-28 14:00:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "There are three people sitting at the table calmly working on laptops." },
+  { timestamp_pt: "2026-05-28 14:00:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 1, unit: "count" }], notes: "One person seated at the conference table, working on a laptop." },
+  { timestamp_pt: "2026-05-28 14:01:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }], notes: "Second person enters and takes a seat across the table." },
+  { timestamp_pt: "2026-05-28 14:02:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "There are three people sitting at the table calmly working on laptops." },
+  { timestamp_pt: "2026-05-28 14:03:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "Three occupants present, focused work session in progress." },
+  { timestamp_pt: "2026-05-28 14:04:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "All three seated, minimal movement observed." },
+  { timestamp_pt: "2026-05-28 14:05:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }], notes: "Fourth person enters and pulls up a chair to join the group." },
+  { timestamp_pt: "2026-05-28 14:06:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }], notes: "Four people present, brief group discussion visible around laptop screens." },
+  { timestamp_pt: "2026-05-28 14:07:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "One person has stepped out. Three people remain, still working." },
+  { timestamp_pt: "2026-05-28 14:08:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }], notes: "Two occupants remain. Session appears to be winding down." },
 ]
 
 export const BE_LIVE_METRICS_LGQ = {
@@ -269,6 +278,55 @@ export const BE_LIVE_METRICS_LGQ = {
       "Conference Room": { occupancy_pct: 60, count: 3 },
     },
   },
+}
+
+// ── LGQ insight output ───────────────────────────────────────────────────────
+const _LGQ_OCC_LABELS = ["14:00:00","14:01:00","14:02:00","14:03:00","14:04:00","14:05:00","14:06:00","14:07:00","14:08:00"]
+const _LGQ_OCC_VALS   = [1, 2, 3, 3, 3, 4, 4, 3, 2]
+
+export const BE_INSIGHT_OUTPUT_LGQ = {
+  id: SEED_LGQ_INSIGHT_ID,
+  study_id: LGQ_STUDY_ID,
+  output_mode: "final_insights" as const,
+  status: "complete",
+  created_at: "2026-05-28T14:12:00.000Z",
+  dashboard_summary:
+    "The LGQ Conference Room Study monitored occupancy over 8 minutes. " +
+    "The room started with a single occupant and grew to a peak of 4 people at 14:05–14:06 before tapering back to 2 by session end. " +
+    "Average occupancy was approximately 3 people — consistent with focused small-group work. " +
+    "No safety events were detected. The room operated below its full capacity throughout the session.",
+  charts: [
+    {
+      chart_id: "lgq_chart_1",
+      chart_type: "line",
+      title: "Occupancy Over Time",
+      data: { labels: _LGQ_OCC_LABELS, values: _LGQ_OCC_VALS },
+    },
+  ],
+  tables: [
+    {
+      table_id: "lgq_table_1",
+      title: "Detection Log",
+      columns: ["Timestamp", "Occupancy", "Notes"],
+      rows: DEMO_DETECTIONS_LGQ.map(d => [
+        d.timestamp_pt.split(" ")[1],
+        String(d.detected_behaviors.find(b => b.name === "Occupancy")?.value ?? ""),
+        d.notes,
+      ]),
+    },
+  ],
+  insights: [
+    "Occupancy peaked at 4 people between 14:05 and 14:06, indicating the Conference Room serves as a gathering point for small collaborative sessions.",
+    "The room was consistently occupied throughout the 8-minute study, suggesting high demand during the observed window.",
+    "Average occupancy of approximately 3 people is below the room's capacity, indicating the space is underutilized relative to its size.",
+    "The natural ramp-up (arrivals 14:00–14:05) and ramp-down (departures 14:07–14:08) suggest structured, bounded work sessions rather than ad-hoc drop-ins.",
+  ],
+  recommendations: [
+    "Consider offering the Conference Room in shorter booking slots to increase availability for back-to-back small meetings.",
+    "Install a real-time occupancy indicator outside the Conference Room so teams can quickly see availability without opening the door.",
+    "Track occupancy across multiple sessions to identify peak-demand windows and optimize scheduling policies.",
+    "If 3–4 person groups are the typical use case, evaluate whether a smaller breakout room would better serve this team size and free the Conference Room for larger groups.",
+  ],
 }
 
 // ── BE_studies ───────────────────────────────────────────────────────────────
