@@ -571,7 +571,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                     legendType="none" connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
                 <Line key={s.title} type="monotone" dataKey={s.title}
-                  stroke={color} strokeWidth={2}
+                  stroke={color} strokeWidth={3}
                   dot={(props: Record<string, unknown>) => {
                     const { cx, cy, index } = props as { cx: number; cy: number; index: number }
                     const prev = visibleData[index - 1]?.[s.title]

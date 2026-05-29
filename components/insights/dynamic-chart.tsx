@@ -123,7 +123,7 @@ export function DynamicChart({ chart_type, title, data }: DynamicChartProps) {
               <XAxis dataKey="name" stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} interval="preserveStartEnd" />
               <YAxis stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} width={36} domain={[0, 1]} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: COLORS.axis }} />
-              <Line type="monotone" dataKey="value" stroke={COLORS.line} strokeWidth={2} dot={false} connectNulls />
+              <Line type="monotone" dataKey="value" stroke={COLORS.line} strokeWidth={3} dot={false} connectNulls />
             </LineChart>
           </ResponsiveContainer>
         </div>
