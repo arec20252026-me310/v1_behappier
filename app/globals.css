@@ -45,6 +45,20 @@
   --success: oklch(0.48 0.2 160);
   --warning: oklch(0.66 0.18 80);
   --info: oklch(0.43 0.15 19);
+
+  /* Camera map icon */
+  --cam-cone-fill: rgba(37,99,235,0.20);
+  --cam-cone-stroke: rgba(37,99,235,0.55);
+  --cam-cone-fill-sel: rgba(37,99,235,0.35);
+  --cam-cone-stroke-sel: rgba(37,99,235,0.80);
+  --cam-body-fill: #1C2A3A;
+  --cam-body-stroke: #2563eb;
+  --cam-body-fill-sel: #2D3F56;
+  --cam-body-stroke-sel: #3b82f6;
+  --cam-lens-fill: #2563eb;
+  --cam-lens-stroke: #60a5fa;
+  --cam-lens-fill-sel: #3b82f6;
+  --cam-mount: #2563eb;
 }
 
 .dark {
@@ -86,6 +100,20 @@
   --success: oklch(0.65 0.18 160);
   --warning: oklch(0.75 0.15 80);
   --info: oklch(0.62 0.15 22);
+
+  /* Camera map icon */
+  --cam-cone-fill: rgba(99,179,237,0.18);
+  --cam-cone-stroke: rgba(99,179,237,0.40);
+  --cam-cone-fill-sel: rgba(99,179,237,0.28);
+  --cam-cone-stroke-sel: rgba(99,179,237,0.70);
+  --cam-body-fill: #1C2A3A;
+  --cam-body-stroke: #4A90D9;
+  --cam-body-fill-sel: #2D3F56;
+  --cam-body-stroke-sel: #63B3ED;
+  --cam-lens-fill: #3B82F6;
+  --cam-lens-stroke: #60A5FA;
+  --cam-lens-fill-sel: #63B3ED;
+  --cam-mount: #4A90D9;
 }
 
 

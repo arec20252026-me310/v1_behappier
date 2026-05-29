@@ -72,7 +72,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
       {cards.map((card) => (
         <Link key={card.title} href={card.href}>
           <Card className="bg-card border-border hover:bg-secondary/30 transition-colors cursor-pointer">
-            <CardContent className="px-3 py-1">
+            <CardContent className="px-3 py-0.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-base text-foreground/70 font-medium leading-tight">{card.title}</p>
@@ -84,7 +84,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
                   </div>
                 </div>
                 <div className={`p-2 rounded-lg bg-card ${card.color}`}>
-                  <card.icon className="h-6 w-6" />
+                  <card.icon className="h-8 w-8" />
                 </div>
               </div>
             </CardContent>
