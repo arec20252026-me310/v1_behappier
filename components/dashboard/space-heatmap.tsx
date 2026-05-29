@@ -367,19 +367,19 @@ export function SpaceHeatmap({
   const renderGrid = (enlarged: boolean) => (
     <div>
       {/* Legend */}
-      <div className={cn("flex items-center gap-4 mb-2 flex-wrap", enlarged ? "text-base" : "text-xs")}>
+      <div className={cn("flex items-center gap-4 mb-2 flex-wrap", enlarged ? "text-4xl" : "text-xs")}>
         {livePreviewMetrics ? (
           <>
             <span className="text-muted-foreground">Occupancy:</span>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-red-400" style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded border border-red-400", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
           </>
         ) : (
           <>
             <span className="text-muted-foreground">Status:</span>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
           </>
         )}
       </div>
@@ -562,7 +562,7 @@ export function SpaceHeatmap({
         <DialogContent className="sm:max-w-[92vw] w-[92vw] h-[88vh] p-0 gap-0 overflow-hidden">
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
-              <DialogTitle className="text-2xl font-medium">Occupancy Map</DialogTitle>
+              <DialogTitle className="text-5xl font-medium">Occupancy Map</DialogTitle>
               <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
             </DialogHeader>
             <div className={cn("flex-1 min-h-0 flex flex-row gap-6 overflow-hidden", allActiveStudies.length === 0 && "justify-center")}>

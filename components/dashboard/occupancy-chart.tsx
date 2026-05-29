@@ -291,7 +291,7 @@ export function OccupancyChart({
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-2xl font-medium">{isLive ? "Current Study" : "Most Recent Study"}</DialogTitle>
+                <DialogTitle className="text-5xl font-medium">{isLive ? "Current Study" : "Most Recent Study"}</DialogTitle>
               </div>
               <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
             </DialogHeader>
