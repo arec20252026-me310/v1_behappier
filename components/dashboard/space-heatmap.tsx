@@ -463,7 +463,7 @@ export function SpaceHeatmap({
             >
               <div className="p-1 h-full flex flex-col justify-between text-foreground">
                 <div className="flex items-center gap-1">
-                  <span className={cn("font-medium truncate leading-tight", enlarged ? "text-sm" : "text-[10px]")} style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+                  <span className={cn("font-medium truncate leading-tight", enlarged ? "text-base" : "text-[10px]")} style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                     {zone.name}
                   </span>
                 </div>
