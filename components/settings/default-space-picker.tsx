@@ -3,19 +3,25 @@
 import { useTransition } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { setDefaultSpace } from "@/app/actions/space"
+import { setDemoSpaceId } from "@/app/actions/demo"
 import type { Space } from "@/lib/types"
 
 interface DefaultSpacePickerProps {
   spaces: Space[]
   defaultSpaceId: string | null
+  isDemo?: boolean
 }
 
-export function DefaultSpacePicker({ spaces, defaultSpaceId }: DefaultSpacePickerProps) {
+export function DefaultSpacePicker({ spaces, defaultSpaceId, isDemo = false }: DefaultSpacePickerProps) {
   const [isPending, startTransition] = useTransition()
 
   function handleChange(spaceId: string) {
     startTransition(async () => {
-      await setDefaultSpace(spaceId)
+      if (isDemo) {
+        await setDemoSpaceId(spaceId)
+      } else {
+        await setDefaultSpace(spaceId)
+      }
     })
   }
 
