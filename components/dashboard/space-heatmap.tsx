@@ -367,7 +367,7 @@ export function SpaceHeatmap({
   const renderGrid = (enlarged: boolean) => (
     <div>
       {/* Legend */}
-      <div className={cn("flex items-center gap-4 mb-2 flex-wrap", enlarged ? "text-3xl" : "text-xs")}>
+      <div className={cn("flex items-center gap-4 mb-2 flex-wrap", enlarged ? "text-2xl" : "text-xs")}>
         {livePreviewMetrics ? (
           <>
             <span className="text-muted-foreground">Occupancy:</span>
