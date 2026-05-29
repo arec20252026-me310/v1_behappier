@@ -196,8 +196,10 @@ export function ZoneGrid({
 
       const newX = Math.max(0, Math.min(gridWidth - 20, rawX))
       const newY = Math.max(0, Math.min(gridHeight - 20, rawY))
+      const fracX = gridWidth > 0 ? Math.max(0, newX - imgOffsetX) / gridWidth : 0
+      const fracY = gridHeight > 0 ? Math.max(0, newY - imgOffsetY) / gridHeight : 0
 
-      onUpdateCameras(cameras.map(c => c.id === draggingCamera ? { ...c, x: newX, y: newY } : c))
+      onUpdateCameras(cameras.map(c => c.id === draggingCamera ? { ...c, x: newX, y: newY, fracX, fracY } : c))
     }
   }, [dragging, resizing, draggingCamera, dragStart, resizeStart, cameraDragStart, zones, cameras, onUpdateZone, onUpdateCameras, gridCols, gridRows, gridWidth, gridHeight, cellSize])
 
@@ -245,7 +247,7 @@ export function ZoneGrid({
             ref={floorPlanImgRef}
             src={floorPlanUrl}
             alt="Floor plan"
-            className="absolute inset-0 w-full h-full object-contain opacity-50"
+            className="absolute inset-0 w-full h-full object-contain opacity-80 dark:opacity-50"
             style={{ pointerEvents: 'none' }}
             crossOrigin="anonymous"
           />
@@ -316,16 +318,15 @@ export function ZoneGrid({
           >
             <div className="p-1 h-full flex flex-col overflow-hidden">
               <span
-                className="text-[10px] font-medium truncate leading-tight"
+                className="text-[10px] font-semibold truncate leading-tight text-white"
                 style={{
-                  color: zone.color,
-                  textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                  textShadow: '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.5)'
                 }}
               >
                 {zone.name}
               </span>
               {zone.zone_type && zone.grid_height > 1 && (
-                <span className="text-[8px] text-muted-foreground capitalize truncate">
+                <span className="text-[8px] text-white/80 capitalize truncate" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
                   {zone.zone_type.replace("_", " ")}
                 </span>
               )}

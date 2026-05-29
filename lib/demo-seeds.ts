@@ -10,6 +10,7 @@ import type { FitResult } from "@/lib/model-fitting"
 
 // ── Fixed IDs (real Supabase rows) ──────────────────────────────────────────
 export const SPACE_ID   = "e8d9c195-0ae8-41ed-b03f-034ce91dd3c4"
+export const LGQ_SPACE_ID = "754df673-391d-409c-9b5c-27618028aa25"
 export const HA_MAP_ID  = "bf7ba38c-9bb5-43c9-b099-f3b293285efc"
 export const CAMERA_ID  = "8a425334-aafb-4d8a-9bd2-737e73eed13b"
 export const KITCHEN_ID = "4a1fd84a-8805-49c2-b6bc-6552519ad18b"
@@ -120,7 +121,7 @@ export const ZONES = [
   { id: "7a42add1-dc7b-4aab-866b-55d69d7cdad6", space_id: SPACE_ID, name: "Electronics Space", zone_type: "workspace", grid_x: 7,  grid_y: 20, grid_width: 5, grid_height: 4, color: "#10B981", capacity: 10, metadata: {}, ...TS },
 ]
 
-// ── Cameras ──────────────────────────────────────────────────────────────────
+// ── Cameras — Peterson Loft ───────────────────────────────────────────────────
 // Placements copied from cameras.metadata in Supabase (real DB rows).
 export const CAMERA = {
   id: CAMERA_2_ID,
@@ -129,7 +130,7 @@ export const CAMERA = {
   stream_url: null,
   status: "active" as const,
   field_of_view: {},
-  metadata: { ha_entity_id: "camera_2", placement_x: 285, placement_y: 402, placement_direction: "up" },
+  metadata: { ha_entity_id: "camera_2", placement_x: 218, placement_y: 389, placement_frac_x: 0.47391304347826085, placement_frac_y: 0.6763434860110051, placement_direction: "up" },
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",
 }
@@ -143,7 +144,7 @@ export const CAMERAS = [
     stream_url: null,
     status: "active" as const,
     field_of_view: {},
-    metadata: { ha_entity_id: "camera_1", placement_x: 78, placement_y: 296, placement_direction: "right" },
+    metadata: { ha_entity_id: "camera_1", placement_x: 29, placement_y: 276, placement_frac_x: 0.06304347826086956, placement_frac_y: 0.4798217468805704, placement_direction: "right" },
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   },
@@ -154,7 +155,7 @@ export const CAMERAS = [
     stream_url: null,
     status: "active" as const,
     field_of_view: {},
-    metadata: { ha_entity_id: "camera_3", placement_x: 287, placement_y: 430, placement_direction: "left" },
+    metadata: { ha_entity_id: "camera_3", placement_x: 217, placement_y: 412, placement_frac_x: 0.4717391304347826, placement_frac_y: 0.7163434860110052, placement_direction: "left" },
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   },
@@ -162,10 +163,171 @@ export const CAMERAS = [
 
 type CameraDir = import("@/lib/types").CameraDirection
 export const DEMO_CAMERA_PLACEMENTS: import("@/lib/types").CameraPlacement[] = [
-  { id: `cam-${KITCHEN_ID}`, zoneId: KITCHEN_ID, x: 285, y: 402, direction: "up"    as CameraDir, label: "camera_2" },
-  { id: `cam-${TEAM2_ID}`,   zoneId: TEAM2_ID,   x: 78,  y: 296, direction: "right" as CameraDir, label: "camera_1" },
-  { id: `cam-${TEAM4_ID}`,   zoneId: TEAM4_ID,   x: 287, y: 430, direction: "left"  as CameraDir, label: "camera_3" },
+  { id: `cam-${KITCHEN_ID}`, zoneId: KITCHEN_ID, x: 218, y: 389, fracX: 0.47391304347826085, fracY: 0.6763434860110051, direction: "up"    as CameraDir, label: "camera_2" },
+  { id: `cam-${TEAM2_ID}`,   zoneId: TEAM2_ID,   x: 29,  y: 276, fracX: 0.06304347826086956, fracY: 0.4798217468805704, direction: "right" as CameraDir, label: "camera_1" },
+  { id: `cam-${TEAM4_ID}`,   zoneId: TEAM4_ID,   x: 217, y: 412, fracX: 0.4717391304347826,  fracY: 0.7163434860110052, direction: "left"  as CameraDir, label: "camera_3" },
 ]
+
+// ── Space — Looking Glass HQ ──────────────────────────────────────────────────
+export const DEMO_LGQ_SPACE = {
+  id: LGQ_SPACE_ID,
+  name: "Looking Glass HQ",
+  description: "Looking Glass headquarters office",
+  address: null,
+  total_area_sqft: null,
+  building_type: "office",
+  floor_plan_url: "/api/file?pathname=floor-plans%2F1780008266311.jpg",
+  grid_resolution: 32,
+  metadata: {},
+  is_default: false,
+  created_at: "2024-01-01T00:00:00Z",
+  updated_at: "2024-01-01T00:00:00Z",
+}
+
+export const ZONES_LGQ = [
+  { id: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", space_id: LGQ_SPACE_ID, name: "Conference Room", zone_type: "meeting_room", grid_x: 0,  grid_y: 2,  grid_width: 10, grid_height: 8, color: "#F59E0B", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", space_id: LGQ_SPACE_ID, name: "Hot Desks",       zone_type: "workspace",   grid_x: 20, grid_y: 3,  grid_width: 9,  grid_height: 9, color: "#10B981", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "79c7a05a-5363-413d-a640-f2d74c5f524f", space_id: LGQ_SPACE_ID, name: "Kitchen",         zone_type: "kitchen",     grid_x: 12, grid_y: 14, grid_width: 6,  grid_height: 6, color: "#EC4899", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "ce05b46a-4d3b-4619-a53f-4ce13a99ed0f", space_id: LGQ_SPACE_ID, name: "Meditation Room", zone_type: "break_room",  grid_x: 23, grid_y: 15, grid_width: 8,  grid_height: 5, color: "#EF4444", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+]
+
+export const CAMERAS_LGQ = [
+  { id: "151bdb6f-f2ab-42f8-ac85-65078078cc9a", zone_id: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", name: "camera_1", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_1", placement_x: 203, placement_y: 70,  placement_frac_x: 0.2564489009186352,  placement_frac_y: 0.14583333333333334, placement_direction: "down" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "c75b7af2-96a9-4e69-886b-ffbf96e92479", zone_id: "79c7a05a-5363-413d-a640-f2d74c5f524f", name: "camera_2", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_2", placement_x: 414, placement_y: 460, placement_frac_x: 0.5311884842519685,  placement_frac_y: 0.9583333333333334,  placement_direction: "up"   }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "ab88826c-49f5-416e-9315-1cc2e223340c", zone_id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", name: "camera_3", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_3", placement_x: 714, placement_y: 232, placement_frac_x: 0.9218134842519685,  placement_frac_y: 0.48333333333333334, placement_direction: "left" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+]
+
+export const DEMO_CAMERA_PLACEMENTS_LGQ: import("@/lib/types").CameraPlacement[] = [
+  { id: "cam-lgq-conf",    zoneId: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", x: 203, y: 70,  fracX: 0.2564489009186352,  fracY: 0.14583333333333334, direction: "down" as CameraDir, label: "camera_1" },
+  { id: "cam-lgq-kitchen", zoneId: "79c7a05a-5363-413d-a640-f2d74c5f524f", x: 414, y: 460, fracX: 0.5311884842519685,  fracY: 0.9583333333333334,  direction: "up"   as CameraDir, label: "camera_2" },
+  { id: "cam-lgq-desks",   zoneId: "ec740992-4f29-4f9a-92fc-ae103aaa676d", x: 714, y: 232, fracX: 0.9218134842519685,  fracY: 0.48333333333333334, direction: "left" as CameraDir, label: "camera_3" },
+]
+
+// ── LGQ study seed data ──────────────────────────────────────────────────────
+export const LGQ_CONF_ROOM_ID = "56239f1a-4645-4ad2-adaf-8aaaf6b34e92"
+export const LGQ_STUDY_ID = "study_lgq_001"
+export const SEED_BE_STUDY_LGQ_ID = "00000000-0000-0000-0000-000000000011"
+export const SEED_LGQ_INSIGHT_ID  = "00000000-0000-0000-0000-000000000013"
+
+export const DEMO_METRICS_LGQ = [
+  {
+    id: "8db6e8a5-00a3-4df7-b618-48223d1551d9", space_id: LGQ_SPACE_ID,
+    name: "Occupancy", description: "Number of people present within the observed area at a given instant",
+    category: "utilization" as const, unit: "count", calculation_method: null,
+    rubric: "Count every person visible within the observed area regardless of activity. Score = total headcount. Score 0 if no people are present.",
+    literature_reference: "Fruin, J.J. (1971). Pedestrian Planning and Design. Metropolitan Association of Urban Designers and Environmental Planners.",
+    is_active: true, ..._TS_M,
+  },
+]
+
+const BE_STUDY_BASE_LGQ = {
+  id: SEED_BE_STUDY_LGQ_ID,
+  study_id: LGQ_STUDY_ID,
+  building_id: LGQ_SPACE_ID,
+  user_id: null,
+  session_id: null,
+  study_goal: "Monitor the Conference Room for occupancy during a working session.",
+  study_plan: {},
+  task_graph: {},
+  graph_plan: {},
+  metadata: {
+    study_name: "LGQ Conference Room Study",
+    monitored_zone_id: LGQ_CONF_ROOM_ID,
+    target_zones: [LGQ_CONF_ROOM_ID],
+  },
+  live_preview_status: null,
+  started_at: "2026-05-28T14:00:00.000000+00:00",
+  duration_seconds: 480,
+  created_at: "2026-05-28T13:59:45.000000+00:00",
+  updated_at: "2026-05-28T14:08:00.000000+00:00",
+}
+
+export const BE_STUDY_IN_PROGRESS_LGQ = {
+  ...BE_STUDY_BASE_LGQ,
+  status: "running",
+  current_stage: "monitoring_running" as const,
+  live_preview_status: "Monitoring running — 1 snapshot analyzed",
+}
+
+export const BE_STUDY_COMPLETE_LGQ = {
+  ...BE_STUDY_BASE_LGQ,
+  status: "complete",
+  current_stage: "complete" as const,
+}
+
+export const DEMO_DETECTIONS_LGQ = [
+  { timestamp_pt: "2026-05-28 14:00:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 1, unit: "count" }], notes: "One person seated at the conference table, working on a laptop." },
+  { timestamp_pt: "2026-05-28 14:01:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }], notes: "Second person enters and takes a seat across the table." },
+  { timestamp_pt: "2026-05-28 14:02:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "There are three people sitting at the table calmly working on laptops." },
+  { timestamp_pt: "2026-05-28 14:03:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "Three occupants present, focused work session in progress." },
+  { timestamp_pt: "2026-05-28 14:04:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "All three seated, minimal movement observed." },
+  { timestamp_pt: "2026-05-28 14:05:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }], notes: "Fourth person enters and pulls up a chair to join the group." },
+  { timestamp_pt: "2026-05-28 14:06:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }], notes: "Four people present, brief group discussion visible around laptop screens." },
+  { timestamp_pt: "2026-05-28 14:07:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "One person has stepped out. Three people remain, still working." },
+  { timestamp_pt: "2026-05-28 14:08:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "There are three people sitting at the table calmly working on laptops." },
+]
+
+export const BE_LIVE_METRICS_LGQ = {
+  id: "00000000-0000-0000-0000-000000000012",
+  study_id: LGQ_STUDY_ID,
+  status: "running",
+  label: "Monitoring running — 1 snapshot analyzed",
+  updated_at: "2026-05-28T14:01:00.000Z",
+  metrics: {
+    zone_metrics: {
+      "Conference Room": { occupancy_pct: 60, count: 3 },
+    },
+  },
+}
+
+// ── LGQ insight output ───────────────────────────────────────────────────────
+const _LGQ_OCC_LABELS = ["14:00:00","14:01:00","14:02:00","14:03:00","14:04:00","14:05:00","14:06:00","14:07:00","14:08:00"]
+const _LGQ_OCC_VALS   = [1, 2, 3, 3, 3, 4, 4, 3, 3]
+
+export const BE_INSIGHT_OUTPUT_LGQ = {
+  id: SEED_LGQ_INSIGHT_ID,
+  study_id: LGQ_STUDY_ID,
+  output_mode: "final_insights" as const,
+  status: "complete",
+  created_at: "2026-05-28T14:12:00.000Z",
+  dashboard_summary:
+    "The LGQ Conference Room Study monitored occupancy over 8 minutes. " +
+    "The room started with a single occupant and grew to a peak of 4 people at 14:05–14:06 before tapering back to 2 by session end. " +
+    "Average occupancy was approximately 3 people — consistent with focused small-group work. " +
+    "No safety events were detected. The room operated below its full capacity throughout the session.",
+  charts: [
+    {
+      chart_id: "lgq_chart_1",
+      chart_type: "line",
+      title: "Occupancy Over Time",
+      data: { labels: _LGQ_OCC_LABELS, values: _LGQ_OCC_VALS },
+    },
+  ],
+  tables: [
+    {
+      table_id: "lgq_table_1",
+      title: "Detection Log",
+      columns: ["Timestamp", "Occupancy", "Notes"],
+      rows: DEMO_DETECTIONS_LGQ.map(d => [
+        d.timestamp_pt.split(" ")[1],
+        String(d.detected_behaviors.find(b => b.name === "Occupancy")?.value ?? ""),
+        d.notes,
+      ]),
+    },
+  ],
+  insights: [
+    "Occupancy peaked at 4 people between 14:05 and 14:06, indicating the Conference Room serves as a gathering point for small collaborative sessions.",
+    "The room was consistently occupied throughout the 8-minute study, suggesting high demand during the observed window.",
+    "Average occupancy of approximately 3 people is below the room's capacity, indicating the space is underutilized relative to its size.",
+    "The natural ramp-up (arrivals 14:00–14:05) and ramp-down (departures 14:07–14:08) suggest structured, bounded work sessions rather than ad-hoc drop-ins.",
+  ],
+  recommendations: [
+    "Consider offering the Conference Room in shorter booking slots to increase availability for back-to-back small meetings.",
+    "Install a real-time occupancy indicator outside the Conference Room so teams can quickly see availability without opening the door.",
+    "Track occupancy across multiple sessions to identify peak-demand windows and optimize scheduling policies.",
+    "If 3–4 person groups are the typical use case, evaluate whether a smaller breakout room would better serve this team size and free the Conference Room for larger groups.",
+  ],
+}
 
 // ── BE_studies ───────────────────────────────────────────────────────────────
 // metadata.monitored_zone_id tells the heatmap which zone to highlight
@@ -309,7 +471,8 @@ export const BE_INSIGHT_OUTPUT = {
 
 // ── Models demo (model-created scenario) ─────────────────────────────────────
 
-export const SEED_MODEL_DATASET_ID = "00000000-0000-0000-0000-000000000010"
+export const SEED_MODEL_DATASET_ID     = "00000000-0000-0000-0000-000000000010"
+export const SEED_LGQ_MODEL_DATASET_ID = "00000000-0000-0000-0000-000000000014"
 
 // CO2 is randomly scattered (noisy). Occupancy is a realistic step function over time
 // (people arrive and stay; CO2 lags behind, so the scatter plot looks naturally noisy).
@@ -404,5 +567,69 @@ export const DEMO_FIT_ENTRIES: FitEntry[] = [
     inputCols: ["CO2 (ppm)"],
     outputCol: "Occupancy (count)",
     inputValues: { "CO2 (ppm)": _CO2 },
+  },
+]
+
+// ── LGQ Models demo (model-created scenario) ──────────────────────────────────
+const _LGQ_TS_SHORT = ["14:00","14:01","14:02","14:03","14:04","14:05","14:06","14:07","14:08"]
+const _LGQ_TIME_IDX = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+const _LGQ_OCC_MODEL = [1, 2, 3, 3, 3, 4, 4, 3, 3]
+
+// LSTM closely tracks the occupancy ramp-up and plateau (R²≈0.998)
+const _LGQ_LSTM_PRED = [0.92, 2.05, 2.98, 3.01, 2.99, 3.96, 4.03, 2.97, 3.04]
+
+const _LGQ_LSTM_LOSS = Array.from({ length: 80 }, (_, i) =>
+  parseFloat((0.85 * Math.exp(-i / 14) + 0.03).toFixed(4))
+)
+
+export const DEMO_BEHAVIOR_DATASET_LGQ = {
+  filename: "lgq_conference_room_behavior.csv",
+  columns: ["Timestamp", "Occupancy (count)"],
+  rows: _LGQ_OCC_MODEL.map((occ, i) => ({ "Timestamp": _LGQ_TS_SHORT[i], "Occupancy (count)": occ })),
+}
+
+export const DEMO_MERGED_DATASET_LGQ = {
+  filename: "lgq_conference_room_behavior",
+  columns: ["Timestamp", "Time Step", "Occupancy (count)"],
+  rows: _LGQ_TIME_IDX.map((idx, i) => ({
+    "Timestamp": _LGQ_TS_SHORT[i],
+    "Time Step": idx,
+    "Occupancy (count)": _LGQ_OCC_MODEL[i],
+  })),
+}
+
+export const DEMO_MODEL_DATASET_LGQ = {
+  id: SEED_LGQ_MODEL_DATASET_ID,
+  name: "lgq_conference_room_behavior",
+  study_id: LGQ_STUDY_ID,
+  columns: ["Timestamp", "Time Step", "Occupancy (count)"],
+  data: _LGQ_TIME_IDX.map((idx, i) => ({
+    "Timestamp": _LGQ_TS_SHORT[i],
+    "Time Step": idx,
+    "Occupancy (count)": _LGQ_OCC_MODEL[i],
+  })),
+  metadata: { rowCount: 9, merged: true },
+  created_at: "2026-05-28T14:10:00Z",
+}
+
+export const DEMO_FIT_ENTRIES_LGQ: FitEntry[] = [
+  {
+    id: "demo-lgq-lstm",
+    label: "LSTM: Time Series → Occupancy (count)",
+    color: "#8b5cf6",
+    visible: true,
+    xValues: _LGQ_TIME_IDX,
+    yValues: _LGQ_OCC_MODEL,
+    fitResult: {
+      modelType: "lstm",
+      parameters: { architecture: "LSTM: Input([4,1]) → LSTM(16) → Dense(8) → Dense(1)" },
+      metrics: { r2: 0.998, rmse: 0.063, mse: 0.004 },
+      predictedY: _LGQ_LSTM_PRED,
+      trainingLoss: _LGQ_LSTM_LOSS,
+    } as FitResult,
+    inputCount: 1,
+    inputCols: ["Time Step"],
+    outputCol: "Occupancy (count)",
+    inputValues: { "Time Step": _LGQ_TIME_IDX },
   },
 ]

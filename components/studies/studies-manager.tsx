@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils"
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   draft:     { label: "Draft",      color: "bg-muted text-muted-foreground" },
-  planned:   { label: "Planned",    color: "bg-blue-500/20 text-blue-400" },
+  planned:   { label: "Planned",    color: "bg-blue-500/20 text-blue-700 dark:text-blue-400" },
   running:   { label: "Running",    color: "bg-success/20 text-success" },
-  analyzing: { label: "Analyzing",  color: "bg-yellow-500/20 text-yellow-400" },
+  analyzing: { label: "Analyzing",  color: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" },
   active:    { label: "Active",     color: "bg-success/20 text-success" },
   complete:  { label: "Complete",   color: "bg-primary/20 text-primary" },
   failed:    { label: "Failed",     color: "bg-destructive/20 text-destructive" },
@@ -157,7 +157,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
           <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
             <FlaskConical className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-sm text-muted-foreground text-center mb-4">
+          <p className="text-base text-muted-foreground text-center mb-4">
             Set up your space first to create studies
           </p>
           <Button onClick={() => router.push("/dashboard/space")}>Set Up Space</Button>
@@ -269,8 +269,8 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Micro-Studies</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-xl font-semibold text-foreground">Micro-Studies</h2>
+          <p className="text-base text-muted-foreground">
             {activeCount} actively running
           </p>
         </div>
@@ -292,7 +292,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
       {showForm && (
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-medium">
+            <CardTitle className="text-lg font-medium">
               {editingStudy ? "Edit Study" : "Configure Study"}
             </CardTitle>
           </CardHeader>
@@ -324,7 +324,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                         ...f,
                         duration_minutes: e.target.value ? parseInt(e.target.value) : null,
                       }))}
-                      className="w-28 px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-28 px-3 py-2 border border-border rounded-md bg-background text-foreground text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                     <select
                       value={form.duration_minutes ?? ""}
@@ -332,7 +332,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                         ...f,
                         duration_minutes: e.target.value ? parseInt(e.target.value) : null,
                       }))}
-                      className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="flex-1 px-3 py-2 border border-border rounded-md bg-background text-foreground text-base focus:outline-none focus:ring-2 focus:ring-primary/50"
                     >
                       <option value="">Select a preset…</option>
                       {DURATION_OPTIONS.map(o => (
@@ -358,7 +358,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
               {zones.length > 0 && (
                 <div className="space-y-2">
                   <Label>Target Zone *</Label>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Click a zone on the map to select it.
                     {form.target_zones[0] && (
                       <span className="ml-1 font-medium text-foreground">
@@ -382,7 +382,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
               {metrics.length > 0 && (
                 <div className="space-y-2">
                   <Label>Metrics to Track *</Label>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Selected metrics guide what the behavior monitoring and insights agents prioritize.
                   </p>
                   <ScrollArea className="h-[130px] rounded border border-border p-3">
@@ -396,10 +396,10 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                           />
                           <label
                             htmlFor={`metric-${metric.id}`}
-                            className="text-sm font-medium leading-none cursor-pointer"
+                            className="text-base font-medium leading-none cursor-pointer"
                           >
                             {metric.name}
-                            <span className="text-xs text-muted-foreground ml-2">
+                            <span className="text-sm text-muted-foreground ml-2">
                               ({metric.category.replace(/_/g, " ")})
                             </span>
                           </label>
@@ -413,7 +413,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
               {/* AI response feedback */}
               {lastResponse && (
                 <div className={cn(
-                  "flex items-start gap-2 p-3 rounded-lg text-sm",
+                  "flex items-start gap-2 p-3 rounded-lg text-base",
                   lastResponse.action_type === "start_study"
                     ? "bg-success/10 text-foreground"
                     : "bg-secondary/50 text-foreground"
@@ -424,7 +424,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
               )}
 
               {error && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-base">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   {error}
                 </div>
@@ -451,8 +451,8 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
             <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
               <FlaskConical className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">No Studies Yet</h3>
-            <p className="text-sm text-muted-foreground text-center max-w-md">
+            <h3 className="text-xl font-medium text-foreground mb-2">No Studies Yet</h3>
+            <p className="text-base text-muted-foreground text-center max-w-md">
               Click <strong>New Study</strong> above to configure and launch your first study.
               The AI agents will handle planning, behavior monitoring, and insights automatically.
             </p>
@@ -470,24 +470,24 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground line-clamp-1">
+                      <p className="text-base font-medium text-foreground line-clamp-1">
                         {(study.metadata as Record<string, unknown>)?.study_name as string ?? study.study_goal}
                       </p>
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5" title={study.study_id}>
+                      <p className="text-sm text-muted-foreground font-mono mt-0.5" title={study.study_id}>
                         {study.study_id.replace(/^study_/, "ID ")}
                       </p>
                       {spaceName && (
-                        <p className="text-xs text-muted-foreground/70 mt-0.5">{spaceName}</p>
+                        <p className="text-sm text-muted-foreground/70 mt-0.5">{spaceName}</p>
                       )}
                       {study.study_goal && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{study.study_goal}</p>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{study.study_goal}</p>
                       )}
                     </div>
-                    <Badge className={cn(stage.color, "shrink-0 text-xs")}>{stage.label}</Badge>
+                    <Badge className={cn(stage.color, "shrink-0 text-sm")}>{stage.label}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-1.5">
-                  <div className="flex items-center justify-end text-xs text-muted-foreground">
+                  <div className="flex items-center justify-end text-sm text-muted-foreground">
                     <span>{formatDistanceToNow(new Date(study.created_at), { addSuffix: true })}</span>
                   </div>
                   {study.status === "running" && (
@@ -501,7 +501,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                     </div>
                   )}
                   {study.started_at && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Started: {new Date(study.started_at).toLocaleDateString()}
                       {study.duration_seconds && ` · ${formatDuration(Math.round(study.duration_seconds / 60))}`}
                     </p>
@@ -511,7 +511,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                       <Button
                         size="sm"
                         variant="outline"
-                        className="gap-1.5 h-7 text-xs"
+                        className="gap-1.5 h-7 text-sm"
                         onClick={() => handleEditStudy(study)}
                       >
                         <Pencil className="h-3 w-3" />
@@ -520,11 +520,11 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                     )}
                     {confirmDeleteId === study.study_id ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-destructive">Delete study and all insights?</span>
+                        <span className="text-sm text-destructive">Delete study and all insights?</span>
                         <Button
                           size="sm"
                           variant="destructive"
-                          className="h-7 text-xs px-2"
+                          className="h-7 text-sm px-2"
                           disabled={isDeleting}
                           onClick={() => handleDelete(study.study_id)}
                         >
@@ -533,7 +533,7 @@ export function StudiesManager({ space, initialStudies, zones, metrics, cameras 
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 text-xs px-2"
+                          className="h-7 text-sm px-2"
                           disabled={isDeleting}
                           onClick={() => setConfirmDeleteId(null)}
                         >

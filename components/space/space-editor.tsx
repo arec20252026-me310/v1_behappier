@@ -46,6 +46,8 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras, al
           zoneId: cam.zone_id,
           x: typeof meta.placement_x === "number" ? meta.placement_x : (zone.grid_x + zone.grid_width / 2) * cellSize,
           y: typeof meta.placement_y === "number" ? meta.placement_y : (zone.grid_y + zone.grid_height / 2) * cellSize,
+          fracX: typeof meta.placement_frac_x === "number" ? meta.placement_frac_x : undefined,
+          fracY: typeof meta.placement_frac_y === "number" ? meta.placement_frac_y : undefined,
           direction: (typeof meta.placement_direction === "string" ? meta.placement_direction : "down") as CameraDirection,
           label: cam.name,
         }
@@ -211,7 +213,7 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras, al
           const cam = cameras.find(c => c.zone_id === p.zoneId)
           if (!cam) continue
           await supabase.from("cameras").update({
-            metadata: { ...cam.metadata, placement_x: p.x, placement_y: p.y, placement_direction: p.direction },
+            metadata: { ...cam.metadata, placement_x: p.x, placement_y: p.y, placement_frac_x: p.fracX, placement_frac_y: p.fracY, placement_direction: p.direction },
           }).eq("id", cam.id)
         }
       }
@@ -254,7 +256,7 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras, al
         const cam = cameras.find(c => c.zone_id === p.zoneId)
         if (!cam) continue
         await supabase.from("cameras").update({
-          metadata: { ...cam.metadata, placement_x: p.x, placement_y: p.y, placement_direction: p.direction },
+          metadata: { ...cam.metadata, placement_x: p.x, placement_y: p.y, placement_frac_x: p.fracX, placement_frac_y: p.fracY, placement_direction: p.direction },
         }).eq("id", cam.id)
       }
       setSaveStatus("success")
@@ -281,7 +283,7 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras, al
   return (
     <div className="flex flex-col gap-4 h-full">
       {/* Space switcher bar */}
-      {!demo && allSpaces.length > 0 && (
+      {allSpaces.length > 0 && (
         <div className="flex items-center gap-3">
           <Select
             value={currentSpace?.id ?? undefined}

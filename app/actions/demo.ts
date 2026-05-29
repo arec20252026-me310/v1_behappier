@@ -38,3 +38,9 @@ export async function reverseDemoScenario(current: DemoScenario) {
   cookieStore.set("demo_mode", prev, { path: "/", httpOnly: false })
   redirect(scenarioRedirect(prev))
 }
+
+export async function setDemoSpaceId(spaceId: string) {
+  const cookieStore = await cookies()
+  cookieStore.set("demo_space_id", spaceId, { path: "/", httpOnly: false })
+  redirect("/dashboard")
+}

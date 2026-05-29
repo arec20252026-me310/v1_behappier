@@ -11,7 +11,6 @@ export default async function DashboardLayout({
 }) {
   const scenario = await getDemoScenario()
   const review = await isReviewMode()
-
   return (
     <div className="flex h-screen overflow-hidden">
       <SidebarNav />

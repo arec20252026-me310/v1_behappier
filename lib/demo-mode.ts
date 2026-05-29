@@ -1,4 +1,5 @@
 import { cookies } from "next/headers"
+import { SPACE_ID } from "@/lib/demo-seeds"
 
 export type DemoScenario = "blank" | "space-ready" | "study-in-progress" | "study-complete" | "model-created"
 
@@ -13,4 +14,9 @@ export async function getDemoScenario(): Promise<DemoScenario | null> {
 
 export async function isDemoMode(): Promise<boolean> {
   return (await getDemoScenario()) !== null
+}
+
+export async function getDemoSpaceId(): Promise<string> {
+  const cookieStore = await cookies()
+  return cookieStore.get("demo_space_id")?.value ?? SPACE_ID
 }

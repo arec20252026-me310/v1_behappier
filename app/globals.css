@@ -4,15 +4,84 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* OccupancyIQ - Dark analytics dashboard theme */
+  /* Looking Glass - Light theme (default) */
+  --background: oklch(0.985 0.01 75);
+  --foreground: oklch(0.13 0.02 245);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.13 0.02 245);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.13 0.02 245);
+  --primary: oklch(0.43 0.15 19);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.91 0.012 240);
+  --secondary-foreground: oklch(0.13 0.02 245);
+  --muted: oklch(0.91 0.012 240);
+  --muted-foreground: oklch(0.34 0.012 245);
+  --accent: oklch(0.48 0.2 160);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.52 0.24 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.84 0.012 240);
+  --input: oklch(0.91 0.012 240);
+  --ring: oklch(0.43 0.15 19);
+  --chart-1: oklch(0.52 0.17 22);
+  --chart-2: oklch(0.65 0.16 85);
+  --chart-3: oklch(0.52 0.18 148);
+  --chart-4: oklch(0.52 0.18 235);
+  --chart-5: oklch(0.52 0.17 285);
+  --radius: 0.5rem;
+
+  /* Deep maroon sidebar — matches logo red family */
+  --sidebar: oklch(0.28 0.09 19);
+  --sidebar-foreground: oklch(0.90 0.005 19);
+  --sidebar-primary: oklch(0.72 0.13 26);
+  --sidebar-primary-foreground: oklch(0.22 0.09 19);
+  --sidebar-accent: oklch(0.30 0.09 19);
+  --sidebar-accent-foreground: oklch(0.93 0 0);
+  --sidebar-border: oklch(0.29 0.09 19);
+  --sidebar-ring: oklch(0.72 0.13 26);
+
+  /* Custom semantic colors */
+  --success: oklch(0.48 0.2 160);
+  --warning: oklch(0.66 0.18 80);
+  --info: oklch(0.43 0.15 19);
+
+  /* Chart axis / tick / label text */
+  --chart-axis: #374151;
+
+  /* Scatter plot data dots */
+  --chart-scatter: oklch(0.35 0.18 22);
+
+  /* Chart hover tooltips */
+  --chart-tooltip-bg: oklch(1 0 0);
+  --chart-tooltip-border: oklch(0.84 0.012 240);
+  --chart-tooltip-text: oklch(0.13 0.02 245);
+
+  /* Camera map icon */
+  --cam-cone-fill: rgba(37,99,235,0.20);
+  --cam-cone-stroke: rgba(37,99,235,0.55);
+  --cam-cone-fill-sel: rgba(37,99,235,0.35);
+  --cam-cone-stroke-sel: rgba(37,99,235,0.80);
+  --cam-body-fill: #1C2A3A;
+  --cam-body-stroke: #2563eb;
+  --cam-body-fill-sel: #2D3F56;
+  --cam-body-stroke-sel: #3b82f6;
+  --cam-lens-fill: #2563eb;
+  --cam-lens-stroke: #60a5fa;
+  --cam-lens-fill-sel: #3b82f6;
+  --cam-mount: #2563eb;
+}
+
+.dark {
+  /* Looking Glass - Dark theme */
   --background: oklch(0.13 0.01 260);
   --foreground: oklch(0.95 0 0);
   --card: oklch(0.17 0.01 260);
   --card-foreground: oklch(0.95 0 0);
   --popover: oklch(0.17 0.01 260);
   --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.7 0.15 200);
-  --primary-foreground: oklch(0.13 0.01 260);
+  --primary: oklch(0.62 0.15 22);
+  --primary-foreground: oklch(0.98 0 0);
   --secondary: oklch(0.22 0.01 260);
   --secondary-foreground: oklch(0.95 0 0);
   --muted: oklch(0.22 0.01 260);
@@ -23,26 +92,50 @@
   --destructive-foreground: oklch(0.95 0 0);
   --border: oklch(0.28 0.01 260);
   --input: oklch(0.22 0.01 260);
-  --ring: oklch(0.7 0.15 200);
-  --chart-1: oklch(0.7 0.15 200);
-  --chart-2: oklch(0.65 0.18 160);
-  --chart-3: oklch(0.75 0.15 80);
-  --chart-4: oklch(0.65 0.2 30);
-  --chart-5: oklch(0.6 0.18 280);
-  --radius: 0.5rem;
-  --sidebar: oklch(0.11 0.01 260);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.7 0.15 200);
-  --sidebar-primary-foreground: oklch(0.13 0.01 260);
-  --sidebar-accent: oklch(0.22 0.01 260);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.25 0.01 260);
-  --sidebar-ring: oklch(0.7 0.15 200);
-  
+  --ring: oklch(0.62 0.15 22);
+  --chart-1: oklch(0.62 0.17 22);
+  --chart-2: oklch(0.72 0.16 85);
+  --chart-3: oklch(0.62 0.18 148);
+  --chart-4: oklch(0.62 0.18 235);
+  --chart-5: oklch(0.62 0.17 285);
+  --sidebar: oklch(0.17 0.07 19);
+  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-primary: oklch(0.72 0.13 26);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.26 0.07 19);
+  --sidebar-accent-foreground: oklch(0.92 0 0);
+  --sidebar-border: oklch(0.24 0.07 19);
+  --sidebar-ring: oklch(0.72 0.13 26);
+
   /* Custom semantic colors */
   --success: oklch(0.65 0.18 160);
   --warning: oklch(0.75 0.15 80);
-  --info: oklch(0.7 0.15 200);
+  --info: oklch(0.62 0.15 22);
+
+  /* Chart axis / tick / label text */
+  --chart-axis: #64748b;
+
+  /* Scatter plot data dots */
+  --chart-scatter: oklch(0.62 0.17 22);
+
+  /* Chart hover tooltips */
+  --chart-tooltip-bg: oklch(0.17 0.01 260);
+  --chart-tooltip-border: oklch(0.28 0.01 260);
+  --chart-tooltip-text: oklch(0.95 0 0);
+
+  /* Camera map icon */
+  --cam-cone-fill: rgba(99,179,237,0.18);
+  --cam-cone-stroke: rgba(99,179,237,0.40);
+  --cam-cone-fill-sel: rgba(99,179,237,0.28);
+  --cam-cone-stroke-sel: rgba(99,179,237,0.70);
+  --cam-body-fill: #1C2A3A;
+  --cam-body-stroke: #4A90D9;
+  --cam-body-fill-sel: #2D3F56;
+  --cam-body-stroke-sel: #63B3ED;
+  --cam-lens-fill: #3B82F6;
+  --cam-lens-stroke: #60A5FA;
+  --cam-lens-fill-sel: #63B3ED;
+  --cam-mount: #4A90D9;
 }
 
 
@@ -92,6 +185,9 @@
 }
 
 @layer base {
+  html {
+    font-size: 17.5px;
+  }
   * {
     @apply border-border outline-ring/50;
   }

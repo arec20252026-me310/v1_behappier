@@ -228,8 +228,10 @@ export type CameraDirection = 'up' | 'down' | 'left' | 'right'
 export interface CameraPlacement {
   id: string
   zoneId: string    // the zone this camera is assigned to
-  x: number         // pixel x position within the grid container
-  y: number         // pixel y position within the grid container
+  x: number         // pixel x position within the grid container (builder coordinate)
+  y: number         // pixel y position within the grid container (builder coordinate)
+  fracX?: number    // grid-relative fraction 0-1 (saved after drag, preferred for dashboard)
+  fracY?: number    // grid-relative fraction 0-1 (saved after drag, preferred for dashboard)
   direction: CameraDirection
   label: string
 }
@@ -283,6 +285,14 @@ export const METRIC_CATEGORIES = [
 
 // Pre-defined metrics with literature references
 export const PREDEFINED_METRICS = [
+  {
+    name: 'Occupancy',
+    category: 'utilization',
+    description: 'Number of people present within the observed area at a given instant',
+    unit: 'count',
+    literature_reference: 'Fruin, J.J. (1971). Pedestrian Planning and Design. Metropolitan Association of Urban Designers and Environmental Planners.',
+    rubric: 'Count every person visible within the observed area regardless of activity (seated, standing, walking). Include partially visible people if more than half their body is in frame. Score = total headcount. Score 0 if no people are present.',
+  },
   {
     name: 'Foot Traffic Count',
     category: 'traffic_flow',

@@ -1,11 +1,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { StudiesManager } from "@/components/studies/studies-manager"
-import { getDemoScenario } from "@/lib/demo-mode"
+import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { getDefaultSpace } from "@/lib/spaces"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE, DEMO_DETECTIONS, STUDY_ID,
+  DEMO_LGQ_SPACE, ZONES_LGQ, LGQ_SPACE_ID,
+  BE_STUDY_IN_PROGRESS_LGQ, BE_STUDY_COMPLETE_LGQ, DEMO_DETECTIONS_LGQ, LGQ_STUDY_ID,
 } from "@/lib/demo-seeds"
 
 export default async function StudiesPage() {
@@ -13,9 +15,12 @@ export default async function StudiesPage() {
   const demo = scenario !== null
   const supabase = await createClient()
 
+  const demoSpaceId = await getDemoSpaceId()
+  const isLGQ = demoSpaceId === LGQ_SPACE_ID
+
   const hasSpace = demo && scenario !== "blank"
   const space = hasSpace
-    ? DEMO_SPACE
+    ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE)
     : demo ? null : await getDefaultSpace()
   const spaceName = space?.name ?? undefined
 
@@ -28,10 +33,14 @@ export default async function StudiesPage() {
       .neq("status", "complete")
   }
 
+  const hasStudy = demo && (scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created")
+
   const beStudies = demo
-    ? (scenario === "study-in-progress" ? [BE_STUDY_IN_PROGRESS]
-       : (scenario === "study-complete" || scenario === "model-created") ? [BE_STUDY_COMPLETE]
-       : [])
+    ? (scenario === "study-in-progress"
+        ? [isLGQ ? BE_STUDY_IN_PROGRESS_LGQ : BE_STUDY_IN_PROGRESS]
+        : (scenario === "study-complete" || scenario === "model-created")
+          ? [isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE]
+          : [])
     : space ? ((await supabase
         .from("BE_studies")
         .select("*")
@@ -39,19 +48,27 @@ export default async function StudiesPage() {
         .order("created_at", { ascending: false })).data ?? []) : []
 
   const zones = demo
-    ? (hasSpace ? ZONES : [])
+    ? (hasSpace ? (isLGQ ? ZONES_LGQ : ZONES) : [])
     : space ? ((await supabase.from("zones").select("*").eq("space_id", space.id)).data ?? []) : []
 
-  const hasStudy = demo && (scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created")
-  const metrics = demo
-    ? (hasStudy ? DEMO_METRICS.filter(m => m.is_active) : [])
-    : space ? ((await supabase
-        .from("metrics")
-        .select("*")
-        .eq("space_id", space.id)
-        .eq("is_active", true)).data ?? []) : []
+  let metrics
+  if (demo) {
+    if (!hasStudy) {
+      metrics = []
+    } else if (isLGQ) {
+      const { data } = await supabase.from("metrics").select("*").eq("space_id", LGQ_SPACE_ID).eq("is_active", true)
+      metrics = data ?? []
+    } else {
+      metrics = DEMO_METRICS.filter(m => m.is_active)
+    }
+  } else {
+    metrics = space ? ((await supabase.from("metrics").select("*").eq("space_id", space.id).eq("is_active", true)).data ?? []) : []
+  }
 
   const cameras = demo ? [] : ((await supabase.from("cameras").select("*")).data ?? [])
+
+  const demoStudyId = isLGQ ? LGQ_STUDY_ID : STUDY_ID
+  const demoDetections = isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS
 
   return (
     <div className="flex flex-col h-full">
@@ -70,8 +87,8 @@ export default async function StudiesPage() {
           demo={demo}
           spaceName={spaceName}
           demoDetectionsByStudy={
-            demo && scenario === "study-in-progress"
-              ? { [STUDY_ID]: DEMO_DETECTIONS }
+            demo && hasStudy
+              ? { [demoStudyId]: demoDetections }
               : undefined
           }
         />

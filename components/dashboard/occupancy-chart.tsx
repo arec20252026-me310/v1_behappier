@@ -170,7 +170,7 @@ export function OccupancyChart({
     return (
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5">
-          <CardTitle className="text-base font-medium">Most Recent Study</CardTitle>
+          <CardTitle className="text-xl font-medium">Most Recent Study</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -192,7 +192,7 @@ export function OccupancyChart({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">Current Study</CardTitle>
+            <CardTitle className="text-xl font-medium">Current Study</CardTitle>
           </div>
           <Link href="/dashboard/insights"><Button variant="ghost" size="sm" className="text-xs">View All</Button></Link>
         </CardHeader>
@@ -219,6 +219,7 @@ export function OccupancyChart({
           yAxisLabel={fallbackSeries.length === 1 ? fallbackSeries[0].title : undefined}
           seriesDescriptions={metricDescriptions}
           isLive={false}
+          enlarged={enlarged}
         />
       )
     }
@@ -257,6 +258,7 @@ export function OccupancyChart({
                   seriesDescriptions={metricDescriptions}
                   isLive={true}
                   compact={isCompact}
+                  enlarged={enlarged}
                 />
               )}
             </div>
@@ -268,10 +270,10 @@ export function OccupancyChart({
 
   return (
     <>
-      <Card className={`bg-card border-border pt-2 ${isLive && allActiveStudies.length >= 3 ? "pb-1" : "pb-4"}`}>
-        <CardHeader className={`flex flex-row items-center justify-between ${isLive && allActiveStudies.length >= 3 ? "pb-0.5" : "pb-1.5"}`}>
+      <Card className="bg-card border-border pt-2 pb-4">
+        <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
-            <CardTitle className="text-base font-medium">{isLive ? "Current Study" : "Most Recent Study"}</CardTitle>
+            <CardTitle className="text-xl font-medium">{isLive ? "Current Study" : "Most Recent Study"}</CardTitle>
             {isLive && agoText && (
               <span className="text-xs text-muted-foreground font-normal">Last detection {agoText}</span>
             )}
@@ -289,7 +291,7 @@ export function OccupancyChart({
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-base font-medium">{isLive ? "Current Study" : "Most Recent Study"}</DialogTitle>
+                <DialogTitle className="text-5xl font-medium">{isLive ? "Current Study" : "Most Recent Study"}</DialogTitle>
               </div>
               <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
             </DialogHeader>
@@ -311,7 +313,7 @@ export function OccupancyChart({
                           Study {idx + 1}: {s.study_id}
                         </p>
                       )}
-                      <p className={`font-medium text-muted-foreground uppercase tracking-wide ${allActiveStudies.length >= 3 ? "text-xs mb-1" : "text-base mb-3"}`}>Latest Detection</p>
+                      <p className={`font-medium text-muted-foreground uppercase tracking-wide ${allActiveStudies.length >= 3 ? "text-xs mb-1" : "text-xl mb-3"}`}>Latest Detection</p>
                       <LiveDetectionFeed
                         studyId={s.study_id}
                         status={s.status}

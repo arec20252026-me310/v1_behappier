@@ -84,8 +84,10 @@ export function CameraMapIcon({
         {/* FOV cone */}
         <path
           d={conePath}
-          fill={selected ? "rgba(99,179,237,0.28)" : "rgba(99,179,237,0.18)"}
-          stroke={selected ? "rgba(99,179,237,0.7)" : "rgba(99,179,237,0.4)"}
+          style={{
+            fill: selected ? "var(--cam-cone-fill-sel)" : "var(--cam-cone-fill)",
+            stroke: selected ? "var(--cam-cone-stroke-sel)" : "var(--cam-cone-stroke)",
+          }}
           strokeWidth={0.8}
         />
 
@@ -106,8 +108,10 @@ export function CameraMapIcon({
           width={bodyW}
           height={bodyH}
           rx={3}
-          fill={selected ? "#2D3F56" : "#1C2A3A"}
-          stroke={selected ? "#63B3ED" : "#4A90D9"}
+          style={{
+            fill: selected ? "var(--cam-body-fill-sel)" : "var(--cam-body-fill)",
+            stroke: selected ? "var(--cam-body-stroke-sel)" : "var(--cam-body-stroke)",
+          }}
           strokeWidth={selected ? 1.5 : 1}
         />
 
@@ -116,8 +120,10 @@ export function CameraMapIcon({
           cx={cx}
           cy={cy}
           r={lensR}
-          fill={selected ? "#63B3ED" : "#3B82F6"}
-          stroke={selected ? "#BFEFFF" : "#60A5FA"}
+          style={{
+            fill: selected ? "var(--cam-lens-fill-sel)" : "var(--cam-lens-fill)",
+            stroke: "var(--cam-lens-stroke)",
+          }}
           strokeWidth={0.8}
         />
 
@@ -147,7 +153,7 @@ export function CameraMapIcon({
               width={isHorizontal ? mountSize : mountSize}
               height={isHorizontal ? mountSize : mountSize}
               rx={1}
-              fill="#4A90D9"
+              style={{ fill: "var(--cam-mount)" }}
             />
           )
         })()}
@@ -159,7 +165,7 @@ export function CameraMapIcon({
             cy={cy}
             r={size * 0.52}
             fill="none"
-            stroke="#63B3ED"
+            style={{ stroke: "var(--cam-body-stroke-sel)" }}
             strokeWidth={1.5}
             strokeDasharray="3 2"
             opacity={0.8}

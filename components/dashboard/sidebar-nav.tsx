@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 import {
   LayoutDashboard,
   Map,
@@ -64,11 +65,8 @@ export function SidebarNav() {
     >
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">BH</span>
-            </div>
-            <span className="font-semibold text-sidebar-foreground">BeHappier</span>
+          <div className="flex items-center">
+            <Image src="/looking-glass-name.jpg" alt="Looking Glass" width={180} height={36} className="object-contain" style={{ maxHeight: 36 }} />
           </div>
         )}
         <Button
@@ -113,8 +111,8 @@ export function SidebarNav() {
             "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
         >
-          <Clapperboard className="h-5 w-5 shrink-0 text-muted-foreground" />
-          {!collapsed && <span className="text-base font-semibold text-muted-foreground">Start Demo</span>}
+          <Clapperboard className="h-5 w-5 shrink-0 text-sidebar-foreground/60" />
+          {!collapsed && <span className="text-base font-semibold text-sidebar-foreground/60">Start Demo</span>}
         </Link>
         <Link
           href="/dashboard/settings"

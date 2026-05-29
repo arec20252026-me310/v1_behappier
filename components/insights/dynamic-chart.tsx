@@ -7,22 +7,18 @@ import {
   Tooltip, ResponsiveContainer,
 } from "recharts"
 
-// Hardcoded oklch values from the dark theme (matches globals.css .dark block)
 const COLORS = {
-  line:       "oklch(0.7 0.15 200)",   // --chart-1
-  bar:        "oklch(0.65 0.18 160)",  // --chart-2
+  line:       "oklch(0.60 0.17 22)",   // --chart-1 (crimson)
+  bar:        "oklch(0.60 0.18 148)",  // --chart-2 (green)
   grid:       "oklch(0.28 0.01 260)",  // approx --border
-  axis:       "oklch(0.65 0 0)",       // --muted-foreground
-  tooltipBg:  "oklch(0.17 0.01 260)", // --card
-  tooltipBdr: "oklch(0.28 0.01 260)",
-  tooltipTxt: "oklch(0.95 0 0)",       // --foreground
+  axis:       "var(--chart-axis)",      // dark in light mode, slate-500 in dark mode
 }
 
 const TOOLTIP_STYLE = {
-  backgroundColor: COLORS.tooltipBg,
-  border: `1px solid ${COLORS.tooltipBdr}`,
+  backgroundColor: "var(--chart-tooltip-bg)",
+  border: "1px solid var(--chart-tooltip-border)",
   borderRadius: "0.5rem",
-  color: COLORS.tooltipTxt,
+  color: "var(--chart-tooltip-text)",
   fontSize: 11,
 }
 
@@ -58,7 +54,7 @@ function HeatmapChart({ labels, values }: { labels: string[]; values: (number | 
   const numCols = values[0]?.length ?? 0
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full text-sm border-collapse">
         <thead>
           <tr>
             <th className="text-left p-1 text-muted-foreground font-normal">Time</th>
@@ -80,7 +76,7 @@ function HeatmapChart({ labels, values }: { labels: string[]; values: (number | 
                     key={ci}
                     className="p-1 text-center"
                     title={val == null ? "null" : String(val)}
-                    style={{ background: `oklch(0.7 0.15 200 / ${Math.round(alpha * 100)}%)`, color: COLORS.tooltipTxt }}
+                    style={{ background: `oklch(0.7 0.15 200 / ${Math.round(alpha * 100)}%)`, color: "var(--chart-tooltip-text)" }}
                   >
                     {val == null ? "—" : val.toFixed(2)}
                   </td>
@@ -100,7 +96,7 @@ export function DynamicChart({ chart_type, title, data }: DynamicChartProps) {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground">{title}</p>
+      <p className="text-sm font-medium text-muted-foreground">{title}</p>
 
       {chart_type === "heatmap" ? (
         <HeatmapChart labels={labels} values={values as (number | null)[][]} />
@@ -109,8 +105,8 @@ export function DynamicChart({ chart_type, title, data }: DynamicChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={toRechartsData(labels, values as (number | null)[])}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
-              <XAxis dataKey="name" stroke={COLORS.axis} fontSize={9} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-              <YAxis stroke={COLORS.axis} fontSize={9} tickLine={false} axisLine={false} width={28} />
+              <XAxis dataKey="name" stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+              <YAxis stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} width={36} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: COLORS.axis }} />
               <Bar dataKey="value" fill={COLORS.bar} radius={[2, 2, 0, 0]} />
             </BarChart>
@@ -121,10 +117,10 @@ export function DynamicChart({ chart_type, title, data }: DynamicChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={toRechartsData(labels, values as (number | null)[])}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
-              <XAxis dataKey="name" stroke={COLORS.axis} fontSize={9} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-              <YAxis stroke={COLORS.axis} fontSize={9} tickLine={false} axisLine={false} width={28} domain={[0, 1]} />
+              <XAxis dataKey="name" stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+              <YAxis stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} width={36} domain={[0, 1]} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: COLORS.axis }} />
-              <Line type="monotone" dataKey="value" stroke={COLORS.line} strokeWidth={2} dot={false} connectNulls />
+              <Line type="monotone" dataKey="value" stroke={COLORS.line} strokeWidth={4} dot={false} connectNulls />
             </LineChart>
           </ResponsiveContainer>
         </div>

@@ -69,10 +69,10 @@ export function LiveDetectionFeed({ studyId, status, limit = 4, demoDetections, 
     ? studyCount >= 3 ? "text-base" : studyCount === 2 ? "text-3xl" : "text-5xl"
     : "text-foreground/70"
   const timestampSize = large
-    ? studyCount >= 3 ? "text-xs" : studyCount === 2 ? "text-base" : "text-lg"
+    ? studyCount >= 3 ? "text-xs" : studyCount === 2 ? "text-base" : "text-2xl"
     : ""
   const notesSize = large
-    ? studyCount >= 3 ? "text-xs" : studyCount === 2 ? "text-lg" : "text-2xl"
+    ? studyCount >= 3 ? "text-xs" : studyCount === 2 ? "text-lg" : "text-4xl"
     : ""
   const spacing = large
     ? studyCount >= 3 ? "space-y-1" : studyCount === 2 ? "space-y-4" : "space-y-6"

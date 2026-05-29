@@ -4,20 +4,21 @@ import React, { useRef, useState, useEffect } from "react"
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Tooltip as UITooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Info } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const SERIES_COLORS = [
-  "oklch(0.7 0.15 200)",
-  "oklch(0.65 0.18 160)",
-  "oklch(0.75 0.15 80)",
-  "oklch(0.65 0.2 30)",
-  "oklch(0.6 0.18 280)",
+  "oklch(0.60 0.17 22)",   // red
+  "oklch(0.72 0.16 85)",   // yellow
+  "oklch(0.60 0.18 148)",  // green
+  "oklch(0.60 0.18 235)",  // blue
+  "oklch(0.60 0.17 285)",  // purple (overflow)
 ]
 
 const TOOLTIP_STYLE: React.CSSProperties = {
-  backgroundColor: "oklch(0.17 0.01 260)",
-  border: "1px solid oklch(0.28 0.01 260)",
+  backgroundColor: "var(--chart-tooltip-bg)",
+  border: "1px solid var(--chart-tooltip-border)",
   borderRadius: "0.5rem",
-  color: "oklch(0.95 0 0)",
+  color: "var(--chart-tooltip-text)",
   fontSize: 11,
   padding: "6px 10px",
 }
@@ -90,6 +91,7 @@ interface TimeSeriesChartProps {
   seriesDescriptions?: Record<string, string>
   isLive?: boolean
   compact?: boolean
+  enlarged?: boolean
 }
 
 function lookupDescription(title: string, descriptions: Record<string, string>): string | undefined {
@@ -236,7 +238,7 @@ const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
 
-export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive, compact = false }: TimeSeriesChartProps) {
+export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive, compact = false, enlarged = false }: TimeSeriesChartProps) {
   const effectiveYAxisLabel = yAxisLabel ?? (series.length > 1 ? "Multiple behaviors" : undefined)
   const allData = mergeSeriesData(series)
   const total = allData.length
@@ -446,10 +448,10 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
   }, [allData])
   const xTickFormatter = React.useCallback((ms: number) => msToLabel.get(ms) ?? msToTimeLabel(ms), [msToLabel])
 
-  const thumbBg = dragMode === "pan" ? "oklch(0.60 0.1 200)" : "oklch(0.46 0.08 200)"
+  const thumbBg = dragMode === "pan" ? "oklch(0.60 0.13 22)" : "oklch(0.46 0.12 22)"
   const handleBg = dragMode === "left" || dragMode === "right"
-    ? "oklch(0.68 0.12 200)"
-    : "oklch(0.54 0.10 200)"
+    ? "oklch(0.68 0.14 22)"
+    : "oklch(0.54 0.13 22)"
 
   const durationLabel = activePreset
     ? activePreset
@@ -485,14 +487,14 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                       borderColor: SERIES_COLORS[i % SERIES_COLORS.length],
                     }}
                   />
-                  <span className="text-xs" style={{ color: hidden.has(s.title) ? "oklch(0.5 0 0)" : "oklch(0.75 0 0)" }}>
+                  <span className={cn(enlarged ? "text-sm" : "text-sm", hidden.has(s.title) ? "text-muted-foreground/60" : "text-foreground")}>
                     {s.title}
                   </span>
                 </label>
                 {desc && (
                   <UITooltip>
                     <TooltipTrigger asChild>
-                      <button type="button" style={{ display: "flex", alignItems: "center", color: "oklch(0.45 0 0)", lineHeight: 0 }}>
+                      <button type="button" className="text-muted-foreground" style={{ display: "flex", alignItems: "center", lineHeight: 0 }}>
                         <Info style={{ width: 11, height: 11 }} />
                       </button>
                     </TooltipTrigger>
@@ -515,12 +517,12 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 key={preset.label}
                 onClick={() => applyPreset(preset)}
                 style={{
-                  fontSize: 10,
-                  padding: "2px 7px",
+                  fontSize: enlarged ? 13 : 12,
+                  padding: enlarged ? "4px 10px" : "3px 8px",
                   borderRadius: "9999px",
-                  border: `1px solid ${isActive ? "oklch(0.55 0.12 200)" : "oklch(0.30 0.01 260)"}`,
-                  background: isActive ? "oklch(0.30 0.10 200)" : "transparent",
-                  color: isActive ? "oklch(0.88 0.08 200)" : "oklch(0.50 0 0)",
+                  border: `1px solid ${isActive ? "oklch(0.55 0.15 22)" : "oklch(0.30 0.01 260)"}`,
+                  background: isActive ? "oklch(0.30 0.12 22)" : "transparent",
+                  color: isActive ? "oklch(0.88 0.07 28)" : "var(--foreground)",
                   cursor: "pointer",
                   transition: "all 0.12s",
                   fontVariantNumeric: "tabular-nums",
@@ -528,13 +530,13 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 }}
                 onMouseEnter={e => {
                   if (!isActive) {
-                    ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.78 0 0)"
+                    ;(e.currentTarget as HTMLButtonElement).style.color = "var(--muted-foreground)"
                     ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.45 0.01 260)"
                   }
                 }}
                 onMouseLeave={e => {
                   if (!isActive) {
-                    ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.50 0 0)"
+                    ;(e.currentTarget as HTMLButtonElement).style.color = "var(--foreground)"
                     ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.30 0.01 260)"
                   }
                 }}
@@ -551,8 +553,8 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
-            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "#9ca3af", fontSize: 11 } : undefined} />
-            <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "#9ca3af", fontSize: 10 }} axisLine={{ stroke: "#9ca3af" }} tickLine={{ stroke: "#9ca3af" }} width={52} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "#9ca3af", fontSize: 11 } : undefined} />
+            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 14 : 12 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "var(--chart-axis)", fontSize: enlarged ? 15 : 13 } : undefined} />
+            <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 14 : 12 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 64 : 60} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 15 : 13 } : undefined} />
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
@@ -569,7 +571,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                     legendType="none" connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
                 <Line key={s.title} type="monotone" dataKey={s.title}
-                  stroke={color} strokeWidth={2}
+                  stroke={color} strokeWidth={4}
                   dot={(props: Record<string, unknown>) => {
                     const { cx, cy, index } = props as { cx: number; cy: number; index: number }
                     const prev = visibleData[index - 1]?.[s.title]
@@ -617,7 +619,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 height: 12,
                 transform: "translateY(-50%)",
                 borderRadius: "9999px",
-                background: "oklch(0.22 0.01 260)",
+                background: "var(--muted)",
                 overflow: "hidden",
               }}
             >
@@ -667,7 +669,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 height: 14,
                 borderRadius: "50%",
                 background: handleBg,
-                border: "1.5px solid oklch(0.72 0.13 200)",
+                border: "1.5px solid oklch(0.72 0.14 26)",
                 cursor: "col-resize",
                 zIndex: 2,
                 boxSizing: "border-box",
@@ -686,7 +688,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 height: 14,
                 borderRadius: "50%",
                 background: handleBg,
-                border: "1.5px solid oklch(0.72 0.13 200)",
+                border: "1.5px solid oklch(0.72 0.14 26)",
                 cursor: "col-resize",
                 zIndex: 2,
                 boxSizing: "border-box",
@@ -697,7 +699,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
 
           {/* Status row */}
           <div className="flex items-center justify-between">
-            <span className="text-xs" style={{ color: "oklch(0.40 0 0)" }}>
+            <span className="text-sm text-foreground">
               {statusLabel}
             </span>
             {isLive && (

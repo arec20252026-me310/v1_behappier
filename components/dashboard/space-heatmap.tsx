@@ -367,19 +367,19 @@ export function SpaceHeatmap({
   const renderGrid = (enlarged: boolean) => (
     <div>
       {/* Legend */}
-      <div className="flex items-center gap-4 mb-2 text-xs flex-wrap">
+      <div className={cn("flex items-center gap-4 mb-2 flex-wrap font-medium", enlarged ? "text-xl" : "text-sm")}>
         {livePreviewMetrics ? (
           <>
-            <span className="text-muted-foreground">Occupancy:</span>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-red-400" style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
+            <span className="text-foreground">Occupancy:</span>
+            <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded border border-red-400", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
           </>
         ) : (
           <>
-            <span className="text-muted-foreground">Status:</span>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
-            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded border border-yellow-400" style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
+            <span className="text-foreground">Status:</span>
+            <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
           </>
         )}
       </div>
@@ -388,7 +388,7 @@ export function SpaceHeatmap({
       <div
         className="relative rounded-lg overflow-hidden border border-border mx-auto"
         style={enlarged
-          ? { height: "calc(88vh - 100px)", aspectRatio: `${effectiveCols} / ${effectiveRows}` }
+          ? { width: `min(55vw, calc((88vh - 100px) * ${(effectiveCols / effectiveRows).toFixed(6)}))`, aspectRatio: `${effectiveCols} / ${effectiveRows}` }
           : { width: gridResolution <= 20 ? "80%" : "100%", aspectRatio: `${effectiveCols} / ${effectiveRows}` }}
       >
         {floorPlanUrl ? (
@@ -396,7 +396,7 @@ export function SpaceHeatmap({
             ref={!enlarged ? floorPlanImgRef : undefined}
             src={floorPlanUrl}
             alt="Floor plan"
-            className="absolute inset-0 w-full h-full object-contain opacity-50"
+            className="absolute inset-0 w-full h-full object-contain opacity-80 dark:opacity-50"
             style={{ pointerEvents: "none" }}
             crossOrigin="anonymous"
           />
@@ -461,19 +461,19 @@ export function SpaceHeatmap({
                   : undefined,
               }}
             >
-              <div className="p-1 h-full flex flex-col justify-between text-foreground">
+              <div className="p-1 h-full flex flex-col justify-between text-white">
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-medium truncate leading-tight" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+                  <span className={cn("font-medium truncate leading-tight", enlarged ? "text-xl" : "text-[10px]")} style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                     {zone.name}
                   </span>
                 </div>
                 {liveCount !== null && tracksOccupancy !== false && (
                   <div className="flex items-center justify-center flex-1">
                     <div className="relative inline-flex items-center justify-center">
-                      <div className="absolute w-10 h-10 rounded-full bg-white/25 animate-ping" />
-                      <div className="relative w-9 h-9 rounded-full bg-white/20 border border-white/60 flex flex-col items-center justify-center shadow-lg gap-0">
-                        <Users className="h-3 w-3 text-white mb-0.5" />
-                        <span className="text-[11px] font-bold text-white leading-none">{liveCount}</span>
+                      <div className={cn("absolute rounded-full bg-white/25 animate-ping", enlarged ? "w-16 h-16" : "w-10 h-10")} />
+                      <div className={cn("relative rounded-full bg-white/20 border border-white/60 flex flex-col items-center justify-center shadow-lg gap-0", enlarged ? "w-14 h-14" : "w-9 h-9")}>
+                        <Users className={cn("text-white mb-0.5", enlarged ? "h-5 w-5" : "h-3 w-3")} />
+                        <span className={cn("font-bold text-white leading-none", enlarged ? "text-xl" : "text-[11px]")}>{liveCount}</span>
                       </div>
                     </div>
                   </div>
@@ -484,20 +484,34 @@ export function SpaceHeatmap({
         })}
 
         {cameras.map((cam) => {
-          const builderCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
-          const totalBuilderWidth = builderCellSize * effectiveCols
-          const totalBuilderHeight = builderCellSize * effectiveRows
+          // Prefer saved grid-fraction coords (written by zone-grid on drag).
+          // Fall back: derive from pixel x/y using the approximate cellSize from the builder formula.
+          // This is more accurate than zone-center for cameras that were placed but never saved with fracs.
+          let fracX: number
+          let fracY: number
+          if (cam.fracX !== undefined && cam.fracY !== undefined) {
+            fracX = cam.fracX
+            fracY = cam.fracY
+          } else if (cam.x > 0 || cam.y > 0) {
+            const approxCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
+            fracX = Math.max(0, Math.min(1, cam.x / (effectiveCols * approxCellSize)))
+            fracY = Math.max(0, Math.min(1, cam.y / (effectiveRows * approxCellSize)))
+          } else {
+            const zone = zones.find(z => z.id === cam.zoneId)
+            fracX = zone ? (zone.grid_x + zone.grid_width / 2) / effectiveCols : 0.5
+            fracY = zone ? (zone.grid_y + zone.grid_height / 2) / effectiveRows : 0.5
+          }
           return (
             <div
               key={cam.id}
               className="absolute pointer-events-none"
               style={{
-                left: `${imgOffsetXFrac * 100 + (cam.x / totalBuilderWidth) * (1 - 2 * imgOffsetXFrac) * 100}%`,
-                top: `${imgOffsetYFrac * 100 + (cam.y / totalBuilderHeight) * (1 - 2 * imgOffsetYFrac) * 100}%`,
+                left: `${(imgOffsetXFrac + fracX) * 100}%`,
+                top: `${(imgOffsetYFrac + fracY) * 100}%`,
                 zIndex: 20, transform: "translate(-50%, -50%)"
               }}
             >
-              <CameraMapIcon direction={cam.direction} size={18} label={cam.label} showLabel={false} />
+              <CameraMapIcon direction={cam.direction} size={enlarged ? 36 : 26} label={cam.label} showLabel={false} />
             </div>
           )
         })}
@@ -510,8 +524,8 @@ export function SpaceHeatmap({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-medium">Occupancy Map</CardTitle>
-            {hasAnyRunningStudy && (
+            <CardTitle className="text-xl font-medium">Occupancy Map</CardTitle>
+            {hasAnyRunningStudy && allActiveStudies.some(s => s.status === "running" || s.status === "analyzing") && (
               <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
                 {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
               </Badge>
@@ -548,7 +562,7 @@ export function SpaceHeatmap({
         <DialogContent className="sm:max-w-[92vw] w-[92vw] h-[88vh] p-0 gap-0 overflow-hidden">
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
-              <DialogTitle className="text-base font-medium">Occupancy Map</DialogTitle>
+              <DialogTitle className="text-5xl font-medium">Occupancy Map</DialogTitle>
               <DialogDescription className="sr-only">Enlarged heatmap view</DialogDescription>
             </DialogHeader>
             <div className={cn("flex-1 min-h-0 flex flex-row gap-6 overflow-hidden", allActiveStudies.length === 0 && "justify-center")}>
@@ -564,7 +578,7 @@ export function SpaceHeatmap({
                       {allActiveStudies.length > 1 && (
                         <p className="text-[10px] font-mono text-muted-foreground mb-1 truncate">{s.study_id}</p>
                       )}
-                      <p className="text-base font-medium text-muted-foreground uppercase tracking-wide mb-3">Latest Detection</p>
+                      <p className="text-2xl font-medium text-muted-foreground uppercase tracking-wide mb-3">Latest Detection</p>
                       <LiveDetectionFeed
                         studyId={s.study_id}
                         status={s.status}

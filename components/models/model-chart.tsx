@@ -41,7 +41,7 @@ interface ModelChartProps {
   yAxisLabel?: string
 }
 
-const DATA_COLOR = "oklch(0.7 0.15 180)"
+const DATA_COLOR = "var(--chart-scatter)"
 
 export const FIT_COLORS = [
   "#f59e0b",
@@ -69,10 +69,10 @@ function makeElapsedTooltipFormatter(maxSec: number): (v: number) => string {
 }
 
 const TOOLTIP_STYLE: React.CSSProperties = {
-  backgroundColor: "oklch(0.17 0.01 260)",
-  border: "1px solid oklch(0.28 0.01 260)",
+  backgroundColor: "var(--chart-tooltip-bg)",
+  border: "1px solid var(--chart-tooltip-border)",
   borderRadius: "0.5rem",
-  color: "oklch(0.95 0 0)",
+  color: "var(--chart-tooltip-text)",
   fontSize: 11,
   padding: "6px 10px",
 }
@@ -205,7 +205,7 @@ export function ModelChart({
       <div style={{ height: 300, position: "relative" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart margin={{ top: 8, right: 24, left: 8, bottom: 36 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis
               dataKey="x"
               type="number"
@@ -213,12 +213,12 @@ export function ModelChart({
               scale="linear"
               ticks={xTicks}
               tickFormatter={xTickFormatter}
-              tick={{ fill: "#9ca3af", fontSize: 10 }}
-              axisLine={{ stroke: "#9ca3af" }}
-              tickLine={{ stroke: "#9ca3af" }}
+              tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
+              axisLine={{ stroke: "var(--chart-axis)" }}
+              tickLine={{ stroke: "var(--chart-axis)" }}
               label={
                 (xAxisLabel ?? xLabel)
-                  ? { value: xAxisLabel ?? xLabel, position: "insideBottom", offset: -10, fill: "#9ca3af", fontSize: 11 }
+                  ? { value: xAxisLabel ?? xLabel, position: "insideBottom", offset: -10, fill: "var(--chart-axis)", fontSize: 11 }
                   : undefined
               }
             />
@@ -226,13 +226,13 @@ export function ModelChart({
               type="number"
               domain={[yDomainMin, yDomainMax]}
               tickFormatter={yTickFormatter}
-              tick={{ fill: "#9ca3af", fontSize: 10 }}
-              axisLine={{ stroke: "#9ca3af" }}
-              tickLine={{ stroke: "#9ca3af" }}
+              tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
+              axisLine={{ stroke: "var(--chart-axis)" }}
+              tickLine={{ stroke: "var(--chart-axis)" }}
               width={56}
               label={
                 (yAxisLabel ?? yLabel)
-                  ? { value: yAxisLabel ?? yLabel, angle: -90, position: "insideLeft", fill: "#9ca3af", fontSize: 11 }
+                  ? { value: yAxisLabel ?? yLabel, angle: -90, position: "insideLeft", fill: "var(--chart-axis)", fontSize: 11 }
                   : undefined
               }
             />

@@ -7,25 +7,12 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'OccupancyIQ - AI-Powered Occupancy Insights',
+  title: 'Looking Glass - AI-Powered Occupancy Insights',
   description: 'Transform video feeds into actionable behavioral insights for your spaces',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/looking-glass-icon.jpg',
+    apple: '/looking-glass-icon.jpg',
   },
 }
 
@@ -36,6 +23,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-background h-full overflow-hidden">
+      <head>
+        {/* Apply dark class before first paint to avoid flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="font-sans antialiased h-full overflow-hidden">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

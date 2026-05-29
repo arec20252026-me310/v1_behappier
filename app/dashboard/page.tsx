@@ -5,12 +5,14 @@ import { OccupancyChart } from "@/components/dashboard/occupancy-chart"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
 import { LatestDetectionCard } from "@/components/dashboard/latest-detection-card"
 import { StudyStatusWatcher } from "@/components/dashboard/study-status-watcher"
-import { getDemoScenario } from "@/lib/demo-mode"
+import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { getDefaultSpace } from "@/lib/spaces"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
   BE_LIVE_METRICS, BE_INSIGHT_OUTPUT, DEMO_DETECTIONS, DEMO_CAMERA_PLACEMENTS,
+  DEMO_LGQ_SPACE, ZONES_LGQ, DEMO_CAMERA_PLACEMENTS_LGQ, LGQ_SPACE_ID,
+  DEMO_METRICS_LGQ, BE_STUDY_IN_PROGRESS_LGQ, BE_STUDY_COMPLETE_LGQ, BE_LIVE_METRICS_LGQ, DEMO_DETECTIONS_LGQ, BE_INSIGHT_OUTPUT_LGQ,
 } from "@/lib/demo-seeds"
 
 const ACTIVE_STATUSES = ["running", "analyzing"]
@@ -22,20 +24,42 @@ export default async function DashboardPage() {
 
   // ── Demo mode: serve hardcoded data per scenario ──────────────────────────
   if (demo) {
+    const demoSpaceId = await getDemoSpaceId()
+    const isLGQ = demoSpaceId === LGQ_SPACE_ID
+
     const hasSpace    = scenario !== "blank"
     const hasStudy    = scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created"
     const hasLive     = scenario === "study-in-progress"
     const hasInsights = scenario === "study-complete" || scenario === "model-created"
     const showInsightsBadge = scenario === "study-complete"
 
-    const demoSpace   = hasSpace ? DEMO_SPACE : null
-    const demoZones   = hasSpace ? ZONES : []
-    const demoStudies = scenario === "study-in-progress" ? [BE_STUDY_IN_PROGRESS] : []
-    const demoInsights  = hasInsights ? [BE_INSIGHT_OUTPUT] : []
-    const demoLive      = hasLive ? BE_LIVE_METRICS : null
-    const demoCompletedStudy    = hasInsights ? BE_STUDY_COMPLETE : null
-    const demoCompletedInsights = showInsightsBadge ? BE_INSIGHT_OUTPUT : null
+    const demoSpace   = hasSpace ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE) : null
+    const demoZones   = hasSpace ? (isLGQ ? ZONES_LGQ : ZONES) : []
+    const demoStudies = scenario === "study-in-progress"
+      ? [isLGQ ? BE_STUDY_IN_PROGRESS_LGQ : BE_STUDY_IN_PROGRESS]
+      : (scenario === "study-complete" || scenario === "model-created")
+        ? [isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE]
+        : []
+    const demoInsights  = hasInsights ? [isLGQ ? BE_INSIGHT_OUTPUT_LGQ : BE_INSIGHT_OUTPUT] : []
+    const demoLive      = hasLive ? (isLGQ ? BE_LIVE_METRICS_LGQ : BE_LIVE_METRICS) : null
+    const demoCompletedStudy    = hasStudy && scenario !== "study-in-progress" ? (isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE) : null
+    // LGQ shows study data for in-progress and study-complete only (model-created = all zones green)
+    const lgqDisplayStudy = isLGQ && (scenario === "study-in-progress" || scenario === "study-complete")
+      ? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS_LGQ : BE_STUDY_COMPLETE_LGQ)
+      : null
+    const demoCompletedInsights = showInsightsBadge ? (isLGQ ? BE_INSIGHT_OUTPUT_LGQ : BE_INSIGHT_OUTPUT) : null
     const latestOutput = showInsightsBadge ? (demoInsights[0] ?? null) : null
+
+    // For LGQ, fetch real metric count from Supabase (behaviors tab does the same)
+    let lgqActiveMetricsCount = 0
+    if (isLGQ && hasSpace) {
+      const { data: lgqMetrics } = await supabase
+        .from("metrics")
+        .select("id")
+        .eq("space_id", LGQ_SPACE_ID)
+        .eq("is_active", true)
+      lgqActiveMetricsCount = lgqMetrics?.length ?? 0
+    }
 
     function toArr(v: unknown): unknown[] {
       if (Array.isArray(v)) return v
@@ -58,7 +82,7 @@ export default async function DashboardPage() {
       return `${description} — ${cited}`
     }
     const demoMetricDescriptions: Record<string, string> = Object.fromEntries(
-      DEMO_METRICS.map(m => [m.name, withCitation(m.description, m.literature_reference)])
+      (isLGQ ? DEMO_METRICS_LGQ : DEMO_METRICS).map(m => [m.name, withCitation(m.description, m.literature_reference)])
     )
 
     return (
@@ -67,46 +91,46 @@ export default async function DashboardPage() {
           title="Dashboard"
           subtitle={demoSpace?.name || "Get started by setting up your space"}
         />
-        <div className="flex-1 p-6 space-y-6 overflow-auto">
+        <div className="flex-1 p-6 space-y-4 overflow-auto">
           <MetricCards
             zonesCount={demoZones.length}
-            studiesCount={demoStudies.length}
+            studiesCount={hasLive ? demoStudies.length : 0}
             insightsCount={insightsCount}
-            metricsCount={hasStudy ? DEMO_METRICS.filter(m => m.is_active).length : 0}
+            metricsCount={hasStudy ? (isLGQ ? lgqActiveMetricsCount : DEMO_METRICS.filter(m => m.is_active).length) : 0}
             latestInsightAt={showInsightsBadge ? demoInsights[0]?.created_at : undefined}
             isDemo={true}
           />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <SpaceHeatmap
               zones={demoZones}
               insights={[]}
               space={demoSpace}
               studies={[]}
-              cameras={hasSpace ? DEMO_CAMERA_PLACEMENTS : []}
+              cameras={hasSpace ? (isLGQ ? DEMO_CAMERA_PLACEMENTS_LGQ : DEMO_CAMERA_PLACEMENTS) : []}
               livePreviewMetrics={scenario === "study-in-progress" ? null : demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
-              activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
-              activeStudyStatus={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined}
-              activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id : undefined}
-              demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
+              activeStudyId={scenario === "study-in-progress" ? (lgqDisplayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id) : undefined}
+              activeStudyStatus={scenario === "study-in-progress" ? (lgqDisplayStudy?.status ?? BE_STUDY_IN_PROGRESS.status) : undefined}
+              activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (lgqDisplayStudy?.metadata?.monitored_zone_id ?? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id) : undefined}
+              demoDetections={scenario === "study-in-progress" ? (isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS) : undefined}
               tracksOccupancy={scenario === "study-in-progress"}
               isDemo={true}
             />
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               <OccupancyChart
                 latestOutput={latestOutput}
-                studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000}
+                studyDurationMs={(isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE).duration_seconds * 1000}
                 metricDescriptions={demoMetricDescriptions}
-                activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
-                activeStudyStatus={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined}
-                demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
+                activeStudyId={scenario === "study-in-progress" ? (lgqDisplayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id) : undefined}
+                activeStudyStatus={scenario === "study-in-progress" ? (lgqDisplayStudy?.status ?? BE_STUDY_IN_PROGRESS.status) : undefined}
+                demoDetections={scenario === "study-in-progress" ? (isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS) : undefined}
               />
               {scenario === "study-in-progress" && (
                 <LatestDetectionCard
-                  studyId={BE_STUDY_IN_PROGRESS.study_id}
-                  status={BE_STUDY_IN_PROGRESS.status}
-                  demoDetections={DEMO_DETECTIONS.slice(-1)}
+                  studyId={lgqDisplayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id}
+                  status={lgqDisplayStudy?.status ?? BE_STUDY_IN_PROGRESS.status}
+                  demoDetections={(isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS).slice(-1)}
                 />
               )}
             </div>
@@ -142,6 +166,8 @@ export default async function DashboardPage() {
       zoneId: cam.zone_id,
       x: typeof meta.placement_x === "number" ? meta.placement_x : zone ? (zone.grid_x + zone.grid_width / 2) * cameraCellSize : 0,
       y: typeof meta.placement_y === "number" ? meta.placement_y : zone ? (zone.grid_y + zone.grid_height / 2) * cameraCellSize : 0,
+      fracX: typeof meta.placement_frac_x === "number" ? meta.placement_frac_x : undefined,
+      fracY: typeof meta.placement_frac_y === "number" ? meta.placement_frac_y : undefined,
       direction: (typeof meta.placement_direction === "string" ? meta.placement_direction : "down") as import("@/lib/types").CameraDirection,
       label: cam.name,
     }
@@ -254,7 +280,7 @@ export default async function DashboardPage() {
         subtitle={space?.name || "Get started by setting up your space"}
       />
 
-      <div className="flex-1 p-6 space-y-6 overflow-auto">
+      <div className="flex-1 p-6 space-y-4 overflow-auto">
         <MetricCards
           zonesCount={zones.length}
           studiesCount={beStudies.length}
@@ -289,7 +315,7 @@ export default async function DashboardPage() {
           const detectionCardStudies = activeStudies.map(s => ({ studyId: s.study_id, status: s.status }))
 
           return (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <SpaceHeatmap
                 zones={zones}
                 insights={[]}
@@ -301,7 +327,7 @@ export default async function DashboardPage() {
                 completedZoneInsights={completedZoneInsights}
                 tracksOccupancy={metrics.some(m => (m as { name: string }).name?.toLowerCase().includes("occupancy"))}
               />
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4">
                 <OccupancyChart
                   latestOutput={latestOutput}
                   metricDescriptions={metricDescriptions}
