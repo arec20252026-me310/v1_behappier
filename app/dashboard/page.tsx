@@ -91,7 +91,7 @@ export default async function DashboardPage() {
           title="Dashboard"
           subtitle={demoSpace?.name || "Get started by setting up your space"}
         />
-        <div className="flex-1 p-6 space-y-6 overflow-auto">
+        <div className="flex-1 p-6 space-y-4 overflow-auto">
           <MetricCards
             zonesCount={demoZones.length}
             studiesCount={hasLive ? demoStudies.length : 0}
@@ -100,7 +100,7 @@ export default async function DashboardPage() {
             latestInsightAt={showInsightsBadge ? demoInsights[0]?.created_at : undefined}
             isDemo={true}
           />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <SpaceHeatmap
               zones={demoZones}
               insights={[]}
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
               tracksOccupancy={scenario === "study-in-progress"}
               isDemo={true}
             />
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               <OccupancyChart
                 latestOutput={latestOutput}
                 studyDurationMs={(isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE).duration_seconds * 1000}
@@ -280,7 +280,7 @@ export default async function DashboardPage() {
         subtitle={space?.name || "Get started by setting up your space"}
       />
 
-      <div className="flex-1 p-6 space-y-6 overflow-auto">
+      <div className="flex-1 p-6 space-y-4 overflow-auto">
         <MetricCards
           zonesCount={zones.length}
           studiesCount={beStudies.length}
@@ -315,7 +315,7 @@ export default async function DashboardPage() {
           const detectionCardStudies = activeStudies.map(s => ({ studyId: s.study_id, status: s.status }))
 
           return (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <SpaceHeatmap
                 zones={zones}
                 insights={[]}
@@ -327,7 +327,7 @@ export default async function DashboardPage() {
                 completedZoneInsights={completedZoneInsights}
                 tracksOccupancy={metrics.some(m => (m as { name: string }).name?.toLowerCase().includes("occupancy"))}
               />
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4">
                 <OccupancyChart
                   latestOutput={latestOutput}
                   metricDescriptions={metricDescriptions}

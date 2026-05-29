@@ -99,8 +99,8 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
           <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
             <Lightbulb className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">No Insights Yet</h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
+          <h3 className="text-xl font-medium text-foreground mb-2">No Insights Yet</h3>
+          <p className="text-base text-muted-foreground text-center max-w-md">
             Insights are generated automatically as your studies collect and analyze behavioral data.
             Start a study to begin.
           </p>
@@ -112,8 +112,8 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Study Insights</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="text-xl font-semibold text-foreground">Study Insights</h2>
+        <p className="text-base text-muted-foreground">
           {normalized.length} insight report{normalized.length !== 1 ? "s" : ""} generated
         </p>
       </div>
@@ -124,11 +124,11 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
             <CardContent className="p-5 space-y-4">
               {/* Study title */}
               <div>
-                <h3 className="text-sm font-semibold text-foreground leading-snug">
+                <h3 className="text-base font-semibold text-foreground leading-snug">
                   {studyGoals[output.study_id] || studyLabel(output.study_id)}
                 </h3>
                 {spaceName && (
-                  <p className="text-xs text-muted-foreground/70 mt-0.5">{spaceName}</p>
+                  <p className="text-sm text-muted-foreground/70 mt-0.5">{spaceName}</p>
                 )}
                 <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
                   {output.study_id}
@@ -140,22 +140,22 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                 <div className="flex items-center gap-2">
                   <Badge
                     variant={output.output_mode === "final_insights" ? "default" : "outline"}
-                    className="text-xs"
+                    className="text-sm"
                   >
                     {output.output_mode === "final_insights" ? "Final Insights" : "Milestone Summary"}
                   </Badge>
-                  <Badge variant="outline" className="text-xs text-muted-foreground capitalize">
+                  <Badge variant="outline" className="text-sm text-muted-foreground capitalize">
                     {output.status}
                   </Badge>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {formatDistanceToNow(new Date(output.created_at), { addSuffix: true })}
                 </span>
               </div>
 
               {/* Summary */}
               {output.dashboard_summary && (
-                <p className="text-sm text-foreground leading-relaxed">
+                <p className="text-base text-foreground leading-relaxed">
                   {output.dashboard_summary}
                 </p>
               )}
@@ -165,13 +165,13 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                 <div>
                   <div className="flex items-center gap-1.5 mb-2">
                     <Lightbulb className="h-3.5 w-3.5 text-chart-4" />
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                       Key Findings
                     </p>
                   </div>
                   <ul className="space-y-1.5">
                     {output.insights.map((insight, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
+                      <li key={i} className="flex items-start gap-2 text-base">
                         <div className="w-1.5 h-1.5 rounded-full bg-chart-4 mt-1.5 shrink-0" />
                         <span>{insight}</span>
                       </li>
@@ -185,13 +185,13 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                 <div>
                   <div className="flex items-center gap-1.5 mb-2">
                     <Target className="h-3.5 w-3.5 text-chart-2" />
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                       Recommendations
                     </p>
                   </div>
                   <ul className="space-y-1.5">
                     {output.recommendations.map((rec, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
+                      <li key={i} className="flex items-start gap-2 text-base">
                         <div className="w-1.5 h-1.5 rounded-full bg-chart-2 mt-1.5 shrink-0" />
                         <span>{rec}</span>
                       </li>
@@ -216,7 +216,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                   <div className="space-y-4 pt-2 border-t border-border">
                     <div className="flex items-center gap-1.5">
                       <BarChart3 className="h-3.5 w-3.5 text-chart-1" />
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                         Charts
                       </p>
                     </div>
@@ -248,7 +248,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                       ? <ChevronDown className="h-3.5 w-3.5 text-chart-3" />
                       : <ChevronRight className="h-3.5 w-3.5 text-chart-3" />}
                     <Table2 className="h-3.5 w-3.5 text-chart-3" />
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                       Detection Log {!isOpen && <span className="text-muted-foreground/60">(click to expand)</span>}
                     </p>
                   </button>
@@ -275,9 +275,9 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
 
                     return (
                       <div key={t.table_id as string ?? i} className="space-y-1.5">
-                        {title && <p className="text-xs text-muted-foreground">{title}</p>}
+                        {title && <p className="text-sm text-muted-foreground">{title}</p>}
                         <div className="overflow-x-auto rounded border border-border">
-                          <table className="w-full text-xs">
+                          <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-border bg-muted/40">
                                 {columns.map((col, ci) => (

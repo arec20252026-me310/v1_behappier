@@ -193,9 +193,9 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
   return (
     <>
       <div className="space-y-3">
-        {title && <p className="text-xs text-muted-foreground">{title}</p>}
+        {title && <p className="text-sm text-muted-foreground">{title}</p>}
         <div className="overflow-x-auto rounded border border-border">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/40">
                 <th className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap w-14">
@@ -251,7 +251,7 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
 
         {/* Pagination controls */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between gap-2 pt-1 text-xs">
+          <div className="flex items-center justify-between gap-2 pt-1 text-sm">
             <p className="text-muted-foreground">
               Showing {pageStart + 1}–{pageEnd} of {rows.length}
             </p>
@@ -294,7 +294,7 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
         {/* Accuracy summary — shown as soon as any behavior is evaluated */}
         {accuracySummary.length > 0 && (
           <div className="space-y-2 pt-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
               Metric Accuracy — {evaluatedRowCount} of {rows.length} rows evaluated{allEvaluated ? " ✓" : ""}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -303,14 +303,14 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
                 return (
                   <div key={metric} className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 min-w-[140px]">
                     <div>
-                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">{metric}</p>
+                      <p className="text-sm text-muted-foreground truncate max-w-[120px]">{metric}</p>
                       <p className={cn(
                         "text-xl font-semibold",
                         pct >= 80 ? "text-green-400" : pct >= 60 ? "text-yellow-400" : "text-red-400"
                       )}>
                         {pct}%
                       </p>
-                      <p className="text-xs text-muted-foreground">{correct}/{total} correct</p>
+                      <p className="text-sm text-muted-foreground">{correct}/{total} correct</p>
                     </div>
                   </div>
                 )
@@ -357,7 +357,7 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
             onClick={e => e.stopPropagation()}
           >
             {/* Counter */}
-            <p className="text-center text-xs text-white/50">
+            <p className="text-center text-sm text-white/50">
               {openIdx + 1} / {rows.length}
             </p>
 
@@ -375,12 +375,12 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
             {/* Single behavior evaluation — matches the row that was clicked */}
             {currentDetection && currentBehaviorName && (
               <div className="flex items-center justify-between gap-3 bg-black/60 backdrop-blur rounded-lg px-4 py-3">
-                <span className="text-sm text-white/80">{currentBehaviorName}</span>
+                <span className="text-base text-white/80">{currentBehaviorName}</span>
                 <div className="flex gap-2">
                   <button
                     onClick={e => { e.stopPropagation(); setVerdict(currentDetection.id, currentBehaviorName, "correct") }}
                     className={cn(
-                      "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center gap-1.5 px-4 py-2 rounded-lg text-base font-medium transition-colors",
                       currentVerdict === "correct"
                         ? "bg-green-500 text-white"
                         : "bg-white/10 text-white/70 hover:bg-green-500/40 hover:text-white"
@@ -392,7 +392,7 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
                   <button
                     onClick={e => { e.stopPropagation(); setVerdict(currentDetection.id, currentBehaviorName, "incorrect") }}
                     className={cn(
-                      "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center gap-1.5 px-4 py-2 rounded-lg text-base font-medium transition-colors",
                       currentVerdict === "incorrect"
                         ? "bg-red-500 text-white"
                         : "bg-white/10 text-white/70 hover:bg-red-500/40 hover:text-white"
@@ -408,20 +408,20 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
             {/* Log entry */}
             <div className="bg-black/60 backdrop-blur rounded-lg p-4 space-y-2.5">
               {currentDetection?.timestamp_pt && (
-                <p className="text-xs font-mono text-white/60">{currentDetection.timestamp_pt}</p>
+                <p className="text-sm font-mono text-white/60">{currentDetection.timestamp_pt}</p>
               )}
               {currentRow && columns.length > 0 && (
                 <div className="grid grid-cols-2 gap-x-6 gap-y-1">
                   {columns.map((col, ci) => (
                     <div key={ci} className="flex gap-1.5 min-w-0">
-                      <span className="text-xs text-white/45 shrink-0">{col}:</span>
-                      <span className="text-xs text-white/90 truncate">{currentRow[ci] ?? "—"}</span>
+                      <span className="text-sm text-white/45 shrink-0">{col}:</span>
+                      <span className="text-sm text-white/90 truncate">{currentRow[ci] ?? "—"}</span>
                     </div>
                   ))}
                 </div>
               )}
               {currentDetection?.notes && (
-                <p className="text-xs text-white/65 leading-relaxed border-t border-white/10 pt-2.5">
+                <p className="text-sm text-white/65 leading-relaxed border-t border-white/10 pt-2.5">
                   {currentDetection.notes}
                 </p>
               )}

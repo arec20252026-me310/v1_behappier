@@ -43,8 +43,8 @@ export function DetectionReview({ detections, studyId }: DetectionReviewProps) {
         >
           <div className="flex items-center gap-2">
             <Camera className="h-4 w-4 text-blue-400" />
-            <span className="text-sm font-medium text-foreground">Snapshot Review</span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-base font-medium text-foreground">Snapshot Review</span>
+            <span className="text-sm text-muted-foreground">
               {detections.length} detection{detections.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -73,7 +73,7 @@ export function DetectionReview({ detections, studyId }: DetectionReviewProps) {
                     }}
                   />
                   <div
-                    className="absolute inset-0 items-center justify-center bg-muted text-muted-foreground text-xs hidden"
+                    className="absolute inset-0 items-center justify-center bg-muted text-muted-foreground text-sm hidden"
                   >
                     No image
                   </div>
@@ -81,7 +81,7 @@ export function DetectionReview({ detections, studyId }: DetectionReviewProps) {
 
                 {/* Timestamp */}
                 {d.timestamp_pt && (
-                  <p className="text-xs text-muted-foreground font-mono truncate">{d.timestamp_pt}</p>
+                  <p className="text-sm text-muted-foreground font-mono truncate">{d.timestamp_pt}</p>
                 )}
 
                 {/* Detected values */}
@@ -90,7 +90,7 @@ export function DetectionReview({ detections, studyId }: DetectionReviewProps) {
                     {d.detected_behaviors.map((b, i) => (
                       <span
                         key={i}
-                        className="text-xs px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20"
+                        className="text-sm px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20"
                       >
                         {b.name}: {b.value}{b.unit ? ` ${b.unit}` : ""}
                       </span>
@@ -100,7 +100,7 @@ export function DetectionReview({ detections, studyId }: DetectionReviewProps) {
 
                 {/* AI notes */}
                 {d.notes && (
-                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{d.notes}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{d.notes}</p>
                 )}
               </div>
             ))}

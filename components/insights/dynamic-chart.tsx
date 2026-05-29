@@ -57,7 +57,7 @@ function HeatmapChart({ labels, values }: { labels: string[]; values: (number | 
   const numCols = values[0]?.length ?? 0
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full text-sm border-collapse">
         <thead>
           <tr>
             <th className="text-left p-1 text-muted-foreground font-normal">Time</th>
@@ -99,7 +99,7 @@ export function DynamicChart({ chart_type, title, data }: DynamicChartProps) {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground">{title}</p>
+      <p className="text-sm font-medium text-muted-foreground">{title}</p>
 
       {chart_type === "heatmap" ? (
         <HeatmapChart labels={labels} values={values as (number | null)[][]} />

@@ -11,7 +11,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b border-primary/30 bg-primary/20">
+    <header className="flex items-center justify-between px-6 py-4 border-b border-primary/15 bg-primary/8">
       <div>
         <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
         {subtitle && (
