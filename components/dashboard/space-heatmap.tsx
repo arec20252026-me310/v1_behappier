@@ -386,10 +386,10 @@ export function SpaceHeatmap({
 
       {/* Grid */}
       <div
-        className="relative rounded-lg overflow-hidden border border-border"
+        className="relative rounded-lg overflow-hidden border border-border mx-auto"
         style={enlarged
           ? { height: "calc(88vh - 100px)", aspectRatio: `${effectiveCols} / ${effectiveRows}` }
-          : { width: "100%", aspectRatio: `${effectiveCols} / ${effectiveRows}` }}
+          : { width: gridResolution <= 10 ? "88%" : "100%", aspectRatio: `${effectiveCols} / ${effectiveRows}` }}
       >
         {floorPlanUrl ? (
           <img
