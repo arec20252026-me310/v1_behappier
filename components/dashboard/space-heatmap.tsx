@@ -511,7 +511,7 @@ export function SpaceHeatmap({
                 zIndex: 20, transform: "translate(-50%, -50%)"
               }}
             >
-              <CameraMapIcon direction={cam.direction} size={enlarged ? 28 : 18} label={cam.label} showLabel={false} />
+              <CameraMapIcon direction={cam.direction} size={enlarged ? 36 : 26} label={cam.label} showLabel={false} />
             </div>
           )
         })}
