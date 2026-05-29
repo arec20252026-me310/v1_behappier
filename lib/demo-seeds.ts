@@ -264,7 +264,7 @@ export const DEMO_DETECTIONS_LGQ = [
   { timestamp_pt: "2026-05-28 14:05:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }], notes: "Fourth person enters and pulls up a chair to join the group." },
   { timestamp_pt: "2026-05-28 14:06:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }], notes: "Four people present, brief group discussion visible around laptop screens." },
   { timestamp_pt: "2026-05-28 14:07:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "One person has stepped out. Three people remain, still working." },
-  { timestamp_pt: "2026-05-28 14:08:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }], notes: "Two occupants remain. Session appears to be winding down." },
+  { timestamp_pt: "2026-05-28 14:08:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "There are three people sitting at the table calmly working on laptops." },
 ]
 
 export const BE_LIVE_METRICS_LGQ = {
