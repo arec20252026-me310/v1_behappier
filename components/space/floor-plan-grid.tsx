@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { type Zone, type Insight } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { AlertTriangle } from 'lucide-react'
@@ -38,16 +39,14 @@ export function FloorPlanGrid({
   onZoneResize,
   className,
 }: FloorPlanGridProps) {
-  // Get occupancy color based on percentage
   const getOccupancyColor = (percentage: number) => {
-    if (percentage >= 90) return 'rgba(239, 68, 68, 0.7)' // red
-    if (percentage >= 70) return 'rgba(249, 115, 22, 0.7)' // orange
-    if (percentage >= 50) return 'rgba(234, 179, 8, 0.7)' // yellow
-    if (percentage >= 25) return 'rgba(34, 197, 94, 0.7)' // green
-    return 'rgba(59, 130, 246, 0.5)' // blue (low/empty)
+    if (percentage >= 90) return 'rgba(239, 68, 68, 0.7)'
+    if (percentage >= 70) return 'rgba(249, 115, 22, 0.7)'
+    if (percentage >= 50) return 'rgba(234, 179, 8, 0.7)'
+    if (percentage >= 25) return 'rgba(34, 197, 94, 0.7)'
+    return 'rgba(59, 130, 246, 0.5)'
   }
 
-  // Check if a zone has an active (unacknowledged) insight
   const getZoneInsight = (zoneId: string) => {
     return insights.find(
       (insight) =>
@@ -57,19 +56,51 @@ export function FloorPlanGrid({
     )
   }
 
-  const cellSize = 100 / gridResolution
+  // Track floor plan AR so the container matches the image shape (mirrors zone-grid.tsx)
+  const [imgAspectRatio, setImgAspectRatio] = useState<number | null>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+  useEffect(() => {
+    const img = imgRef.current
+    if (!img || !floorPlanUrl) { setImgAspectRatio(null); return }
+    const apply = (el: HTMLImageElement) => {
+      if (el.naturalWidth && el.naturalHeight) setImgAspectRatio(el.naturalWidth / el.naturalHeight)
+    }
+    if (img.complete) apply(img)
+    else img.addEventListener('load', () => apply(img), { once: true })
+  }, [floorPlanUrl])
+
+  const effectiveCols = zones.length > 0
+    ? Math.max(gridResolution, ...zones.map(z => z.grid_x + z.grid_width))
+    : gridResolution
+  const effectiveRowsMin = zones.length > 0
+    ? Math.max(1, ...zones.map(z => z.grid_y + z.grid_height))
+    : 1
+  const effectiveRows = imgAspectRatio
+    ? Math.max(Math.round(effectiveCols / imgAspectRatio), effectiveRowsMin)
+    : Math.max(effectiveCols, effectiveRowsMin)
+
+  const cellPctX = 100 / effectiveCols
+  const cellPctY = 100 / effectiveRows
+
+  const containerAR = effectiveCols / effectiveRows
+  const [imgOffsetXFrac, imgOffsetYFrac] = useMemo(() => {
+    if (!imgAspectRatio) return [0, 0]
+    if (containerAR > imgAspectRatio) return [(1 - imgAspectRatio / containerAR) / 2, 0]
+    return [0, (1 - containerAR / imgAspectRatio) / 2]
+  }, [imgAspectRatio, containerAR])
 
   return (
     <div
       className={cn(
-        'relative w-full aspect-square rounded-lg overflow-hidden border border-border',
+        'relative w-full rounded-lg overflow-hidden border border-border',
         floorPlanUrl ? 'bg-muted/30' : 'bg-muted/50',
         className
       )}
+      style={{ aspectRatio: `${effectiveCols} / ${effectiveRows}` }}
     >
-      {/* Floor plan background image */}
       {floorPlanUrl && (
         <img
+          ref={imgRef}
           src={floorPlanUrl}
           alt="Floor plan"
           className="absolute inset-0 w-full h-full object-contain opacity-60"
@@ -77,7 +108,6 @@ export function FloorPlanGrid({
         />
       )}
 
-      {/* Grid overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -85,11 +115,11 @@ export function FloorPlanGrid({
             linear-gradient(to right, rgba(100, 100, 100, 0.15) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(100, 100, 100, 0.15) 1px, transparent 1px)
           `,
-          backgroundSize: `${cellSize}% ${cellSize}%`,
+          backgroundSize: `${cellPctX}% ${cellPctY}%`,
+          backgroundPosition: `${imgOffsetXFrac * 100}% ${imgOffsetYFrac * 100}%`,
         }}
       />
 
-      {/* Zones */}
       {zones.map((zone) => {
         const hasInsight = getZoneInsight(zone.id)
         const occupancyPercent = zone.occupancy_percentage ?? 0
@@ -106,10 +136,10 @@ export function FloorPlanGrid({
               hasInsight && 'zone-flashing'
             )}
             style={{
-              left: `${zone.grid_x * cellSize}%`,
-              top: `${zone.grid_y * cellSize}%`,
-              width: `${zone.grid_width * cellSize}%`,
-              height: `${zone.grid_height * cellSize}%`,
+              left: `${imgOffsetXFrac * 100 + zone.grid_x * cellPctX}%`,
+              top: `${imgOffsetYFrac * 100 + zone.grid_y * cellPctY}%`,
+              width: `${zone.grid_width * cellPctX}%`,
+              height: `${zone.grid_height * cellPctY}%`,
               backgroundColor: showOccupancy
                 ? getOccupancyColor(occupancyPercent)
                 : `${zone.color}99`,
@@ -128,7 +158,6 @@ export function FloorPlanGrid({
               }
             }}
           >
-            {/* Zone label */}
             <div className="absolute inset-0 flex flex-col items-center justify-center p-1 overflow-hidden">
               <span
                 className="text-[10px] sm:text-xs font-medium text-white drop-shadow-md text-center leading-tight truncate w-full"
@@ -146,28 +175,22 @@ export function FloorPlanGrid({
               )}
             </div>
 
-            {/* Insight alert icon */}
             {hasInsight && (
               <div className="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 shadow-lg">
                 <AlertTriangle className="h-3 w-3 text-white" />
               </div>
             )}
 
-            {/* Resize handle (edit mode only) */}
             {mode === 'edit' && isSelected && (
               <div
                 className="absolute bottom-0 right-0 w-3 h-3 bg-primary cursor-se-resize rounded-tl"
-                onMouseDown={(e) => {
-                  e.stopPropagation()
-                  // Resize logic would be handled by parent
-                }}
+                onMouseDown={(e) => e.stopPropagation()}
               />
             )}
           </div>
         )
       })}
 
-      {/* Empty state */}
       {!floorPlanUrl && zones.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
           <span className="text-sm">No floor plan uploaded</span>
