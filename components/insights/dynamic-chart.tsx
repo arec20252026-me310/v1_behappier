@@ -76,7 +76,7 @@ function HeatmapChart({ labels, values }: { labels: string[]; values: (number | 
                     key={ci}
                     className="p-1 text-center"
                     title={val == null ? "null" : String(val)}
-                    style={{ background: `oklch(0.7 0.15 200 / ${Math.round(alpha * 100)}%)`, color: COLORS.tooltipTxt }}
+                    style={{ background: `oklch(0.7 0.15 200 / ${Math.round(alpha * 100)}%)`, color: "var(--chart-tooltip-text)" }}
                   >
                     {val == null ? "—" : val.toFixed(2)}
                   </td>
