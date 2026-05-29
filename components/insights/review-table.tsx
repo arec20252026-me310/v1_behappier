@@ -7,6 +7,7 @@ import type { DetectionRow } from "./insights-list"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
+
 // Each snapshot produces one row per behavior metric, so rows are not 1:1 with detections.
 // Match by the timestamp column value instead of row index.
 function buildDetectionByTimestamp(detections: DetectionRow[]): Record<string, DetectionRow> {
@@ -15,6 +16,18 @@ function buildDetectionByTimestamp(detections: DetectionRow[]): Record<string, D
     if (d.timestamp_pt) map[d.timestamp_pt] = d
   }
   return map
+}
+
+// Build a URL for the snapshot proxy API. Uses the image_id + cameraId so the
+// server-side route can find the file using the service role key (the browser
+// anon client has no permission to create signed URLs for private buckets).
+function snapshotProxyUrl(imageId: string, cameraId?: string | null): string | null {
+  if (!imageId) return null
+  if (cameraId) {
+    const path = `snapshots/${cameraId}/${imageId}.jpg`
+    return `/api/snapshot?path=${encodeURIComponent(path)}`
+  }
+  return `/api/snapshot?image_id=${encodeURIComponent(imageId)}`
 }
 
 interface ReviewTableProps {
@@ -31,20 +44,10 @@ type Evaluations = Record<string, Record<string, Verdict>>
 
 const PAGE_SIZE = 30
 
-// Compute the storage path for a detection. Mirrors the n8n upload convention:
-//   snapshots/<camera_id>/<image_id>.jpg
-function storagePathFor(imageId: string, cameraId?: string | null): string | null {
-  if (!imageId || !cameraId) return null
-  return `snapshots/${cameraId}/${imageId}.jpg`
-}
-
 export function ReviewTable({ columns, rows, detections, title, cameraId }: ReviewTableProps) {
   const [openIdx, setOpenIdx] = useState<number | null>(null)
   const [evaluations, setEvaluations] = useState<Evaluations>({})
   const [page, setPage] = useState(0)
-  // signedUrlByDetectionId — populated lazily, per page, from Supabase Storage.
-  // Signed URLs are valid for 1 hour; we don't bother refreshing on this view.
-  const [signedUrlByDetectionId, setSignedUrlByDetectionId] = useState<Record<string, string>>({})
   const supabase = useRef(createClient()).current
 
   // Reset to first page if the row set changes (e.g. study switched)
@@ -90,43 +93,6 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
     return detections[rowIdx] ?? null
   }, [rows, tsColIdx, detectionByTimestamp, detections])
 
-  // Batch-fetch signed URLs for the currently visible page. Snapshots live in a
-  // private bucket, so the browser cannot just fetch them directly — we need
-  // short-lived signed URLs. Generating them in one batch per page keeps the
-  // network traffic predictable: 1 API call per page, then the browser fetches
-  // images straight from Supabase Storage's CDN (not via our serverless API).
-  useEffect(() => {
-    const pageDetections: DetectionRow[] = []
-    for (let i = pageStart; i < pageEnd; i++) {
-      const d = getRowDetection(i)
-      if (d) pageDetections.push(d)
-    }
-    // Pairs of (detection_id, storage_path) for cells we still need a URL for.
-    const todo: { detectionId: string; path: string }[] = []
-    for (const d of pageDetections) {
-      if (signedUrlByDetectionId[d.id]) continue
-      const path = storagePathFor(d.image_id, cameraId)
-      if (!path) continue
-      todo.push({ detectionId: d.id, path })
-    }
-    if (todo.length === 0) return
-    let cancelled = false
-    supabase.storage
-      .from("camera-snapshots")
-      .createSignedUrls(todo.map(t => t.path), 3600)
-      .then(({ data, error }) => {
-        if (cancelled || error || !data) return
-        const next: Record<string, string> = {}
-        for (let i = 0; i < todo.length; i++) {
-          const entry = data[i]
-          if (entry && entry.signedUrl) next[todo[i].detectionId] = entry.signedUrl
-        }
-        if (Object.keys(next).length > 0) {
-          setSignedUrlByDetectionId(prev => ({ ...prev, ...next }))
-        }
-      })
-    return () => { cancelled = true }
-  }, [page, pageStart, pageEnd, cameraId, getRowDetection, signedUrlByDetectionId, supabase])
 
   // Unique snapshot count (detections represented in the table)
   const uniqueDetectionCount = useMemo(() => {
@@ -266,7 +232,7 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
                           )} />
                         )}
                         <SnapshotCell
-                          signedUrl={det ? signedUrlByDetectionId[det.id] : null}
+                          signedUrl={det ? snapshotProxyUrl(det.image_id, cameraId) : null}
                           onExpand={() => setOpenIdx(ri)}
                         />
                       </div>
@@ -397,10 +363,10 @@ export function ReviewTable({ columns, rows, detections, title, cameraId }: Revi
 
             {/* Image — uses the same signed URL we already generated for the
                 thumbnail, so no extra request when the lightbox opens. */}
-            {currentDetection && signedUrlByDetectionId[currentDetection.id] && (
+            {currentDetection && snapshotProxyUrl(currentDetection.image_id, cameraId) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={signedUrlByDetectionId[currentDetection.id]}
+                src={snapshotProxyUrl(currentDetection.image_id, cameraId)!}
                 alt="Snapshot"
                 className="w-full rounded-lg object-contain shadow-2xl"
               />
