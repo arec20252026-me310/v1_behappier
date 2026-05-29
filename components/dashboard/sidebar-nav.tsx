@@ -65,9 +65,8 @@ export function SidebarNav() {
     >
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <Image src="/looking-glass-logo.jpg" alt="Looking Glass" width={32} height={32} className="rounded-md" />
-            <span className="font-semibold text-sidebar-foreground">Looking Glass</span>
+          <div className="flex items-center">
+            <Image src="/looking-glass-name.jpg" alt="Looking Glass" width={180} height={36} className="object-contain" style={{ maxHeight: 36 }} />
           </div>
         )}
         <Button

@@ -282,7 +282,7 @@ export const BE_LIVE_METRICS_LGQ = {
 
 // ── LGQ insight output ───────────────────────────────────────────────────────
 const _LGQ_OCC_LABELS = ["14:00:00","14:01:00","14:02:00","14:03:00","14:04:00","14:05:00","14:06:00","14:07:00","14:08:00"]
-const _LGQ_OCC_VALS   = [1, 2, 3, 3, 3, 4, 4, 3, 2]
+const _LGQ_OCC_VALS   = [1, 2, 3, 3, 3, 4, 4, 3, 3]
 
 export const BE_INSIGHT_OUTPUT_LGQ = {
   id: SEED_LGQ_INSIGHT_ID,
@@ -471,7 +471,8 @@ export const BE_INSIGHT_OUTPUT = {
 
 // ── Models demo (model-created scenario) ─────────────────────────────────────
 
-export const SEED_MODEL_DATASET_ID = "00000000-0000-0000-0000-000000000010"
+export const SEED_MODEL_DATASET_ID     = "00000000-0000-0000-0000-000000000010"
+export const SEED_LGQ_MODEL_DATASET_ID = "00000000-0000-0000-0000-000000000014"
 
 // CO2 is randomly scattered (noisy). Occupancy is a realistic step function over time
 // (people arrive and stay; CO2 lags behind, so the scatter plot looks naturally noisy).
@@ -566,5 +567,69 @@ export const DEMO_FIT_ENTRIES: FitEntry[] = [
     inputCols: ["CO2 (ppm)"],
     outputCol: "Occupancy (count)",
     inputValues: { "CO2 (ppm)": _CO2 },
+  },
+]
+
+// ── LGQ Models demo (model-created scenario) ──────────────────────────────────
+const _LGQ_TS_SHORT = ["14:00","14:01","14:02","14:03","14:04","14:05","14:06","14:07","14:08"]
+const _LGQ_TIME_IDX = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+const _LGQ_OCC_MODEL = [1, 2, 3, 3, 3, 4, 4, 3, 3]
+
+// LSTM closely tracks the occupancy ramp-up and plateau (R²≈0.998)
+const _LGQ_LSTM_PRED = [0.92, 2.05, 2.98, 3.01, 2.99, 3.96, 4.03, 2.97, 3.04]
+
+const _LGQ_LSTM_LOSS = Array.from({ length: 80 }, (_, i) =>
+  parseFloat((0.85 * Math.exp(-i / 14) + 0.03).toFixed(4))
+)
+
+export const DEMO_BEHAVIOR_DATASET_LGQ = {
+  filename: "lgq_conference_room_behavior.csv",
+  columns: ["Timestamp", "Occupancy (count)"],
+  rows: _LGQ_OCC_MODEL.map((occ, i) => ({ "Timestamp": _LGQ_TS_SHORT[i], "Occupancy (count)": occ })),
+}
+
+export const DEMO_MERGED_DATASET_LGQ = {
+  filename: "lgq_conference_room_behavior",
+  columns: ["Timestamp", "Time Step", "Occupancy (count)"],
+  rows: _LGQ_TIME_IDX.map((idx, i) => ({
+    "Timestamp": _LGQ_TS_SHORT[i],
+    "Time Step": idx,
+    "Occupancy (count)": _LGQ_OCC_MODEL[i],
+  })),
+}
+
+export const DEMO_MODEL_DATASET_LGQ = {
+  id: SEED_LGQ_MODEL_DATASET_ID,
+  name: "lgq_conference_room_behavior",
+  study_id: LGQ_STUDY_ID,
+  columns: ["Timestamp", "Time Step", "Occupancy (count)"],
+  data: _LGQ_TIME_IDX.map((idx, i) => ({
+    "Timestamp": _LGQ_TS_SHORT[i],
+    "Time Step": idx,
+    "Occupancy (count)": _LGQ_OCC_MODEL[i],
+  })),
+  metadata: { rowCount: 9, merged: true },
+  created_at: "2026-05-28T14:10:00Z",
+}
+
+export const DEMO_FIT_ENTRIES_LGQ: FitEntry[] = [
+  {
+    id: "demo-lgq-lstm",
+    label: "LSTM: Time Series → Occupancy (count)",
+    color: "#8b5cf6",
+    visible: true,
+    xValues: _LGQ_TIME_IDX,
+    yValues: _LGQ_OCC_MODEL,
+    fitResult: {
+      modelType: "lstm",
+      parameters: { architecture: "LSTM: Input([4,1]) → LSTM(16) → Dense(8) → Dense(1)" },
+      metrics: { r2: 0.998, rmse: 0.063, mse: 0.004 },
+      predictedY: _LGQ_LSTM_PRED,
+      trainingLoss: _LGQ_LSTM_LOSS,
+    } as FitResult,
+    inputCount: 1,
+    inputCols: ["Time Step"],
+    outputCol: "Occupancy (count)",
+    inputValues: { "Time Step": _LGQ_TIME_IDX },
   },
 ]
