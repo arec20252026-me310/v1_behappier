@@ -193,14 +193,14 @@ export const ZONES_LGQ = [
 
 export const CAMERAS_LGQ = [
   { id: "151bdb6f-f2ab-42f8-ac85-65078078cc9a", zone_id: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", name: "camera_1", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_1", placement_x: 208, placement_y: 70,  placement_direction: "down" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "e42ab55d-b88c-436f-85e1-499c4500912f", zone_id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", name: "camera_2", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_2", placement_x: 720, placement_y: 152, placement_direction: "left" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "f1b5c35f-9d23-4fe8-8f64-3d672cca1aa4", zone_id: "79c7a05a-5363-413d-a640-f2d74c5f524f", name: "camera_3", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_3", placement_x: 401, placement_y: 460, placement_direction: "up"   }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "c75b7af2-96a9-4e69-886b-ffbf96e92479", zone_id: "79c7a05a-5363-413d-a640-f2d74c5f524f", name: "camera_2", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_2", placement_x: 416, placement_y: 460, placement_direction: "up"   }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "ab88826c-49f5-416e-9315-1cc2e223340c", zone_id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", name: "camera_3", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_3", placement_x: 713, placement_y: 226, placement_direction: "left" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
 ]
 
 export const DEMO_CAMERA_PLACEMENTS_LGQ: import("@/lib/types").CameraPlacement[] = [
   { id: "cam-lgq-conf",    zoneId: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", x: 208, y: 70,  direction: "down" as CameraDir, label: "camera_1" },
-  { id: "cam-lgq-desks",   zoneId: "ec740992-4f29-4f9a-92fc-ae103aaa676d", x: 720, y: 152, direction: "left" as CameraDir, label: "camera_2" },
-  { id: "cam-lgq-kitchen", zoneId: "79c7a05a-5363-413d-a640-f2d74c5f524f", x: 401, y: 460, direction: "up"   as CameraDir, label: "camera_3" },
+  { id: "cam-lgq-kitchen", zoneId: "79c7a05a-5363-413d-a640-f2d74c5f524f", x: 416, y: 460, direction: "up"   as CameraDir, label: "camera_2" },
+  { id: "cam-lgq-desks",   zoneId: "ec740992-4f29-4f9a-92fc-ae103aaa676d", x: 713, y: 226, direction: "left" as CameraDir, label: "camera_3" },
 ]
 
 // ── BE_studies ───────────────────────────────────────────────────────────────
