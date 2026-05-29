@@ -484,16 +484,25 @@ export function SpaceHeatmap({
         })}
 
         {cameras.map((cam) => {
-          const builderCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
-          const totalBuilderWidth = builderCellSize * effectiveCols
-          const totalBuilderHeight = builderCellSize * effectiveRows
+          // Prefer saved grid-fraction coords (written by zone-grid on drag).
+          // Fall back to zone center so demo / legacy cameras always land inside their zone.
+          let fracX: number
+          let fracY: number
+          if (cam.fracX !== undefined && cam.fracY !== undefined) {
+            fracX = cam.fracX
+            fracY = cam.fracY
+          } else {
+            const zone = zones.find(z => z.id === cam.zoneId)
+            fracX = zone ? (zone.grid_x + zone.grid_width / 2) / effectiveCols : 0.5
+            fracY = zone ? (zone.grid_y + zone.grid_height / 2) / effectiveRows : 0.5
+          }
           return (
             <div
               key={cam.id}
               className="absolute pointer-events-none"
               style={{
-                left: `${(cam.x / totalBuilderWidth) * 100}%`,
-                top: `${(cam.y / totalBuilderHeight) * 100}%`,
+                left: `${(imgOffsetXFrac + fracX) * 100}%`,
+                top: `${(imgOffsetYFrac + fracY) * 100}%`,
                 zIndex: 20, transform: "translate(-50%, -50%)"
               }}
             >

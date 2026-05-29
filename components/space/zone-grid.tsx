@@ -196,8 +196,10 @@ export function ZoneGrid({
 
       const newX = Math.max(0, Math.min(gridWidth - 20, rawX))
       const newY = Math.max(0, Math.min(gridHeight - 20, rawY))
+      const fracX = gridWidth > 0 ? Math.max(0, newX - imgOffsetX) / gridWidth : 0
+      const fracY = gridHeight > 0 ? Math.max(0, newY - imgOffsetY) / gridHeight : 0
 
-      onUpdateCameras(cameras.map(c => c.id === draggingCamera ? { ...c, x: newX, y: newY } : c))
+      onUpdateCameras(cameras.map(c => c.id === draggingCamera ? { ...c, x: newX, y: newY, fracX, fracY } : c))
     }
   }, [dragging, resizing, draggingCamera, dragStart, resizeStart, cameraDragStart, zones, cameras, onUpdateZone, onUpdateCameras, gridCols, gridRows, gridWidth, gridHeight, cellSize])
 

@@ -147,6 +147,8 @@ export default async function DashboardPage() {
       zoneId: cam.zone_id,
       x: typeof meta.placement_x === "number" ? meta.placement_x : zone ? (zone.grid_x + zone.grid_width / 2) * cameraCellSize : 0,
       y: typeof meta.placement_y === "number" ? meta.placement_y : zone ? (zone.grid_y + zone.grid_height / 2) * cameraCellSize : 0,
+      fracX: typeof meta.placement_frac_x === "number" ? meta.placement_frac_x : undefined,
+      fracY: typeof meta.placement_frac_y === "number" ? meta.placement_frac_y : undefined,
       direction: (typeof meta.placement_direction === "string" ? meta.placement_direction : "down") as import("@/lib/types").CameraDirection,
       label: cam.name,
     }

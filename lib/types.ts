@@ -228,8 +228,10 @@ export type CameraDirection = 'up' | 'down' | 'left' | 'right'
 export interface CameraPlacement {
   id: string
   zoneId: string    // the zone this camera is assigned to
-  x: number         // pixel x position within the grid container
-  y: number         // pixel y position within the grid container
+  x: number         // pixel x position within the grid container (builder coordinate)
+  y: number         // pixel y position within the grid container (builder coordinate)
+  fracX?: number    // grid-relative fraction 0-1 (saved after drag, preferred for dashboard)
+  fracY?: number    // grid-relative fraction 0-1 (saved after drag, preferred for dashboard)
   direction: CameraDirection
   label: string
 }
