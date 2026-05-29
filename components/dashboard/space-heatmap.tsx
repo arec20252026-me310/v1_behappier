@@ -367,7 +367,7 @@ export function SpaceHeatmap({
   const renderGrid = (enlarged: boolean) => (
     <div>
       {/* Legend */}
-      <div className={cn("flex items-center gap-4 mb-2 flex-wrap", enlarged ? "text-2xl" : "text-xs")}>
+      <div className={cn("flex items-center gap-4 mb-2 flex-wrap", enlarged ? "text-xl" : "text-xs")}>
         {livePreviewMetrics ? (
           <>
             <span className="text-muted-foreground">Occupancy:</span>
@@ -525,7 +525,7 @@ export function SpaceHeatmap({
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base font-medium">Occupancy Map</CardTitle>
-            {hasAnyRunningStudy && (
+            {hasAnyRunningStudy && allActiveStudies.some(s => s.status === "running" || s.status === "analyzing") && (
               <Badge variant="outline" className="text-xs text-green-400 border-green-500/50 bg-green-500/10">
                 {allActiveStudies.length > 1 ? `Live ×${allActiveStudies.length}` : "Live"}
               </Badge>
