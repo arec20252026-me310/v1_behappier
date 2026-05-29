@@ -131,7 +131,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                   <p className="text-sm text-muted-foreground/70 mt-0.5">{spaceName}</p>
                 )}
                 <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                  {output.study_id}
+                  ID: {output.study_id.replace(/^study_/, "")}
                 </p>
               </div>
 

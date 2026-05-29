@@ -32,18 +32,18 @@ interface DemoBannerProps {
 
 export function DemoBanner({ scenario }: DemoBannerProps) {
   return (
-    <div className="flex items-center justify-between gap-4 px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/20 text-yellow-400 text-sm shrink-0">
+    <div className="flex items-center justify-between gap-4 px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/20 text-yellow-700 dark:text-yellow-400 text-sm shrink-0">
       <div className="flex items-center gap-2">
         <EyeOff className="h-4 w-4 shrink-0" />
         <span className="font-medium">Demo mode active</span>
-        <span className="text-yellow-400/60 hidden sm:inline">— {SCENARIO_LABELS[scenario]} scenario</span>
+        <span className="text-yellow-600/70 dark:text-yellow-400/60 hidden sm:inline">— {SCENARIO_LABELS[scenario]} scenario</span>
       </div>
       <div className="flex items-center gap-2">
         {PREV_LABELS[scenario] && (
           <form action={reverseDemoScenario.bind(null, scenario)}>
             <button
               type="submit"
-              className="flex items-center gap-1 text-xs px-3 py-1 rounded border border-yellow-500/60 hover:border-yellow-400 hover:text-yellow-200 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors whitespace-nowrap font-medium"
+              className="flex items-center gap-1 text-xs px-3 py-1 rounded border border-yellow-600/50 hover:border-yellow-700 hover:text-yellow-900 dark:border-yellow-500/60 dark:hover:border-yellow-400 dark:hover:text-yellow-200 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors whitespace-nowrap font-medium"
             >
               <ChevronLeft className="h-3 w-3" />
               {PREV_LABELS[scenario]}
@@ -54,7 +54,7 @@ export function DemoBanner({ scenario }: DemoBannerProps) {
           <form action={advanceDemoScenario.bind(null, scenario)}>
             <button
               type="submit"
-              className="flex items-center gap-1 text-xs px-3 py-1 rounded border border-yellow-500/60 hover:border-yellow-400 hover:text-yellow-200 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors whitespace-nowrap font-medium"
+              className="flex items-center gap-1 text-xs px-3 py-1 rounded border border-yellow-600/50 hover:border-yellow-700 hover:text-yellow-900 dark:border-yellow-500/60 dark:hover:border-yellow-400 dark:hover:text-yellow-200 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors whitespace-nowrap font-medium"
             >
               {NEXT_LABELS[scenario]}
               <ChevronRight className="h-3 w-3" />
@@ -64,7 +64,7 @@ export function DemoBanner({ scenario }: DemoBannerProps) {
         <form action={disableDemoMode}>
           <button
             type="submit"
-            className="text-xs px-3 py-1 rounded border border-yellow-500/40 hover:border-yellow-500/80 hover:text-yellow-300 transition-colors whitespace-nowrap"
+            className="text-xs px-3 py-1 rounded border border-yellow-600/40 hover:border-yellow-700 hover:text-yellow-900 dark:border-yellow-500/40 dark:hover:border-yellow-500/80 dark:hover:text-yellow-300 transition-colors whitespace-nowrap"
           >
             Exit demo
           </button>
