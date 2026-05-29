@@ -71,8 +71,8 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
         <Link key={card.title} href={card.href}>
-          <Card className="bg-card border-border hover:bg-secondary/30 transition-colors cursor-pointer">
-            <CardContent className="px-3 py-0.5">
+          <Card className="bg-card border-border hover:bg-secondary/30 transition-colors cursor-pointer !py-0 !gap-0">
+            <CardContent className="px-3 py-1.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-base text-foreground/70 font-medium leading-tight">{card.title}</p>
