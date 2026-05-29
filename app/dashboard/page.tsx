@@ -43,6 +43,17 @@ export default async function DashboardPage() {
     const demoCompletedInsights = showInsightsBadge ? BE_INSIGHT_OUTPUT : null
     const latestOutput = showInsightsBadge ? (demoInsights[0] ?? null) : null
 
+    // For LGQ, fetch real metric count from Supabase (behaviors tab does the same)
+    let lgqActiveMetricsCount = 0
+    if (isLGQ && hasSpace) {
+      const { data: lgqMetrics } = await supabase
+        .from("metrics")
+        .select("id")
+        .eq("space_id", LGQ_SPACE_ID)
+        .eq("is_active", true)
+      lgqActiveMetricsCount = lgqMetrics?.length ?? 0
+    }
+
     function toArr(v: unknown): unknown[] {
       if (Array.isArray(v)) return v
       if (v === null || v === undefined || v === "") return []
@@ -78,7 +89,7 @@ export default async function DashboardPage() {
             zonesCount={demoZones.length}
             studiesCount={demoStudies.length}
             insightsCount={insightsCount}
-            metricsCount={hasStudy ? (isLGQ ? DEMO_METRICS_LGQ.filter(m => m.is_active).length : DEMO_METRICS.filter(m => m.is_active).length) : 0}
+            metricsCount={hasStudy ? (isLGQ ? lgqActiveMetricsCount : DEMO_METRICS.filter(m => m.is_active).length) : 0}
             latestInsightAt={showInsightsBadge ? demoInsights[0]?.created_at : undefined}
             isDemo={true}
           />
