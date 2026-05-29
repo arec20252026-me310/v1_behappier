@@ -3,7 +3,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { SpaceEditor } from "@/components/space/space-editor"
 import { getDemoScenario } from "@/lib/demo-mode"
 import { getAllSpaces, getDefaultSpace } from "@/lib/spaces"
-import { DEMO_SPACE, ZONES, CAMERAS } from "@/lib/demo-seeds"
+import { DEMO_SPACE, ZONES, CAMERAS, DEMO_LGQ_SPACE, ZONES_LGQ, CAMERAS_LGQ, LGQ_SPACE_ID } from "@/lib/demo-seeds"
 import type { HACameraMapping, Space, Zone, Camera } from "@/lib/types"
 
 export const dynamic = 'force-dynamic'
@@ -21,12 +21,13 @@ export default async function SpacePage({ searchParams }: { searchParams: Promis
   let allSpaces: Space[] = []
 
   if (demo) {
+    allSpaces = scenario !== "blank" ? [DEMO_SPACE as Space, DEMO_LGQ_SPACE as Space] : []
     if (scenario !== "blank") {
-      space = DEMO_SPACE as Space
-      zones = ZONES as Zone[]
-      cameras = CAMERAS as Camera[]
+      const isLGQ = params.space_id === LGQ_SPACE_ID
+      space = isLGQ ? DEMO_LGQ_SPACE as Space : DEMO_SPACE as Space
+      zones = isLGQ ? ZONES_LGQ as Zone[] : ZONES as Zone[]
+      cameras = isLGQ ? CAMERAS_LGQ as Camera[] : CAMERAS as Camera[]
     }
-    allSpaces = scenario !== "blank" ? [DEMO_SPACE as Space] : []
   } else {
     allSpaces = await getAllSpaces()
 

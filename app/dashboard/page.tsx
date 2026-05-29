@@ -5,12 +5,13 @@ import { OccupancyChart } from "@/components/dashboard/occupancy-chart"
 import { SpaceHeatmap } from "@/components/dashboard/space-heatmap"
 import { LatestDetectionCard } from "@/components/dashboard/latest-detection-card"
 import { StudyStatusWatcher } from "@/components/dashboard/study-status-watcher"
-import { getDemoScenario } from "@/lib/demo-mode"
+import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { getDefaultSpace } from "@/lib/spaces"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
   BE_LIVE_METRICS, BE_INSIGHT_OUTPUT, DEMO_DETECTIONS, DEMO_CAMERA_PLACEMENTS,
+  DEMO_LGQ_SPACE, ZONES_LGQ, DEMO_CAMERA_PLACEMENTS_LGQ, LGQ_SPACE_ID,
 } from "@/lib/demo-seeds"
 
 const ACTIVE_STATUSES = ["running", "analyzing"]
@@ -22,14 +23,18 @@ export default async function DashboardPage() {
 
   // ── Demo mode: serve hardcoded data per scenario ──────────────────────────
   if (demo) {
-    const hasSpace    = scenario !== "blank"
-    const hasStudy    = scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created"
-    const hasLive     = scenario === "study-in-progress"
-    const hasInsights = scenario === "study-complete" || scenario === "model-created"
-    const showInsightsBadge = scenario === "study-complete"
+    const demoSpaceId = await getDemoSpaceId()
+    const isLGQ = demoSpaceId === LGQ_SPACE_ID
 
-    const demoSpace   = hasSpace ? DEMO_SPACE : null
-    const demoZones   = hasSpace ? ZONES : []
+    // LGQ always shows as "space configured" — no studies or insights yet
+    const hasSpace    = scenario !== "blank"
+    const hasStudy    = !isLGQ && (scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created")
+    const hasLive     = !isLGQ && scenario === "study-in-progress"
+    const hasInsights = !isLGQ && (scenario === "study-complete" || scenario === "model-created")
+    const showInsightsBadge = !isLGQ && scenario === "study-complete"
+
+    const demoSpace   = hasSpace ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE) : null
+    const demoZones   = hasSpace ? (isLGQ ? ZONES_LGQ : ZONES) : []
     const demoStudies = scenario === "study-in-progress" ? [BE_STUDY_IN_PROGRESS] : []
     const demoInsights  = hasInsights ? [BE_INSIGHT_OUTPUT] : []
     const demoLive      = hasLive ? BE_LIVE_METRICS : null
@@ -82,7 +87,7 @@ export default async function DashboardPage() {
               insights={[]}
               space={demoSpace}
               studies={[]}
-              cameras={hasSpace ? DEMO_CAMERA_PLACEMENTS : []}
+              cameras={hasSpace ? (isLGQ ? DEMO_CAMERA_PLACEMENTS_LGQ : DEMO_CAMERA_PLACEMENTS) : []}
               livePreviewMetrics={scenario === "study-in-progress" ? null : demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}

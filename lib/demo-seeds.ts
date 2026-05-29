@@ -10,6 +10,7 @@ import type { FitResult } from "@/lib/model-fitting"
 
 // ── Fixed IDs (real Supabase rows) ──────────────────────────────────────────
 export const SPACE_ID   = "e8d9c195-0ae8-41ed-b03f-034ce91dd3c4"
+export const LGQ_SPACE_ID = "754df673-391d-409c-9b5c-27618028aa25"
 export const HA_MAP_ID  = "bf7ba38c-9bb5-43c9-b099-f3b293285efc"
 export const CAMERA_ID  = "8a425334-aafb-4d8a-9bd2-737e73eed13b"
 export const KITCHEN_ID = "4a1fd84a-8805-49c2-b6bc-6552519ad18b"
@@ -120,7 +121,7 @@ export const ZONES = [
   { id: "7a42add1-dc7b-4aab-866b-55d69d7cdad6", space_id: SPACE_ID, name: "Electronics Space", zone_type: "workspace", grid_x: 7,  grid_y: 20, grid_width: 5, grid_height: 4, color: "#10B981", capacity: 10, metadata: {}, ...TS },
 ]
 
-// ── Cameras ──────────────────────────────────────────────────────────────────
+// ── Cameras — Peterson Loft ───────────────────────────────────────────────────
 // Placements copied from cameras.metadata in Supabase (real DB rows).
 export const CAMERA = {
   id: CAMERA_2_ID,
@@ -129,7 +130,7 @@ export const CAMERA = {
   stream_url: null,
   status: "active" as const,
   field_of_view: {},
-  metadata: { ha_entity_id: "camera_2", placement_x: 285, placement_y: 402, placement_direction: "up" },
+  metadata: { ha_entity_id: "camera_2", placement_x: 276, placement_y: 499, placement_direction: "up" },
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",
 }
@@ -143,7 +144,7 @@ export const CAMERAS = [
     stream_url: null,
     status: "active" as const,
     field_of_view: {},
-    metadata: { ha_entity_id: "camera_1", placement_x: 78, placement_y: 296, placement_direction: "right" },
+    metadata: { ha_entity_id: "camera_1", placement_x: 35, placement_y: 353, placement_direction: "right" },
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   },
@@ -154,7 +155,7 @@ export const CAMERAS = [
     stream_url: null,
     status: "active" as const,
     field_of_view: {},
-    metadata: { ha_entity_id: "camera_3", placement_x: 287, placement_y: 430, placement_direction: "left" },
+    metadata: { ha_entity_id: "camera_3", placement_x: 273, placement_y: 534, placement_direction: "left" },
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   },
@@ -162,9 +163,44 @@ export const CAMERAS = [
 
 type CameraDir = import("@/lib/types").CameraDirection
 export const DEMO_CAMERA_PLACEMENTS: import("@/lib/types").CameraPlacement[] = [
-  { id: `cam-${KITCHEN_ID}`, zoneId: KITCHEN_ID, x: 285, y: 402, direction: "up"    as CameraDir, label: "camera_2" },
-  { id: `cam-${TEAM2_ID}`,   zoneId: TEAM2_ID,   x: 78,  y: 296, direction: "right" as CameraDir, label: "camera_1" },
-  { id: `cam-${TEAM4_ID}`,   zoneId: TEAM4_ID,   x: 287, y: 430, direction: "left"  as CameraDir, label: "camera_3" },
+  { id: `cam-${KITCHEN_ID}`, zoneId: KITCHEN_ID, x: 276, y: 499, direction: "up"    as CameraDir, label: "camera_2" },
+  { id: `cam-${TEAM2_ID}`,   zoneId: TEAM2_ID,   x: 35,  y: 353, direction: "right" as CameraDir, label: "camera_1" },
+  { id: `cam-${TEAM4_ID}`,   zoneId: TEAM4_ID,   x: 273, y: 534, direction: "left"  as CameraDir, label: "camera_3" },
+]
+
+// ── Space — Looking Glass HQ ──────────────────────────────────────────────────
+export const DEMO_LGQ_SPACE = {
+  id: LGQ_SPACE_ID,
+  name: "Looking Glass HQ",
+  description: "Looking Glass headquarters office",
+  address: null,
+  total_area_sqft: null,
+  building_type: "office",
+  floor_plan_url: "/api/file?pathname=floor-plans%2F1780008266311.jpg",
+  grid_resolution: 32,
+  metadata: {},
+  is_default: false,
+  created_at: "2024-01-01T00:00:00Z",
+  updated_at: "2024-01-01T00:00:00Z",
+}
+
+export const ZONES_LGQ = [
+  { id: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", space_id: LGQ_SPACE_ID, name: "Conference Room", zone_type: "workspace", grid_x: 0,  grid_y: 2,  grid_width: 10, grid_height: 8, color: "#10B981", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", space_id: LGQ_SPACE_ID, name: "Hot Desks",       zone_type: "workspace", grid_x: 20, grid_y: 3,  grid_width: 9,  grid_height: 9, color: "#10B981", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "8b78cb9e-ab6d-4398-a24a-530dafa63e5f", space_id: LGQ_SPACE_ID, name: "Restrooms",       zone_type: "workspace", grid_x: 7,  grid_y: 14, grid_width: 5,  grid_height: 6, color: "#10B981", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "79c7a05a-5363-413d-a640-f2d74c5f524f", space_id: LGQ_SPACE_ID, name: "Kitchen",         zone_type: "kitchen",   grid_x: 12, grid_y: 14, grid_width: 6,  grid_height: 6, color: "#EC4899", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+]
+
+export const CAMERAS_LGQ = [
+  { id: "151bdb6f-f2ab-42f8-ac85-65078078cc9a", zone_id: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", name: "camera_1", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_1", placement_x: 208, placement_y: 70,  placement_direction: "down" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "e42ab55d-b88c-436f-85e1-499c4500912f", zone_id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", name: "camera_2", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_2", placement_x: 720, placement_y: 152, placement_direction: "left" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "f1b5c35f-9d23-4fe8-8f64-3d672cca1aa4", zone_id: "79c7a05a-5363-413d-a640-f2d74c5f524f", name: "camera_3", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_3", placement_x: 401, placement_y: 460, placement_direction: "up"   }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+]
+
+export const DEMO_CAMERA_PLACEMENTS_LGQ: import("@/lib/types").CameraPlacement[] = [
+  { id: "cam-lgq-conf",    zoneId: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", x: 208, y: 70,  direction: "down" as CameraDir, label: "camera_1" },
+  { id: "cam-lgq-desks",   zoneId: "ec740992-4f29-4f9a-92fc-ae103aaa676d", x: 720, y: 152, direction: "left" as CameraDir, label: "camera_2" },
+  { id: "cam-lgq-kitchen", zoneId: "79c7a05a-5363-413d-a640-f2d74c5f524f", x: 401, y: 460, direction: "up"   as CameraDir, label: "camera_3" },
 ]
 
 // ── BE_studies ───────────────────────────────────────────────────────────────

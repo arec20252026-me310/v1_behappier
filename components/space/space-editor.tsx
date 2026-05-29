@@ -281,7 +281,7 @@ export function SpaceEditor({ space, initialZones, initialCameras, haCameras, al
   return (
     <div className="flex flex-col gap-4 h-full">
       {/* Space switcher bar */}
-      {!demo && allSpaces.length > 0 && (
+      {allSpaces.length > 0 && (
         <div className="flex items-center gap-3">
           <Select
             value={currentSpace?.id ?? undefined}
