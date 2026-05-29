@@ -185,10 +185,10 @@ export const DEMO_LGQ_SPACE = {
 }
 
 export const ZONES_LGQ = [
-  { id: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", space_id: LGQ_SPACE_ID, name: "Conference Room", zone_type: "workspace", grid_x: 0,  grid_y: 2,  grid_width: 10, grid_height: 8, color: "#10B981", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
-  { id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", space_id: LGQ_SPACE_ID, name: "Hot Desks",       zone_type: "workspace", grid_x: 20, grid_y: 3,  grid_width: 9,  grid_height: 9, color: "#10B981", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
-  { id: "8b78cb9e-ab6d-4398-a24a-530dafa63e5f", space_id: LGQ_SPACE_ID, name: "Restrooms",       zone_type: "workspace", grid_x: 7,  grid_y: 14, grid_width: 5,  grid_height: 6, color: "#10B981", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
-  { id: "79c7a05a-5363-413d-a640-f2d74c5f524f", space_id: LGQ_SPACE_ID, name: "Kitchen",         zone_type: "kitchen",   grid_x: 12, grid_y: 14, grid_width: 6,  grid_height: 6, color: "#EC4899", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", space_id: LGQ_SPACE_ID, name: "Conference Room", zone_type: "meeting_room", grid_x: 0,  grid_y: 2,  grid_width: 10, grid_height: 8, color: "#F59E0B", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", space_id: LGQ_SPACE_ID, name: "Hot Desks",       zone_type: "workspace",   grid_x: 20, grid_y: 3,  grid_width: 9,  grid_height: 9, color: "#10B981", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "79c7a05a-5363-413d-a640-f2d74c5f524f", space_id: LGQ_SPACE_ID, name: "Kitchen",         zone_type: "kitchen",     grid_x: 12, grid_y: 14, grid_width: 6,  grid_height: 6, color: "#EC4899", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: "ce05b46a-4d3b-4619-a53f-4ce13a99ed0f", space_id: LGQ_SPACE_ID, name: "Meditation Room", zone_type: "break_room",  grid_x: 23, grid_y: 15, grid_width: 8,  grid_height: 5, color: "#EF4444", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
 ]
 
 export const CAMERAS_LGQ = [
