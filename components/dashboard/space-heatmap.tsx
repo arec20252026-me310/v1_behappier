@@ -290,29 +290,26 @@ export function SpaceHeatmap({
   const effectiveCols = zones.length > 0
     ? Math.max(gridResolution, ...zones.map(z => z.grid_x + z.grid_width))
     : gridResolution
-  const effectiveRows = zones.length > 0
+  const effectiveRowsMin = zones.length > 0
     ? Math.max(gridResolution, ...zones.map(z => z.grid_y + z.grid_height))
     : gridResolution
+  // Match the space builder: derive rows from the floor plan AR so the container
+  // shape matches what was shown when zones were placed (zone-grid.tsx line 88-90)
+  const effectiveRows = imgAspectRatio
+    ? Math.max(Math.round(effectiveCols / imgAspectRatio), effectiveRowsMin)
+    : effectiveRowsMin
   const cellPctX = 100 / effectiveCols
   const cellPctY = 100 / effectiveRows
 
-  // Fraction of container the image actually occupies (object-contain center may letterbox)
+  // Small residual letterbox offset (nearly zero once effectiveRows matches imgAR)
   const containerAR = effectiveCols / effectiveRows
   const [imgOffsetXFrac, imgOffsetYFrac] = useMemo(() => {
     if (!imgAspectRatio) return [0, 0]
     if (containerAR > imgAspectRatio) {
-      // Container wider → image fills height, horizontal bars
       return [(1 - imgAspectRatio / containerAR) / 2, 0]
     }
-    // Container taller → image fills width, vertical bars
     return [0, (1 - containerAR / imgAspectRatio) / 2]
   }, [imgAspectRatio, containerAR])
-  const imgWidthFrac = 1 - 2 * imgOffsetXFrac
-  const imgHeightFrac = 1 - 2 * imgOffsetYFrac
-
-  // Effective cell sizes scaled to the image's rendered area
-  const zoneCellPctX = cellPctX * imgWidthFrac
-  const zoneCellPctY = cellPctY * imgHeightFrac
 
   // Zone IDs with unviewed completed insights
   const completedInsightZoneIds = insightsViewed
@@ -414,7 +411,7 @@ export function SpaceHeatmap({
               linear-gradient(to right, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px),
               linear-gradient(to bottom, rgba(100,100,100,${floorPlanUrl ? "0.15" : "0.25"}) 1px, transparent 1px)
             `,
-            backgroundSize: `${zoneCellPctX}% ${zoneCellPctY}%`,
+            backgroundSize: `${cellPctX}% ${cellPctY}%`,
             backgroundPosition: `${imgOffsetXFrac * 100}% ${imgOffsetYFrac * 100}%`,
           }}
         />
@@ -451,10 +448,10 @@ export function SpaceHeatmap({
                 hasAnyInsight && !liveOccupancy && "zone-flashing"
               )}
               style={{
-                left: `${imgOffsetXFrac * 100 + zone.grid_x * zoneCellPctX}%`,
-                top: `${imgOffsetYFrac * 100 + zone.grid_y * zoneCellPctY}%`,
-                width: `calc(${zone.grid_width * zoneCellPctX}% - 2px)`,
-                height: `calc(${zone.grid_height * zoneCellPctY}% - 2px)`,
+                left: `${imgOffsetXFrac * 100 + zone.grid_x * cellPctX}%`,
+                top: `${imgOffsetYFrac * 100 + zone.grid_y * cellPctY}%`,
+                width: `calc(${zone.grid_width * cellPctX}% - 2px)`,
+                height: `calc(${zone.grid_height * cellPctY}% - 2px)`,
                 backgroundColor: bgColor,
                 borderColor,
                 borderWidth: hasAnyInsight || isActiveStudyZone || liveOccupancy !== null ? 2 : 1,
@@ -495,8 +492,8 @@ export function SpaceHeatmap({
               key={cam.id}
               className="absolute pointer-events-none"
               style={{
-                left: `${imgOffsetXFrac * 100 + (cam.x / totalBuilderWidth) * imgWidthFrac * 100}%`,
-                top: `${imgOffsetYFrac * 100 + (cam.y / totalBuilderHeight) * imgHeightFrac * 100}%`,
+                left: `${(cam.x / totalBuilderWidth) * 100}%`,
+                top: `${(cam.y / totalBuilderHeight) * 100}%`,
                 zIndex: 20, transform: "translate(-50%, -50%)"
               }}
             >
