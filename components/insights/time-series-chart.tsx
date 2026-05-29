@@ -6,7 +6,7 @@ import { Tooltip as UITooltip, TooltipTrigger, TooltipContent } from "@/componen
 import { Info } from "lucide-react"
 
 const SERIES_COLORS = [
-  "oklch(0.7 0.15 200)",
+  "oklch(0.60 0.17 22)",
   "oklch(0.65 0.18 160)",
   "oklch(0.75 0.15 80)",
   "oklch(0.65 0.2 30)",
@@ -447,10 +447,10 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
   }, [allData])
   const xTickFormatter = React.useCallback((ms: number) => msToLabel.get(ms) ?? msToTimeLabel(ms), [msToLabel])
 
-  const thumbBg = dragMode === "pan" ? "oklch(0.60 0.1 200)" : "oklch(0.46 0.08 200)"
+  const thumbBg = dragMode === "pan" ? "oklch(0.60 0.13 22)" : "oklch(0.46 0.12 22)"
   const handleBg = dragMode === "left" || dragMode === "right"
-    ? "oklch(0.68 0.12 200)"
-    : "oklch(0.54 0.10 200)"
+    ? "oklch(0.68 0.14 22)"
+    : "oklch(0.54 0.13 22)"
 
   const durationLabel = activePreset
     ? activePreset
@@ -519,9 +519,9 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                   fontSize: enlarged ? 13 : 10,
                   padding: enlarged ? "4px 10px" : "2px 7px",
                   borderRadius: "9999px",
-                  border: `1px solid ${isActive ? "oklch(0.55 0.12 200)" : "oklch(0.30 0.01 260)"}`,
-                  background: isActive ? "oklch(0.30 0.10 200)" : "transparent",
-                  color: isActive ? "oklch(0.88 0.08 200)" : "oklch(0.50 0 0)",
+                  border: `1px solid ${isActive ? "oklch(0.55 0.15 22)" : "oklch(0.30 0.01 260)"}`,
+                  background: isActive ? "oklch(0.30 0.12 22)" : "transparent",
+                  color: isActive ? "oklch(0.88 0.07 28)" : "oklch(0.50 0 0)",
                   cursor: "pointer",
                   transition: "all 0.12s",
                   fontVariantNumeric: "tabular-nums",
@@ -668,7 +668,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 height: 14,
                 borderRadius: "50%",
                 background: handleBg,
-                border: "1.5px solid oklch(0.72 0.13 200)",
+                border: "1.5px solid oklch(0.72 0.14 26)",
                 cursor: "col-resize",
                 zIndex: 2,
                 boxSizing: "border-box",
@@ -687,7 +687,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 height: 14,
                 borderRadius: "50%",
                 background: handleBg,
-                border: "1.5px solid oklch(0.72 0.13 200)",
+                border: "1.5px solid oklch(0.72 0.14 26)",
                 cursor: "col-resize",
                 zIndex: 2,
                 boxSizing: "border-box",

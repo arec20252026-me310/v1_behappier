@@ -396,7 +396,7 @@ export function SpaceHeatmap({
             ref={!enlarged ? floorPlanImgRef : undefined}
             src={floorPlanUrl}
             alt="Floor plan"
-            className="absolute inset-0 w-full h-full object-contain opacity-50"
+            className="absolute inset-0 w-full h-full object-contain opacity-80 dark:opacity-50"
             style={{ pointerEvents: "none" }}
             crossOrigin="anonymous"
           />

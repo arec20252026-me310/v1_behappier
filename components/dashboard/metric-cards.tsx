@@ -35,7 +35,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
       change: zonesCount === 0 ? "Set up your space" : `${zonesCount} configured`,
       trend: "neutral",
       icon: Map,
-      color: "text-chart-1",
+      color: "text-sky-500",
       href: "/dashboard/space",
     },
     {
