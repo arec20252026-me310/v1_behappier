@@ -111,8 +111,8 @@ export function SidebarNav() {
             "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
         >
-          <Clapperboard className="h-5 w-5 shrink-0 text-muted-foreground" />
-          {!collapsed && <span className="text-base font-semibold text-muted-foreground">Start Demo</span>}
+          <Clapperboard className="h-5 w-5 shrink-0 text-sidebar-foreground/60" />
+          {!collapsed && <span className="text-base font-semibold text-sidebar-foreground/60">Start Demo</span>}
         </Link>
         <Link
           href="/dashboard/settings"

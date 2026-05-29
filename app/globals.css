@@ -24,11 +24,11 @@
   --border: oklch(0.84 0.012 240);
   --input: oklch(0.91 0.012 240);
   --ring: oklch(0.43 0.15 19);
-  --chart-1: oklch(0.52 0.16 21);
-  --chart-2: oklch(0.48 0.2 160);
-  --chart-3: oklch(0.66 0.18 80);
-  --chart-4: oklch(0.60 0.22 30);
-  --chart-5: oklch(0.52 0.2 290);
+  --chart-1: oklch(0.52 0.17 22);
+  --chart-2: oklch(0.65 0.16 85);
+  --chart-3: oklch(0.52 0.18 148);
+  --chart-4: oklch(0.52 0.18 235);
+  --chart-5: oklch(0.52 0.17 285);
   --radius: 0.5rem;
 
   /* Deep maroon sidebar — matches logo red family */
@@ -68,11 +68,11 @@
   --border: oklch(0.28 0.01 260);
   --input: oklch(0.22 0.01 260);
   --ring: oklch(0.62 0.15 22);
-  --chart-1: oklch(0.62 0.15 22);
-  --chart-2: oklch(0.65 0.18 160);
-  --chart-3: oklch(0.75 0.15 80);
-  --chart-4: oklch(0.65 0.2 30);
-  --chart-5: oklch(0.6 0.18 280);
+  --chart-1: oklch(0.62 0.17 22);
+  --chart-2: oklch(0.72 0.16 85);
+  --chart-3: oklch(0.62 0.18 148);
+  --chart-4: oklch(0.62 0.18 235);
+  --chart-5: oklch(0.62 0.17 285);
   --sidebar: oklch(0.17 0.07 19);
   --sidebar-foreground: oklch(0.92 0 0);
   --sidebar-primary: oklch(0.72 0.13 26);

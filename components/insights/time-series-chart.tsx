@@ -6,11 +6,11 @@ import { Tooltip as UITooltip, TooltipTrigger, TooltipContent } from "@/componen
 import { Info } from "lucide-react"
 
 const SERIES_COLORS = [
-  "oklch(0.60 0.17 22)",
-  "oklch(0.65 0.18 160)",
-  "oklch(0.75 0.15 80)",
-  "oklch(0.65 0.2 30)",
-  "oklch(0.6 0.18 280)",
+  "oklch(0.60 0.17 22)",   // red
+  "oklch(0.72 0.16 85)",   // yellow
+  "oklch(0.60 0.18 148)",  // green
+  "oklch(0.60 0.18 235)",  // blue
+  "oklch(0.60 0.17 285)",  // purple (overflow)
 ]
 
 const TOOLTIP_STYLE: React.CSSProperties = {

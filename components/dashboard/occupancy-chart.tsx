@@ -270,8 +270,8 @@ export function OccupancyChart({
 
   return (
     <>
-      <Card className={`bg-card border-border pt-2 ${isLive && allActiveStudies.length >= 3 ? "pb-1" : "pb-4"}`}>
-        <CardHeader className={`flex flex-row items-center justify-between ${isLive && allActiveStudies.length >= 3 ? "pb-0.5" : "pb-1.5"}`}>
+      <Card className="bg-card border-border pt-2 pb-4">
+        <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <CardTitle className="text-base font-medium">{isLive ? "Current Study" : "Most Recent Study"}</CardTitle>
             {isLive && agoText && (
