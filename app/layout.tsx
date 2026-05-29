@@ -27,7 +27,7 @@ export default function RootLayout({
         {/* Apply dark class before first paint to avoid flash */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+            __html: `(function(){try{if(localStorage.getItem('theme')!=='light'){document.documentElement.classList.add('dark')}}catch(e){document.documentElement.classList.add('dark')}})()`,
           }}
         />
       </head>
