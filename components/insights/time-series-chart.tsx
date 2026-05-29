@@ -486,14 +486,14 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                       borderColor: SERIES_COLORS[i % SERIES_COLORS.length],
                     }}
                   />
-                  <span className={enlarged ? "text-sm" : "text-xs"} style={{ color: hidden.has(s.title) ? "oklch(0.5 0 0)" : "oklch(0.75 0 0)" }}>
+                  <span className={cn(enlarged ? "text-sm" : "text-sm", hidden.has(s.title) ? "text-muted-foreground/60" : "text-foreground")}>
                     {s.title}
                   </span>
                 </label>
                 {desc && (
                   <UITooltip>
                     <TooltipTrigger asChild>
-                      <button type="button" style={{ display: "flex", alignItems: "center", color: "oklch(0.45 0 0)", lineHeight: 0 }}>
+                      <button type="button" className="text-muted-foreground" style={{ display: "flex", alignItems: "center", lineHeight: 0 }}>
                         <Info style={{ width: 11, height: 11 }} />
                       </button>
                     </TooltipTrigger>
@@ -516,12 +516,12 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 key={preset.label}
                 onClick={() => applyPreset(preset)}
                 style={{
-                  fontSize: enlarged ? 13 : 10,
-                  padding: enlarged ? "4px 10px" : "2px 7px",
+                  fontSize: enlarged ? 13 : 12,
+                  padding: enlarged ? "4px 10px" : "3px 8px",
                   borderRadius: "9999px",
                   border: `1px solid ${isActive ? "oklch(0.55 0.15 22)" : "oklch(0.30 0.01 260)"}`,
                   background: isActive ? "oklch(0.30 0.12 22)" : "transparent",
-                  color: isActive ? "oklch(0.88 0.07 28)" : "oklch(0.50 0 0)",
+                  color: isActive ? "oklch(0.88 0.07 28)" : "var(--foreground)",
                   cursor: "pointer",
                   transition: "all 0.12s",
                   fontVariantNumeric: "tabular-nums",
@@ -529,13 +529,13 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 }}
                 onMouseEnter={e => {
                   if (!isActive) {
-                    ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.78 0 0)"
+                    ;(e.currentTarget as HTMLButtonElement).style.color = "var(--muted-foreground)"
                     ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.45 0.01 260)"
                   }
                 }}
                 onMouseLeave={e => {
                   if (!isActive) {
-                    ;(e.currentTarget as HTMLButtonElement).style.color = "oklch(0.50 0 0)"
+                    ;(e.currentTarget as HTMLButtonElement).style.color = "var(--foreground)"
                     ;(e.currentTarget as HTMLButtonElement).style.borderColor = "oklch(0.30 0.01 260)"
                   }
                 }}
@@ -552,8 +552,8 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
-            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "#64748b", fontSize: enlarged ? 14 : 10 }} axisLine={{ stroke: "#64748b" }} tickLine={{ stroke: "#64748b" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "#64748b", fontSize: enlarged ? 15 : 11 } : undefined} />
-            <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "#64748b", fontSize: enlarged ? 14 : 10 }} axisLine={{ stroke: "#64748b" }} tickLine={{ stroke: "#64748b" }} width={enlarged ? 64 : 52} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "#64748b", fontSize: enlarged ? 15 : 11 } : undefined} />
+            <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "#64748b", fontSize: enlarged ? 14 : 12 }} axisLine={{ stroke: "#64748b" }} tickLine={{ stroke: "#64748b" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "#64748b", fontSize: enlarged ? 15 : 13 } : undefined} />
+            <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "#64748b", fontSize: enlarged ? 14 : 12 }} axisLine={{ stroke: "#64748b" }} tickLine={{ stroke: "#64748b" }} width={enlarged ? 64 : 60} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "#64748b", fontSize: enlarged ? 15 : 13 } : undefined} />
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
@@ -618,7 +618,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                 height: 12,
                 transform: "translateY(-50%)",
                 borderRadius: "9999px",
-                background: "oklch(0.22 0.01 260)",
+                background: "var(--muted)",
                 overflow: "hidden",
               }}
             >
@@ -698,7 +698,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
 
           {/* Status row */}
           <div className="flex items-center justify-between">
-            <span className="text-xs" style={{ color: "oklch(0.40 0 0)" }}>
+            <span className="text-sm text-foreground">
               {statusLabel}
             </span>
             {isLive && (

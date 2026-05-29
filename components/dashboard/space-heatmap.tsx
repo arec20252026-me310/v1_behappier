@@ -371,15 +371,15 @@ export function SpaceHeatmap({
         {livePreviewMetrics ? (
           <>
             <span className="text-foreground">Occupancy:</span>
-            <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
-            <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
-            <div className="flex items-center gap-1"><div className={cn("rounded border border-red-400", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded border border-red-400", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
           </>
         ) : (
           <>
             <span className="text-foreground">Status:</span>
-            <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
-            <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
+            <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-4 h-4" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
           </>
         )}
       </div>

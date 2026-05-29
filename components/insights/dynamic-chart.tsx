@@ -7,15 +7,14 @@ import {
   Tooltip, ResponsiveContainer,
 } from "recharts"
 
-// Hardcoded oklch values from the dark theme (matches globals.css .dark block)
 const COLORS = {
-  line:       "oklch(0.7 0.15 200)",   // --chart-1
-  bar:        "oklch(0.65 0.18 160)",  // --chart-2
+  line:       "oklch(0.60 0.17 22)",   // --chart-1 (crimson)
+  bar:        "oklch(0.60 0.18 148)",  // --chart-2 (green)
   grid:       "oklch(0.28 0.01 260)",  // approx --border
-  axis:       "oklch(0.65 0 0)",       // --muted-foreground
-  tooltipBg:  "oklch(0.17 0.01 260)", // --card
+  axis:       "#64748b",               // slate-500 — readable on both light and dark
+  tooltipBg:  "oklch(0.17 0.01 260)", // --card (dark)
   tooltipBdr: "oklch(0.28 0.01 260)",
-  tooltipTxt: "oklch(0.95 0 0)",       // --foreground
+  tooltipTxt: "oklch(0.95 0 0)",       // --foreground (dark)
 }
 
 const TOOLTIP_STYLE = {
@@ -109,8 +108,8 @@ export function DynamicChart({ chart_type, title, data }: DynamicChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={toRechartsData(labels, values as (number | null)[])}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
-              <XAxis dataKey="name" stroke={COLORS.axis} fontSize={9} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-              <YAxis stroke={COLORS.axis} fontSize={9} tickLine={false} axisLine={false} width={28} />
+              <XAxis dataKey="name" stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+              <YAxis stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} width={36} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: COLORS.axis }} />
               <Bar dataKey="value" fill={COLORS.bar} radius={[2, 2, 0, 0]} />
             </BarChart>
@@ -121,8 +120,8 @@ export function DynamicChart({ chart_type, title, data }: DynamicChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={toRechartsData(labels, values as (number | null)[])}>
               <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
-              <XAxis dataKey="name" stroke={COLORS.axis} fontSize={9} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-              <YAxis stroke={COLORS.axis} fontSize={9} tickLine={false} axisLine={false} width={28} domain={[0, 1]} />
+              <XAxis dataKey="name" stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+              <YAxis stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} width={36} domain={[0, 1]} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: COLORS.axis }} />
               <Line type="monotone" dataKey="value" stroke={COLORS.line} strokeWidth={2} dot={false} connectNulls />
             </LineChart>

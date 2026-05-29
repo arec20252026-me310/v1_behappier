@@ -32,7 +32,7 @@
   --radius: 0.5rem;
 
   /* Deep maroon sidebar — matches logo red family */
-  --sidebar: oklch(0.22 0.09 19);
+  --sidebar: oklch(0.28 0.09 19);
   --sidebar-foreground: oklch(0.90 0.005 19);
   --sidebar-primary: oklch(0.72 0.13 26);
   --sidebar-primary-foreground: oklch(0.22 0.09 19);
@@ -135,6 +135,9 @@
 }
 
 @layer base {
+  html {
+    font-size: 17.5px;
+  }
   * {
     @apply border-border outline-ring/50;
   }
