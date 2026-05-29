@@ -43,6 +43,10 @@ export default async function DashboardPage() {
     const demoInsights  = hasInsights ? [BE_INSIGHT_OUTPUT] : []
     const demoLive      = hasLive ? (isLGQ ? BE_LIVE_METRICS_LGQ : BE_LIVE_METRICS) : null
     const demoCompletedStudy    = hasStudy && scenario !== "study-in-progress" ? (isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE) : null
+    // LGQ shows study data (zone highlight + detection feed) in all hasStudy scenarios
+    const lgqDisplayStudy = isLGQ && hasStudy
+      ? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS_LGQ : BE_STUDY_COMPLETE_LGQ)
+      : null
     const demoCompletedInsights = showInsightsBadge ? BE_INSIGHT_OUTPUT : null
     const latestOutput = showInsightsBadge ? (demoInsights[0] ?? null) : null
 
@@ -106,11 +110,11 @@ export default async function DashboardPage() {
               livePreviewMetrics={scenario === "study-in-progress" ? null : demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
-              activeStudyId={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.study_id : BE_STUDY_IN_PROGRESS.study_id) : undefined}
-              activeStudyStatus={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.status : BE_STUDY_IN_PROGRESS.status) : undefined}
-              activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.metadata?.monitored_zone_id : (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id) : undefined}
-              demoDetections={scenario === "study-in-progress" ? (isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS) : undefined}
-              tracksOccupancy={scenario === "study-in-progress"}
+              activeStudyId={lgqDisplayStudy?.study_id ?? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined)}
+              activeStudyStatus={lgqDisplayStudy?.status ?? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined)}
+              activeStudyMonitoredZoneId={lgqDisplayStudy?.metadata?.monitored_zone_id ?? (scenario === "study-in-progress" ? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id : undefined)}
+              demoDetections={lgqDisplayStudy ? DEMO_DETECTIONS_LGQ : (scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined)}
+              tracksOccupancy={scenario === "study-in-progress" || (isLGQ && hasStudy)}
               isDemo={true}
             />
             <div className="flex flex-col gap-6">
@@ -118,15 +122,15 @@ export default async function DashboardPage() {
                 latestOutput={latestOutput}
                 studyDurationMs={(isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE).duration_seconds * 1000}
                 metricDescriptions={demoMetricDescriptions}
-                activeStudyId={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.study_id : BE_STUDY_IN_PROGRESS.study_id) : undefined}
-                activeStudyStatus={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.status : BE_STUDY_IN_PROGRESS.status) : undefined}
-                demoDetections={scenario === "study-in-progress" ? (isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS) : undefined}
+                activeStudyId={lgqDisplayStudy?.study_id ?? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined)}
+                activeStudyStatus={lgqDisplayStudy?.status ?? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined)}
+                demoDetections={lgqDisplayStudy ? DEMO_DETECTIONS_LGQ : (scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined)}
               />
-              {scenario === "study-in-progress" && (
+              {(scenario === "study-in-progress" || lgqDisplayStudy) && (
                 <LatestDetectionCard
-                  studyId={isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.study_id : BE_STUDY_IN_PROGRESS.study_id}
-                  status={isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.status : BE_STUDY_IN_PROGRESS.status}
-                  demoDetections={(isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS).slice(-1)}
+                  studyId={lgqDisplayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id}
+                  status={lgqDisplayStudy?.status ?? BE_STUDY_IN_PROGRESS.status}
+                  demoDetections={(lgqDisplayStudy ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS).slice(-1)}
                 />
               )}
             </div>
