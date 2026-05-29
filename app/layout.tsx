@@ -7,7 +7,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'OccupancyIQ - AI-Powered Occupancy Insights',
+  title: 'Looking Glass - AI-Powered Occupancy Insights',
   description: 'Transform video feeds into actionable behavioral insights for your spaces',
   generator: 'v0.app',
   icons: {

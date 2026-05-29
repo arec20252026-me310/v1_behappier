@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 import {
   LayoutDashboard,
   Map,
@@ -65,10 +66,8 @@ export function SidebarNav() {
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">BH</span>
-            </div>
-            <span className="font-semibold text-sidebar-foreground">BeHappier</span>
+            <Image src="/looking-glass-logo.jpg" alt="Looking Glass" width={32} height={32} className="rounded-md" />
+            <span className="font-semibold text-sidebar-foreground">Looking Glass</span>
           </div>
         )}
         <Button
