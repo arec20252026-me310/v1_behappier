@@ -103,7 +103,7 @@ export function FloorPlanGrid({
           ref={imgRef}
           src={floorPlanUrl}
           alt="Floor plan"
-          className="absolute inset-0 w-full h-full object-contain opacity-60"
+          className="absolute inset-0 w-full h-full object-contain opacity-80 dark:opacity-50"
           crossOrigin="anonymous"
         />
       )}
