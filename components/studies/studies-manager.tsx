@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils"
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   draft:     { label: "Draft",      color: "bg-muted text-muted-foreground" },
-  planned:   { label: "Planned",    color: "bg-blue-500/20 text-blue-400" },
+  planned:   { label: "Planned",    color: "bg-blue-500/20 text-blue-700 dark:text-blue-400" },
   running:   { label: "Running",    color: "bg-success/20 text-success" },
-  analyzing: { label: "Analyzing",  color: "bg-yellow-500/20 text-yellow-400" },
+  analyzing: { label: "Analyzing",  color: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" },
   active:    { label: "Active",     color: "bg-success/20 text-success" },
   complete:  { label: "Complete",   color: "bg-primary/20 text-primary" },
   failed:    { label: "Failed",     color: "bg-destructive/20 text-destructive" },

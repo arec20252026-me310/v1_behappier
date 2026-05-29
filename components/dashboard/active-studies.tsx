@@ -14,9 +14,9 @@ interface ActiveStudiesProps {
 
 const STAGE_CONFIG: Record<string, { label: string; color: string }> = {
   draft:                { label: "Draft",         color: "bg-muted text-muted-foreground" },
-  planned:              { label: "Planned",        color: "bg-blue-500/20 text-blue-400" },
-  needfinding_running:  { label: "Researching",    color: "bg-purple-500/20 text-purple-400" },
-  needfinding_complete: { label: "Behaviors ID'd", color: "bg-purple-500/20 text-purple-400" },
+  planned:              { label: "Planned",        color: "bg-blue-500/20 text-blue-700 dark:text-blue-400" },
+  needfinding_running:  { label: "Researching",    color: "bg-purple-500/20 text-purple-700 dark:text-purple-400" },
+  needfinding_complete: { label: "Behaviors ID'd", color: "bg-purple-500/20 text-purple-700 dark:text-purple-400" },
   monitoring_running:   { label: "Monitoring",     color: "bg-success/20 text-success" },
   monitoring_paused:    { label: "Paused",         color: "bg-warning/20 text-warning" },
   milestone_review:     { label: "Milestone",      color: "bg-chart-1/20 text-chart-1" },
