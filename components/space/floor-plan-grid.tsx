@@ -160,15 +160,15 @@ export function FloorPlanGrid({
           >
             <div className="absolute inset-0 flex flex-col items-center justify-center p-1 overflow-hidden">
               <span
-                className="text-[10px] sm:text-xs font-medium text-white drop-shadow-md text-center leading-tight truncate w-full"
-                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+                className="text-[10px] sm:text-xs font-semibold text-white text-center leading-tight truncate w-full"
+                style={{ textShadow: '-1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.8)' }}
               >
                 {zone.name}
               </span>
               {showOccupancy && (
                 <span
-                  className="text-[9px] sm:text-[10px] text-white/90 drop-shadow-md"
-                  style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+                  className="text-[9px] sm:text-[10px] text-white/90"
+                  style={{ textShadow: '-1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7)' }}
                 >
                   {occupancyPercent}%
                 </span>
