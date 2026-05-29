@@ -326,7 +326,7 @@ export function ZoneGrid({
                 {zone.name}
               </span>
               {zone.zone_type && zone.grid_height > 1 && (
-                <span className="text-[8px] text-muted-foreground capitalize truncate">
+                <span className="text-[8px] text-white/80 capitalize truncate" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
                   {zone.zone_type.replace("_", " ")}
                 </span>
               )}
