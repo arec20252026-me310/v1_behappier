@@ -243,6 +243,14 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
   const allData = mergeSeriesData(series)
   const total = allData.length
 
+  const [isDark, setIsDark] = useState(() => typeof document !== "undefined" && document.documentElement.classList.contains("dark"))
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"))
+    const observer = new MutationObserver(check)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+    return () => observer.disconnect()
+  }, [])
+
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [viewStart, setViewStart] = useState(0)
   const [viewEnd, setViewEnd] = useState(total)
@@ -571,7 +579,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
                     legendType="none" connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
                 <Line key={s.title} type="monotone" dataKey={s.title}
-                  stroke={color} strokeWidth={4}
+                  stroke={color} strokeWidth={isDark ? 3 : 4}
                   dot={(props: Record<string, unknown>) => {
                     const { cx, cy, index } = props as { cx: number; cy: number; index: number }
                     const prev = visibleData[index - 1]?.[s.title]
