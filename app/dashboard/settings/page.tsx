@@ -1,6 +1,7 @@
 import { DashboardHeader } from "@/components/dashboard/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Microscope, MapPin } from "lucide-react"
+import { Microscope, MapPin, Palette } from "lucide-react"
+import { ThemeSwitcher } from "@/components/settings/theme-switcher"
 import { isReviewMode } from "@/lib/review-mode"
 import { enableReviewMode, disableReviewMode } from "@/app/actions/review"
 import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
@@ -42,6 +43,21 @@ export default async function SettingsPage() {
               You can configure additional spaces in the Space Builder tab.
             </p>
             <DefaultSpacePicker spaces={allSpaces} defaultSpaceId={defaultSpaceId} isDemo={demo} />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Palette className="h-4 w-4 text-purple-400" />
+              Appearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Choose between light and dark mode. Light mode is the default.
+            </p>
+            <ThemeSwitcher />
           </CardContent>
         </Card>
 

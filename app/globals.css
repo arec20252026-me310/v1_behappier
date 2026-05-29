@@ -4,7 +4,49 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* OccupancyIQ - Dark analytics dashboard theme */
+  /* Looking Glass - Light theme (default) */
+  --background: oklch(0.97 0.003 260);
+  --foreground: oklch(0.15 0.01 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.01 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.01 260);
+  --primary: oklch(0.52 0.15 200);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.93 0.005 260);
+  --secondary-foreground: oklch(0.15 0.01 260);
+  --muted: oklch(0.93 0.005 260);
+  --muted-foreground: oklch(0.48 0.005 260);
+  --accent: oklch(0.48 0.18 160);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.5 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.87 0.007 260);
+  --input: oklch(0.93 0.005 260);
+  --ring: oklch(0.52 0.15 200);
+  --chart-1: oklch(0.52 0.15 200);
+  --chart-2: oklch(0.48 0.18 160);
+  --chart-3: oklch(0.6 0.15 80);
+  --chart-4: oklch(0.55 0.2 30);
+  --chart-5: oklch(0.5 0.18 280);
+  --radius: 0.5rem;
+  --sidebar: oklch(0.94 0.007 260);
+  --sidebar-foreground: oklch(0.15 0.01 260);
+  --sidebar-primary: oklch(0.52 0.15 200);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.87 0.007 260);
+  --sidebar-accent-foreground: oklch(0.15 0.01 260);
+  --sidebar-border: oklch(0.84 0.007 260);
+  --sidebar-ring: oklch(0.52 0.15 200);
+
+  /* Custom semantic colors */
+  --success: oklch(0.48 0.18 160);
+  --warning: oklch(0.6 0.15 80);
+  --info: oklch(0.52 0.15 200);
+}
+
+.dark {
+  /* Looking Glass - Dark theme */
   --background: oklch(0.13 0.01 260);
   --foreground: oklch(0.95 0 0);
   --card: oklch(0.17 0.01 260);
@@ -29,7 +71,6 @@
   --chart-3: oklch(0.75 0.15 80);
   --chart-4: oklch(0.65 0.2 30);
   --chart-5: oklch(0.6 0.18 280);
-  --radius: 0.5rem;
   --sidebar: oklch(0.11 0.01 260);
   --sidebar-foreground: oklch(0.95 0 0);
   --sidebar-primary: oklch(0.7 0.15 200);
@@ -38,7 +79,7 @@
   --sidebar-accent-foreground: oklch(0.95 0 0);
   --sidebar-border: oklch(0.25 0.01 260);
   --sidebar-ring: oklch(0.7 0.15 200);
-  
+
   /* Custom semantic colors */
   --success: oklch(0.65 0.18 160);
   --warning: oklch(0.75 0.15 80);

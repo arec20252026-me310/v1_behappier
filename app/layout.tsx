@@ -23,6 +23,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-background h-full overflow-hidden">
+      <head>
+        {/* Apply dark class before first paint to avoid flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="font-sans antialiased h-full overflow-hidden">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
