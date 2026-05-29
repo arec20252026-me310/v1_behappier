@@ -130,7 +130,7 @@ export const CAMERA = {
   stream_url: null,
   status: "active" as const,
   field_of_view: {},
-  metadata: { ha_entity_id: "camera_2", placement_x: 276, placement_y: 499, placement_direction: "up" },
+  metadata: { ha_entity_id: "camera_2", placement_x: 218, placement_y: 389, placement_frac_x: 0.47391304347826085, placement_frac_y: 0.6763434860110051, placement_direction: "up" },
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",
 }
@@ -144,7 +144,7 @@ export const CAMERAS = [
     stream_url: null,
     status: "active" as const,
     field_of_view: {},
-    metadata: { ha_entity_id: "camera_1", placement_x: 35, placement_y: 353, placement_direction: "right" },
+    metadata: { ha_entity_id: "camera_1", placement_x: 29, placement_y: 276, placement_frac_x: 0.06304347826086956, placement_frac_y: 0.4798217468805704, placement_direction: "right" },
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   },
@@ -155,7 +155,7 @@ export const CAMERAS = [
     stream_url: null,
     status: "active" as const,
     field_of_view: {},
-    metadata: { ha_entity_id: "camera_3", placement_x: 273, placement_y: 534, placement_direction: "left" },
+    metadata: { ha_entity_id: "camera_3", placement_x: 217, placement_y: 412, placement_frac_x: 0.4717391304347826, placement_frac_y: 0.7163434860110052, placement_direction: "left" },
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
   },
@@ -163,9 +163,9 @@ export const CAMERAS = [
 
 type CameraDir = import("@/lib/types").CameraDirection
 export const DEMO_CAMERA_PLACEMENTS: import("@/lib/types").CameraPlacement[] = [
-  { id: `cam-${KITCHEN_ID}`, zoneId: KITCHEN_ID, x: 276, y: 499, direction: "up"    as CameraDir, label: "camera_2" },
-  { id: `cam-${TEAM2_ID}`,   zoneId: TEAM2_ID,   x: 35,  y: 353, direction: "right" as CameraDir, label: "camera_1" },
-  { id: `cam-${TEAM4_ID}`,   zoneId: TEAM4_ID,   x: 273, y: 534, direction: "left"  as CameraDir, label: "camera_3" },
+  { id: `cam-${KITCHEN_ID}`, zoneId: KITCHEN_ID, x: 218, y: 389, fracX: 0.47391304347826085, fracY: 0.6763434860110051, direction: "up"    as CameraDir, label: "camera_2" },
+  { id: `cam-${TEAM2_ID}`,   zoneId: TEAM2_ID,   x: 29,  y: 276, fracX: 0.06304347826086956, fracY: 0.4798217468805704, direction: "right" as CameraDir, label: "camera_1" },
+  { id: `cam-${TEAM4_ID}`,   zoneId: TEAM4_ID,   x: 217, y: 412, fracX: 0.4717391304347826,  fracY: 0.7163434860110052, direction: "left"  as CameraDir, label: "camera_3" },
 ]
 
 // ── Space — Looking Glass HQ ──────────────────────────────────────────────────
@@ -192,15 +192,15 @@ export const ZONES_LGQ = [
 ]
 
 export const CAMERAS_LGQ = [
-  { id: "151bdb6f-f2ab-42f8-ac85-65078078cc9a", zone_id: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", name: "camera_1", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_1", placement_x: 208, placement_y: 70,  placement_direction: "down" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "c75b7af2-96a9-4e69-886b-ffbf96e92479", zone_id: "79c7a05a-5363-413d-a640-f2d74c5f524f", name: "camera_2", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_2", placement_x: 416, placement_y: 460, placement_direction: "up"   }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
-  { id: "ab88826c-49f5-416e-9315-1cc2e223340c", zone_id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", name: "camera_3", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_3", placement_x: 713, placement_y: 226, placement_direction: "left" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "151bdb6f-f2ab-42f8-ac85-65078078cc9a", zone_id: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", name: "camera_1", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_1", placement_x: 203, placement_y: 70,  placement_frac_x: 0.2564489009186352,  placement_frac_y: 0.14583333333333334, placement_direction: "down" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "c75b7af2-96a9-4e69-886b-ffbf96e92479", zone_id: "79c7a05a-5363-413d-a640-f2d74c5f524f", name: "camera_2", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_2", placement_x: 414, placement_y: 460, placement_frac_x: 0.5311884842519685,  placement_frac_y: 0.9583333333333334,  placement_direction: "up"   }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "ab88826c-49f5-416e-9315-1cc2e223340c", zone_id: "ec740992-4f29-4f9a-92fc-ae103aaa676d", name: "camera_3", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_3", placement_x: 714, placement_y: 232, placement_frac_x: 0.9218134842519685,  placement_frac_y: 0.48333333333333334, placement_direction: "left" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
 ]
 
 export const DEMO_CAMERA_PLACEMENTS_LGQ: import("@/lib/types").CameraPlacement[] = [
-  { id: "cam-lgq-conf",    zoneId: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", x: 208, y: 70,  direction: "down" as CameraDir, label: "camera_1" },
-  { id: "cam-lgq-kitchen", zoneId: "79c7a05a-5363-413d-a640-f2d74c5f524f", x: 416, y: 460, direction: "up"   as CameraDir, label: "camera_2" },
-  { id: "cam-lgq-desks",   zoneId: "ec740992-4f29-4f9a-92fc-ae103aaa676d", x: 713, y: 226, direction: "left" as CameraDir, label: "camera_3" },
+  { id: "cam-lgq-conf",    zoneId: "56239f1a-4645-4ad2-adaf-8aaaf6b34e92", x: 203, y: 70,  fracX: 0.2564489009186352,  fracY: 0.14583333333333334, direction: "down" as CameraDir, label: "camera_1" },
+  { id: "cam-lgq-kitchen", zoneId: "79c7a05a-5363-413d-a640-f2d74c5f524f", x: 414, y: 460, fracX: 0.5311884842519685,  fracY: 0.9583333333333334,  direction: "up"   as CameraDir, label: "camera_2" },
+  { id: "cam-lgq-desks",   zoneId: "ec740992-4f29-4f9a-92fc-ae103aaa676d", x: 714, y: 232, fracX: 0.9218134842519685,  fracY: 0.48333333333333334, direction: "left" as CameraDir, label: "camera_3" },
 ]
 
 // ── LGQ study seed data ──────────────────────────────────────────────────────
