@@ -367,17 +367,17 @@ export function SpaceHeatmap({
   const renderGrid = (enlarged: boolean) => (
     <div>
       {/* Legend */}
-      <div className={cn("flex items-center gap-4 mb-2 flex-wrap", enlarged ? "text-xl" : "text-xs")}>
+      <div className={cn("flex items-center gap-4 mb-2 flex-wrap font-medium", enlarged ? "text-xl" : "text-sm")}>
         {livePreviewMetrics ? (
           <>
-            <span className="text-muted-foreground">Occupancy:</span>
+            <span className="text-foreground">Occupancy:</span>
             <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Low</span></div>
             <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Medium</span></div>
             <div className="flex items-center gap-1"><div className={cn("rounded border border-red-400", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(239, 68, 68, 0.45)" }} /><span>High</span></div>
           </>
         ) : (
           <>
-            <span className="text-muted-foreground">Status:</span>
+            <span className="text-foreground">Status:</span>
             <div className="flex items-center gap-1"><div className={cn("rounded", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} /><span>Configured</span></div>
             <div className="flex items-center gap-1"><div className={cn("rounded border border-yellow-400", enlarged ? "w-7 h-7" : "w-3 h-3")} style={{ backgroundColor: "rgba(234, 179, 8, 0.45)" }} /><span>Active Study</span></div>
           </>
@@ -461,7 +461,7 @@ export function SpaceHeatmap({
                   : undefined,
               }}
             >
-              <div className="p-1 h-full flex flex-col justify-between text-foreground">
+              <div className="p-1 h-full flex flex-col justify-between text-white">
                 <div className="flex items-center gap-1">
                   <span className={cn("font-medium truncate leading-tight", enlarged ? "text-xl" : "text-[10px]")} style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
                     {zone.name}

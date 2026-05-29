@@ -11,7 +11,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b border-primary/20 bg-primary/10">
+    <header className="flex items-center justify-between px-6 py-4 border-b border-primary/30 bg-primary/20">
       <div>
         <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
         {subtitle && (
@@ -24,7 +24,7 @@ export function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search..."
-            className="w-64 pl-9 bg-secondary border-border"
+            className="w-64 pl-9 bg-card/70 border-border/50"
           />
         </div>
         

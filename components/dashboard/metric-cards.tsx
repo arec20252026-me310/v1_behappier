@@ -83,7 +83,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
                     <span className="text-sm text-muted-foreground">{card.change}</span>
                   </div>
                 </div>
-                <div className={`p-2 rounded-lg bg-secondary ${card.color}`}>
+                <div className={`p-2 rounded-lg bg-muted/40 ${card.color}`}>
                   <card.icon className="h-6 w-6" />
                 </div>
               </div>

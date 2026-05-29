@@ -170,7 +170,7 @@ export function OccupancyChart({
     return (
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5">
-          <CardTitle className="text-base font-medium">Most Recent Study</CardTitle>
+          <CardTitle className="text-xl font-medium">Most Recent Study</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -273,7 +273,7 @@ export function OccupancyChart({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
-            <CardTitle className="text-base font-medium">{isLive ? "Current Study" : "Most Recent Study"}</CardTitle>
+            <CardTitle className="text-xl font-medium">{isLive ? "Current Study" : "Most Recent Study"}</CardTitle>
             {isLive && agoText && (
               <span className="text-xs text-muted-foreground font-normal">Last detection {agoText}</span>
             )}
