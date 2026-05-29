@@ -155,7 +155,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
 
               {/* Summary */}
               {output.dashboard_summary && (
-                <p className="text-base text-foreground leading-relaxed">
+                <p className="text-sm text-foreground leading-relaxed">
                   {output.dashboard_summary}
                 </p>
               )}
@@ -171,7 +171,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                   </div>
                   <ul className="space-y-1.5">
                     {output.insights.map((insight, i) => (
-                      <li key={i} className="flex items-start gap-2 text-base">
+                      <li key={i} className="flex items-start gap-2 text-sm">
                         <div className="w-1.5 h-1.5 rounded-full bg-chart-4 mt-1.5 shrink-0" />
                         <span>{insight}</span>
                       </li>
@@ -191,7 +191,7 @@ export function InsightsList({ outputs, detectionsByStudy = {}, camerasByStudy =
                   </div>
                   <ul className="space-y-1.5">
                     {output.recommendations.map((rec, i) => (
-                      <li key={i} className="flex items-start gap-2 text-base">
+                      <li key={i} className="flex items-start gap-2 text-sm">
                         <div className="w-1.5 h-1.5 rounded-full bg-chart-2 mt-1.5 shrink-0" />
                         <span>{rec}</span>
                       </li>
