@@ -11,7 +11,7 @@ const COLORS = {
   line:       "oklch(0.60 0.17 22)",   // --chart-1 (crimson)
   bar:        "oklch(0.60 0.18 148)",  // --chart-2 (green)
   grid:       "oklch(0.28 0.01 260)",  // approx --border
-  axis:       "#64748b",               // slate-500 — readable on both light and dark
+  axis:       "var(--chart-axis)",      // dark in light mode, slate-500 in dark mode
   tooltipBg:  "oklch(0.17 0.01 260)", // --card (dark)
   tooltipBdr: "oklch(0.28 0.01 260)",
   tooltipTxt: "oklch(0.95 0 0)",       // --foreground (dark)
