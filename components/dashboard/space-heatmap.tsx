@@ -492,8 +492,8 @@ export function SpaceHeatmap({
               key={cam.id}
               className="absolute pointer-events-none"
               style={{
-                left: `${imgOffsetXFrac * 100 + (cam.x / totalBuilderWidth) * (1 - 2 * imgOffsetXFrac) * 100}%`,
-                top: `${imgOffsetYFrac * 100 + (cam.y / totalBuilderHeight) * (1 - 2 * imgOffsetYFrac) * 100}%`,
+                left: `${(cam.x / totalBuilderWidth) * 100}%`,
+                top: `${(cam.y / totalBuilderHeight) * 100}%`,
                 zIndex: 20, transform: "translate(-50%, -50%)"
               }}
             >
