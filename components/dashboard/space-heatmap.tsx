@@ -389,7 +389,7 @@ export function SpaceHeatmap({
         className="relative rounded-lg overflow-hidden border border-border mx-auto"
         style={enlarged
           ? { height: "calc(88vh - 100px)", aspectRatio: `${effectiveCols} / ${effectiveRows}` }
-          : { width: gridResolution <= 10 ? "88%" : "100%", aspectRatio: `${effectiveCols} / ${effectiveRows}` }}
+          : { width: gridResolution <= 10 ? "78%" : "100%", aspectRatio: `${effectiveCols} / ${effectiveRows}` }}
       >
         {floorPlanUrl ? (
           <img
