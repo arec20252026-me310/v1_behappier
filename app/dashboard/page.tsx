@@ -43,8 +43,8 @@ export default async function DashboardPage() {
     const demoInsights  = hasInsights ? [isLGQ ? BE_INSIGHT_OUTPUT_LGQ : BE_INSIGHT_OUTPUT] : []
     const demoLive      = hasLive ? (isLGQ ? BE_LIVE_METRICS_LGQ : BE_LIVE_METRICS) : null
     const demoCompletedStudy    = hasStudy && scenario !== "study-in-progress" ? (isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE) : null
-    // LGQ shows study data (zone highlight + detection feed) in all hasStudy scenarios
-    const lgqDisplayStudy = isLGQ && hasStudy
+    // LGQ shows study data for in-progress and study-complete only (model-created = all zones green)
+    const lgqDisplayStudy = isLGQ && (scenario === "study-in-progress" || scenario === "study-complete")
       ? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS_LGQ : BE_STUDY_COMPLETE_LGQ)
       : null
     const demoCompletedInsights = showInsightsBadge ? (isLGQ ? BE_INSIGHT_OUTPUT_LGQ : BE_INSIGHT_OUTPUT) : null
@@ -110,10 +110,10 @@ export default async function DashboardPage() {
               livePreviewMetrics={scenario === "study-in-progress" ? null : demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
-              activeStudyId={lgqDisplayStudy?.study_id ?? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined)}
-              activeStudyStatus={lgqDisplayStudy?.status ?? (scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined)}
-              activeStudyMonitoredZoneId={lgqDisplayStudy?.metadata?.monitored_zone_id ?? (scenario === "study-in-progress" ? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id : undefined)}
-              demoDetections={lgqDisplayStudy ? DEMO_DETECTIONS_LGQ : (scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined)}
+              activeStudyId={scenario === "study-in-progress" ? (lgqDisplayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id) : undefined}
+              activeStudyStatus={scenario === "study-in-progress" ? (lgqDisplayStudy?.status ?? BE_STUDY_IN_PROGRESS.status) : undefined}
+              activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (lgqDisplayStudy?.metadata?.monitored_zone_id ?? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id) : undefined}
+              demoDetections={scenario === "study-in-progress" ? (isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS) : undefined}
               tracksOccupancy={scenario === "study-in-progress"}
               isDemo={true}
             />
