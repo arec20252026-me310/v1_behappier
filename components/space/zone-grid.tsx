@@ -320,7 +320,7 @@ export function ZoneGrid({
               <span
                 className="text-[10px] font-semibold truncate leading-tight text-white"
                 style={{
-                  textShadow: '-1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.8)'
+                  textShadow: '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.5)'
                 }}
               >
                 {zone.name}
