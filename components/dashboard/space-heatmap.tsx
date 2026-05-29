@@ -485,12 +485,17 @@ export function SpaceHeatmap({
 
         {cameras.map((cam) => {
           // Prefer saved grid-fraction coords (written by zone-grid on drag).
-          // Fall back to zone center so demo / legacy cameras always land inside their zone.
+          // Fall back: derive from pixel x/y using the approximate cellSize from the builder formula.
+          // This is more accurate than zone-center for cameras that were placed but never saved with fracs.
           let fracX: number
           let fracY: number
           if (cam.fracX !== undefined && cam.fracY !== undefined) {
             fracX = cam.fracX
             fracY = cam.fracY
+          } else if (cam.x > 0 || cam.y > 0) {
+            const approxCellSize = Math.max(30, Math.min(60, 480 / gridResolution))
+            fracX = Math.max(0, Math.min(1, cam.x / (effectiveCols * approxCellSize)))
+            fracY = Math.max(0, Math.min(1, cam.y / (effectiveRows * approxCellSize)))
           } else {
             const zone = zones.find(z => z.id === cam.zoneId)
             fracX = zone ? (zone.grid_x + zone.grid_width / 2) / effectiveCols : 0.5
