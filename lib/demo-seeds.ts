@@ -203,6 +203,74 @@ export const DEMO_CAMERA_PLACEMENTS_LGQ: import("@/lib/types").CameraPlacement[]
   { id: "cam-lgq-desks",   zoneId: "ec740992-4f29-4f9a-92fc-ae103aaa676d", x: 713, y: 226, direction: "left" as CameraDir, label: "camera_3" },
 ]
 
+// ── LGQ study seed data ──────────────────────────────────────────────────────
+export const LGQ_CONF_ROOM_ID = "56239f1a-4645-4ad2-adaf-8aaaf6b34e92"
+export const LGQ_STUDY_ID = "study_lgq_001"
+export const SEED_BE_STUDY_LGQ_ID = "00000000-0000-0000-0000-000000000011"
+
+export const DEMO_METRICS_LGQ = [
+  {
+    id: "8db6e8a5-00a3-4df7-b618-48223d1551d9", space_id: LGQ_SPACE_ID,
+    name: "Occupancy", description: "Number of people present within the observed area at a given instant",
+    category: "utilization" as const, unit: "count", calculation_method: null,
+    rubric: "Count every person visible within the observed area regardless of activity. Score = total headcount. Score 0 if no people are present.",
+    literature_reference: "Fruin, J.J. (1971). Pedestrian Planning and Design. Metropolitan Association of Urban Designers and Environmental Planners.",
+    is_active: true, ..._TS_M,
+  },
+]
+
+const BE_STUDY_BASE_LGQ = {
+  id: SEED_BE_STUDY_LGQ_ID,
+  study_id: LGQ_STUDY_ID,
+  building_id: LGQ_SPACE_ID,
+  user_id: null,
+  session_id: null,
+  study_goal: "Monitor the Conference Room for occupancy during a working session.",
+  study_plan: {},
+  task_graph: {},
+  graph_plan: {},
+  metadata: {
+    study_name: "LGQ Conference Room Study",
+    monitored_zone_id: LGQ_CONF_ROOM_ID,
+    target_zones: [LGQ_CONF_ROOM_ID],
+  },
+  live_preview_status: null,
+  started_at: "2026-05-28T14:00:00.000000+00:00",
+  duration_seconds: 60,
+  created_at: "2026-05-28T13:59:45.000000+00:00",
+  updated_at: "2026-05-28T14:01:00.000000+00:00",
+}
+
+export const BE_STUDY_IN_PROGRESS_LGQ = {
+  ...BE_STUDY_BASE_LGQ,
+  status: "running",
+  current_stage: "monitoring_running" as const,
+  live_preview_status: "Monitoring running — 1 snapshot analyzed",
+}
+
+export const BE_STUDY_COMPLETE_LGQ = {
+  ...BE_STUDY_BASE_LGQ,
+  status: "complete",
+  current_stage: "complete" as const,
+}
+
+export const DEMO_DETECTIONS_LGQ = [
+  { timestamp_pt: "2026-05-28 14:00:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }], notes: "There are three people sitting at the table calmly working on laptops." },
+]
+
+export const BE_LIVE_METRICS_LGQ = {
+  id: "00000000-0000-0000-0000-000000000012",
+  study_id: LGQ_STUDY_ID,
+  status: "running",
+  label: "Monitoring running — 1 snapshot analyzed",
+  updated_at: "2026-05-28T14:01:00.000Z",
+  metrics: {
+    zone_metrics: {
+      "Conference Room": { occupancy_pct: 60, count: 3 },
+    },
+  },
+}
+
 // ── BE_studies ───────────────────────────────────────────────────────────────
 // metadata.monitored_zone_id tells the heatmap which zone to highlight
 const BE_STUDY_BASE = {

@@ -12,6 +12,7 @@ import {
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
   BE_LIVE_METRICS, BE_INSIGHT_OUTPUT, DEMO_DETECTIONS, DEMO_CAMERA_PLACEMENTS,
   DEMO_LGQ_SPACE, ZONES_LGQ, DEMO_CAMERA_PLACEMENTS_LGQ, LGQ_SPACE_ID,
+  DEMO_METRICS_LGQ, BE_STUDY_IN_PROGRESS_LGQ, BE_LIVE_METRICS_LGQ, DEMO_DETECTIONS_LGQ,
 } from "@/lib/demo-seeds"
 
 const ACTIVE_STATUSES = ["running", "analyzing"]
@@ -28,16 +29,16 @@ export default async function DashboardPage() {
 
     // LGQ always shows as "space configured" — no studies or insights yet
     const hasSpace    = scenario !== "blank"
-    const hasStudy    = !isLGQ && (scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created")
-    const hasLive     = !isLGQ && scenario === "study-in-progress"
+    const hasStudy    = scenario === "study-in-progress" || (!isLGQ && (scenario === "study-complete" || scenario === "model-created"))
+    const hasLive     = scenario === "study-in-progress"
     const hasInsights = !isLGQ && (scenario === "study-complete" || scenario === "model-created")
     const showInsightsBadge = !isLGQ && scenario === "study-complete"
 
     const demoSpace   = hasSpace ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE) : null
     const demoZones   = hasSpace ? (isLGQ ? ZONES_LGQ : ZONES) : []
-    const demoStudies = scenario === "study-in-progress" ? [BE_STUDY_IN_PROGRESS] : []
+    const demoStudies = scenario === "study-in-progress" ? [isLGQ ? BE_STUDY_IN_PROGRESS_LGQ : BE_STUDY_IN_PROGRESS] : []
     const demoInsights  = hasInsights ? [BE_INSIGHT_OUTPUT] : []
-    const demoLive      = hasLive ? BE_LIVE_METRICS : null
+    const demoLive      = hasLive ? (isLGQ ? BE_LIVE_METRICS_LGQ : BE_LIVE_METRICS) : null
     const demoCompletedStudy    = hasInsights ? BE_STUDY_COMPLETE : null
     const demoCompletedInsights = showInsightsBadge ? BE_INSIGHT_OUTPUT : null
     const latestOutput = showInsightsBadge ? (demoInsights[0] ?? null) : null
@@ -77,7 +78,7 @@ export default async function DashboardPage() {
             zonesCount={demoZones.length}
             studiesCount={demoStudies.length}
             insightsCount={insightsCount}
-            metricsCount={hasStudy ? DEMO_METRICS.filter(m => m.is_active).length : 0}
+            metricsCount={hasStudy ? (isLGQ ? DEMO_METRICS_LGQ.filter(m => m.is_active).length : DEMO_METRICS.filter(m => m.is_active).length) : 0}
             latestInsightAt={showInsightsBadge ? demoInsights[0]?.created_at : undefined}
             isDemo={true}
           />
@@ -91,10 +92,10 @@ export default async function DashboardPage() {
               livePreviewMetrics={scenario === "study-in-progress" ? null : demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
-              activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
-              activeStudyStatus={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined}
-              activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id : undefined}
-              demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
+              activeStudyId={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.study_id : BE_STUDY_IN_PROGRESS.study_id) : undefined}
+              activeStudyStatus={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.status : BE_STUDY_IN_PROGRESS.status) : undefined}
+              activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.metadata?.monitored_zone_id : (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id) : undefined}
+              demoDetections={scenario === "study-in-progress" ? (isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS) : undefined}
               tracksOccupancy={scenario === "study-in-progress"}
               isDemo={true}
             />
@@ -103,15 +104,15 @@ export default async function DashboardPage() {
                 latestOutput={latestOutput}
                 studyDurationMs={BE_STUDY_COMPLETE.duration_seconds * 1000}
                 metricDescriptions={demoMetricDescriptions}
-                activeStudyId={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.study_id : undefined}
-                activeStudyStatus={scenario === "study-in-progress" ? BE_STUDY_IN_PROGRESS.status : undefined}
-                demoDetections={scenario === "study-in-progress" ? DEMO_DETECTIONS : undefined}
+                activeStudyId={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.study_id : BE_STUDY_IN_PROGRESS.study_id) : undefined}
+                activeStudyStatus={scenario === "study-in-progress" ? (isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.status : BE_STUDY_IN_PROGRESS.status) : undefined}
+                demoDetections={scenario === "study-in-progress" ? (isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS) : undefined}
               />
               {scenario === "study-in-progress" && (
                 <LatestDetectionCard
-                  studyId={BE_STUDY_IN_PROGRESS.study_id}
-                  status={BE_STUDY_IN_PROGRESS.status}
-                  demoDetections={DEMO_DETECTIONS.slice(-1)}
+                  studyId={isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.study_id : BE_STUDY_IN_PROGRESS.study_id}
+                  status={isLGQ ? BE_STUDY_IN_PROGRESS_LGQ.status : BE_STUDY_IN_PROGRESS.status}
+                  demoDetections={(isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS).slice(-1)}
                 />
               )}
             </div>
