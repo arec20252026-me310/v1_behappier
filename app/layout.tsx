@@ -11,7 +11,10 @@ export const metadata: Metadata = {
   description: 'Transform video feeds into actionable behavioral insights for your spaces',
   generator: 'v0.app',
   icons: {
-    icon: '/looking-glass-icon.png',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/looking-glass-icon.png', type: 'image/png' },
+    ],
     apple: '/looking-glass-icon.png',
   },
 }

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Magnifying glass ring -->
+  <circle cx="40" cy="40" r="27" fill="none" stroke="#e5432a" stroke-width="13"/>
+  <!-- Handle - two parallel diagonal bars (upper and lower) -->
+  <line x1="59" y1="59" x2="80" y2="80" stroke="#e5432a" stroke-width="9" stroke-linecap="round"/>
+  <line x1="66" y1="52" x2="87" y2="73" stroke="#e5432a" stroke-width="9" stroke-linecap="round"/>
+</svg>
