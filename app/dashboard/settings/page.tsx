@@ -1,6 +1,7 @@
+import Link from "next/link"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Microscope, MapPin, Palette, Maximize2 } from "lucide-react"
+import { Microscope, MapPin, Palette, Maximize2, Clapperboard } from "lucide-react"
 import { ThemeSwitcher } from "@/components/settings/theme-switcher"
 import { DashboardSettings } from "@/components/settings/dashboard-settings"
 import { isReviewMode } from "@/lib/review-mode"
@@ -59,6 +60,27 @@ export default async function SettingsPage() {
               Hides the metric summary cards, collapses the sidebar, and enters fullscreen for a clean presentation view.
             </p>
             <DashboardSettings />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Clapperboard className="h-4 w-4 text-muted-foreground/60" />
+              Demo Mode
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Load a preset scenario to walk through the platform during demos and user interviews. No database changes are made — exit demo mode to restore your real data.
+            </p>
+            <Link
+              href="/dashboard/demo"
+              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded border border-border text-foreground hover:bg-muted transition-colors"
+            >
+              <Clapperboard className="h-4 w-4" />
+              Open Demo Setup
+            </Link>
           </CardContent>
         </Card>
 

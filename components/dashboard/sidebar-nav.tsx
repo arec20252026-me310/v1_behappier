@@ -14,7 +14,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Clapperboard,
   Maximize2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -58,6 +57,19 @@ export function SidebarNav() {
   const [collapsed, setCollapsed] = useState(false)
   const [showcaseMode, setShowcaseMode] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+
+  async function toggleShowcaseMode() {
+    const next = !showcaseMode
+    setShowcaseMode(next)
+    if (next) setCollapsed(true)
+    localStorage.setItem("behappier_showcase_mode", next ? "true" : "false")
+    window.dispatchEvent(new StorageEvent("storage", { key: "behappier_showcase_mode", newValue: next ? "true" : "false" }))
+    if (next) {
+      try { await document.documentElement.requestFullscreen() } catch {}
+    } else {
+      if (document.fullscreenElement) document.exitFullscreen()
+    }
+  }
 
   useEffect(() => {
     const showcase = localStorage.getItem("behappier_showcase_mode") === "true"
@@ -144,16 +156,20 @@ export function SidebarNav() {
             {!collapsed && <span className="text-base font-semibold">Enter Fullscreen</span>}
           </button>
         )}
-        <Link
-          href="/dashboard/demo"
+        <button
+          onClick={toggleShowcaseMode}
           className={cn(
-            "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+            showcaseMode
+              ? "text-orange-400 hover:bg-sidebar-accent"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            collapsed && "justify-center px-0"
           )}
+          title={showcaseMode ? "Turn off showcase mode" : "Showcase mode"}
         >
-          <Clapperboard className="h-5 w-5 shrink-0 text-sidebar-foreground/60" />
-          {!collapsed && <span className="text-base font-semibold text-sidebar-foreground/60">Start Demo</span>}
-        </Link>
+          <Maximize2 className="h-5 w-5 shrink-0" />
+          {!collapsed && <span className="text-base font-semibold">{showcaseMode ? "Showcase On" : "Showcase Mode"}</span>}
+        </button>
         <Link
           href="/dashboard/settings"
           className={cn(
