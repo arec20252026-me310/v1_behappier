@@ -168,7 +168,7 @@ export function SidebarNav() {
           )}
           title={showcaseMode ? "Turn off showcase mode" : "Showcase mode"}
         >
-          {showcaseMode
+          {showcaseMode && isFullscreen
             ? <Minimize2 className="h-5 w-5 shrink-0" />
             : <Maximize2 className="h-5 w-5 shrink-0" />}
           {!collapsed && <span className="text-base font-semibold">{showcaseMode ? "Showcase On" : "Showcase Mode"}</span>}
