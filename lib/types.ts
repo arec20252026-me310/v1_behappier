@@ -223,7 +223,7 @@ export interface ActionItem {
 }
 
 // Client-side camera placement for the visual map builder
-export type CameraDirection = 'up' | 'down' | 'left' | 'right'
+export type CameraDirection = 'up' | 'up-right' | 'right' | 'down-right' | 'down' | 'down-left' | 'left' | 'up-left'
 
 export interface CameraPlacement {
   id: string

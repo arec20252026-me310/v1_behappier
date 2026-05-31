@@ -37,9 +37,13 @@ export function CameraMapIcon({
   // Direction angles: the cone opens *away* from the camera
   const dirAngles: Record<CameraDirection, number> = {
     up: -90,
-    down: 90,
+    'up-right': -45,
     right: 0,
+    'down-right': 45,
+    down: 90,
+    'down-left': 135,
     left: 180,
+    'up-left': -135,
   }
 
   const baseDeg = dirAngles[direction]
@@ -139,19 +143,22 @@ export function CameraMapIcon({
         {(() => {
           const mountSize = size * 0.14
           const offsets: Record<CameraDirection, { x: number; y: number }> = {
-            up:    { x: cx - mountSize / 2, y: cy + bodyH / 2 - 1 },
-            down:  { x: cx - mountSize / 2, y: cy - bodyH / 2 - mountSize + 1 },
-            right: { x: cx - bodyW / 2 - mountSize + 1, y: cy - mountSize / 2 },
-            left:  { x: cx + bodyW / 2 - 1, y: cy - mountSize / 2 },
+            up:         { x: cx - mountSize / 2, y: cy + bodyH / 2 - 1 },
+            'up-right': { x: cx - bodyW / 2 - mountSize + 1, y: cy + bodyH / 2 - 1 },
+            right:      { x: cx - bodyW / 2 - mountSize + 1, y: cy - mountSize / 2 },
+            'down-right':{ x: cx - bodyW / 2 - mountSize + 1, y: cy - bodyH / 2 - mountSize + 1 },
+            down:       { x: cx - mountSize / 2, y: cy - bodyH / 2 - mountSize + 1 },
+            'down-left':{ x: cx + bodyW / 2 - 1, y: cy - bodyH / 2 - mountSize + 1 },
+            left:       { x: cx + bodyW / 2 - 1, y: cy - mountSize / 2 },
+            'up-left':  { x: cx + bodyW / 2 - 1, y: cy + bodyH / 2 - 1 },
           }
           const { x, y } = offsets[direction]
-          const isHorizontal = direction === "left" || direction === "right"
           return (
             <rect
               x={x}
               y={y}
-              width={isHorizontal ? mountSize : mountSize}
-              height={isHorizontal ? mountSize : mountSize}
+              width={mountSize}
+              height={mountSize}
               rx={1}
               style={{ fill: "var(--cam-mount)" }}
             />

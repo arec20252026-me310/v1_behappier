@@ -25,6 +25,7 @@ interface ActiveStudyEntry {
 
 interface OccupancyChartProps {
   latestOutput?: BEInsightOutput | null
+  completedOutputs?: BEInsightOutput[]
   studyDurationMs?: number
   metricDescriptions?: Record<string, string>
   // Legacy single-study (demo mode)
@@ -76,6 +77,7 @@ function buildLiveSeries(detections: DetectionRow[]): ChartSeries[] {
 
 export function OccupancyChart({
   latestOutput,
+  completedOutputs,
   studyDurationMs,
   metricDescriptions,
   activeStudyId,
@@ -87,7 +89,18 @@ export function OccupancyChart({
   const [isEnlarged, setIsEnlarged] = useState(false)
   const [lastDetectionAt, setLastDetectionAt] = useState<number | null>(null)
   const [agoText, setAgoText] = useState<string | null>(null)
+  const [visibleOutputs, setVisibleOutputs] = useState<BEInsightOutput[]>([])
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
+
+  // Determine which completed outputs to show based on localStorage viewed timestamp
+  useEffect(() => {
+    if (!completedOutputs || completedOutputs.length === 0) { setVisibleOutputs([]); return }
+    const viewedAt = localStorage.getItem("behappier_insights_viewed_at")
+    const unreviewed = viewedAt
+      ? completedOutputs.filter(o => new Date(o.created_at) > new Date(viewedAt))
+      : completedOutputs
+    setVisibleOutputs(unreviewed.length > 0 ? unreviewed.slice(0, 3) : completedOutputs.slice(0, 1))
+  }, [completedOutputs])
 
   // Merge legacy single-study prop with multi-study prop
   const allActiveStudies: ActiveStudyEntry[] = useMemo(() => {
@@ -162,11 +175,14 @@ export function OccupancyChart({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studiesKey, demoDetections])
 
-  const fallbackSeries = latestOutput ? extractLineSeries(latestOutput) : []
+  // visibleOutputs drives the chart when not live; fall back to latestOutput for demo mode
+  const completedSeries = visibleOutputs.length > 0
+    ? visibleOutputs.map(o => ({ output: o, series: extractLineSeries(o) }))
+    : latestOutput ? [{ output: latestOutput, series: extractLineSeries(latestOutput) }] : []
   const totalDetections = Object.values(perStudyDetections).reduce((sum, d) => sum + d.length, 0)
 
   // Empty non-live state
-  if (!isLive && !fallbackSeries.length) {
+  if (!isLive && completedSeries.length === 0) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pb-1.5">
@@ -210,17 +226,49 @@ export function OccupancyChart({
 
   const renderCharts = (enlarged: boolean) => {
     if (!isLive) {
+      const n = completedSeries.length
+      if (n === 0) return null
+      if (n === 1) {
+        const { series } = completedSeries[0]
+        return (
+          <TimeSeriesChart
+            series={series}
+            height={enlarged ? "calc(88vh - 110px)" : 350}
+            studyDurationMs={studyDurationMs}
+            xAxisLabel="Timestamp"
+            yAxisLabel={series.length === 1 ? series[0].title : undefined}
+            seriesDescriptions={metricDescriptions}
+            isLive={false}
+            enlarged={enlarged}
+          />
+        )
+      }
+      // Multiple completed studies with unreviewed insights
       return (
-        <TimeSeriesChart
-          series={fallbackSeries}
-          height={enlarged ? "calc(88vh - 110px)" : 350}
-          studyDurationMs={studyDurationMs}
-          xAxisLabel="Timestamp"
-          yAxisLabel={fallbackSeries.length === 1 ? fallbackSeries[0].title : undefined}
-          seriesDescriptions={metricDescriptions}
-          isLive={false}
-          enlarged={enlarged}
-        />
+        <div className="flex flex-col">
+          {completedSeries.map(({ output, series }, idx) => {
+            const chartHeight = enlarged
+              ? `calc((88vh - ${80 + n * 60 + (n - 1) * 4}px) / ${n})`
+              : n === 2 ? 200 : 160
+            return (
+              <div key={output.study_id} className={idx > 0 ? "border-t border-border/50 pt-1 mt-1" : ""}>
+                <p className="text-[10px] font-mono text-muted-foreground/60 mb-0.5 truncate">
+                  Study {idx + 1}: {output.study_id}
+                </p>
+                <TimeSeriesChart
+                  series={series}
+                  height={chartHeight}
+                  xAxisLabel="Timestamp"
+                  yAxisLabel={series.length === 1 ? series[0].title : undefined}
+                  seriesDescriptions={metricDescriptions}
+                  isLive={false}
+                  compact={n > 1}
+                  enlarged={enlarged}
+                />
+              </div>
+            )
+          })}
+        </div>
       )
     }
 
@@ -273,7 +321,7 @@ export function OccupancyChart({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
-            <CardTitle className="text-xl font-medium">{isLive ? "Current Study" : "Most Recent Study"}</CardTitle>
+            <CardTitle className="text-xl font-medium">{isLive ? "Current Study" : completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</CardTitle>
             {isLive && agoText && (
               <span className="text-xs text-muted-foreground font-normal">Last detection {agoText}</span>
             )}
@@ -291,7 +339,7 @@ export function OccupancyChart({
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-5xl font-medium">{isLive ? "Current Study" : "Most Recent Study"}</DialogTitle>
+                <DialogTitle className="text-5xl font-medium">{isLive ? "Current Study" : completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</DialogTitle>
               </div>
               <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
             </DialogHeader>

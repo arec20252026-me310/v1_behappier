@@ -143,7 +143,7 @@ export function ZoneGrid({
   const handleCameraRightClick = useCallback((e: React.MouseEvent, cam: CameraPlacement) => {
     e.preventDefault()
     e.stopPropagation()
-    const dirs: CameraDirection[] = ['up', 'right', 'down', 'left']
+    const dirs: CameraDirection[] = ['up', 'up-right', 'right', 'down-right', 'down', 'down-left', 'left', 'up-left']
     const idx = dirs.indexOf(cam.direction)
     const nextDir = dirs[(idx + 1) % dirs.length]
     if (onUpdateCameras) {

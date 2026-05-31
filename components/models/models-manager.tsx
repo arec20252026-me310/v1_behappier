@@ -602,8 +602,8 @@ export function ModelsManager({
     const { fitResult } = lastEntry
     const isNN = NN_MODEL_TYPES.includes(fitResult.modelType)
     const content = isNN
-      ? JSON.stringify({ modelType: fitResult.modelType, architecture: fitResult.parameters.architecture, config: fitResult.parameters.config, weights: fitResult.parameters.weights, weightShapes: fitResult.parameters.weightShapes, normalization: fitResult.parameters.normalization, metrics: fitResult.metrics, exportedAt: new Date().toISOString() }, null, 2)
-      : JSON.stringify({ modelType: fitResult.modelType, parameters: fitResult.parameters, metrics: fitResult.metrics, exportedAt: new Date().toISOString() }, null, 2)
+      ? JSON.stringify({ modelType: fitResult.modelType, inputs: modelInputCols, output: modelOutputCol, architecture: fitResult.parameters.architecture, config: fitResult.parameters.config, weights: fitResult.parameters.weights, weightShapes: fitResult.parameters.weightShapes, normalization: fitResult.parameters.normalization, metrics: fitResult.metrics, exportedAt: new Date().toISOString() }, null, 2)
+      : JSON.stringify({ modelType: fitResult.modelType, inputs: modelInputCols, output: modelOutputCol, parameters: fitResult.parameters, metrics: fitResult.metrics, exportedAt: new Date().toISOString() }, null, 2)
     downloadBlob(content, `model-fit-${fitResult.modelType}.json`, "application/json")
   }
 

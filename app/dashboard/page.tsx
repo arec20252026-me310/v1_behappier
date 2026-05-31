@@ -7,6 +7,7 @@ import { LatestDetectionCard } from "@/components/dashboard/latest-detection-car
 import { StudyStatusWatcher } from "@/components/dashboard/study-status-watcher"
 import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { getDefaultSpace } from "@/lib/spaces"
+import type { BEInsightOutput } from "@/lib/types"
 import {
   DEMO_SPACE, ZONES, DEMO_METRICS,
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE,
@@ -200,7 +201,6 @@ export default async function DashboardPage() {
   const allFetchedStudies = [...beStudies]
 
   let completedStudies: typeof beStudies = []
-  let completedStudy = null
   let completedStudyInsights = null
   const { data: completed } = space ? await supabase
     .from("BE_studies")
@@ -210,20 +210,22 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(4) : { data: [] }
   completedStudies = completed ?? []
-  completedStudy = completedStudies[0] ?? null
   allFetchedStudies.push(...completedStudies)
   allSpaceStudyIds.push(...completedStudies.map((s: { study_id: string }) => s.study_id))
 
-  if (completedStudy) {
-    const { data: studyInsight } = await supabase
+  // Fetch final_insights for up to 3 most recent completed studies
+  const completedOutputs: BEInsightOutput[] = []
+  if (completedStudies.length > 0) {
+    const top3Ids = completedStudies.slice(0, 3).map((s: { study_id: string }) => s.study_id)
+    const { data: completedInsights } = await supabase
       .from("BE_insight_outputs")
       .select("*")
-      .eq("study_id", completedStudy.study_id)
+      .in("study_id", top3Ids)
       .eq("output_mode", "final_insights")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .single()
-    completedStudyInsights = studyInsight ?? null
+      .limit(3)
+    if (completedInsights) completedOutputs.push(...(completedInsights as BEInsightOutput[]))
+    completedStudyInsights = completedOutputs[0] ?? null
   }
 
   // latestOutput: prefer active-study insights, fall back to most recent completed study
@@ -330,9 +332,10 @@ export default async function DashboardPage() {
               <div className="flex flex-col gap-4">
                 <OccupancyChart
                   latestOutput={latestOutput}
+                  completedOutputs={completedOutputs}
                   metricDescriptions={metricDescriptions}
                   studyDurationMs={(() => {
-                    const s = allFetchedStudies.find(s => s.study_id === latestOutput?.study_id)
+                    const s = allFetchedStudies.find(s => s.study_id === (completedOutputs[0] ?? latestOutput)?.study_id)
                     return s?.duration_seconds ? s.duration_seconds * 1000 : undefined
                   })()}
                   activeStudies={chartStudies.length > 0 ? chartStudies : undefined}
