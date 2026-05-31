@@ -2,7 +2,11 @@
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
 import type { DemoScenario } from "@/lib/demo-mode"
+import { LGQ_SPACE_ID, EXPE_SPACE_ID } from "@/lib/demo-seeds"
+
+const DEMO_SPACE_IDS = new Set([LGQ_SPACE_ID, EXPE_SPACE_ID])
 
 function scenarioRedirect(scenario: DemoScenario): string {
   return scenario === "model-created" ? "/dashboard/models" : "/dashboard"
@@ -10,6 +14,23 @@ function scenarioRedirect(scenario: DemoScenario): string {
 
 export async function enableDemoMode(scenario: DemoScenario = "blank") {
   const cookieStore = await cookies()
+
+  // Preserve the current demo space selection if already set.
+  // On first activation, check if the user's real default space is a known demo space
+  // and carry it over so the selected space doesn't reset to Peterson Loft.
+  if (!cookieStore.get("demo_space_id")?.value) {
+    const supabase = await createClient()
+    const { data: defaultSpace } = await supabase
+      .from("spaces")
+      .select("id")
+      .eq("is_default", true)
+      .limit(1)
+      .single()
+    if (defaultSpace?.id && DEMO_SPACE_IDS.has(defaultSpace.id)) {
+      cookieStore.set("demo_space_id", defaultSpace.id, { path: "/", httpOnly: false })
+    }
+  }
+
   cookieStore.set("demo_mode", scenario, { path: "/", httpOnly: false })
   cookieStore.delete("review_mode")
   redirect(scenarioRedirect(scenario))

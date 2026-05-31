@@ -329,33 +329,41 @@ export const BE_INSIGHT_OUTPUT_LGQ = {
   ],
 }
 
-// ── Space — Expe Room 126 ────────────────────────────────────────────────────
-export const EXPE_SPACE_ID = "00000000-0000-0001-0000-000000000001"
-export const EXPE_ROOM_ID  = "00000000-0000-0001-0000-000000000002"
-export const EXPE_STUDY_ID = "study_expe_126_001"
+// ── Space — EXPE Room 126 (real Supabase IDs) ─────────────────────────────────
+export const EXPE_SPACE_ID       = "99eab524-a616-450c-9aa4-892f3346b854"
+export const EXPE_QUIET_ZONE_ID  = "816023aa-06f3-4446-9574-a7bb13c1c1de"
+export const EXPE_ROOM_ID        = "f0725c0e-5921-4fa9-824f-dc1e6313d5ac" // Interaction Zone (monitored)
+export const EXPE_OBS_AREA_ID    = "1e0c5c9b-b49c-4afe-a999-0b354b9b903a"
+export const EXPE_STUDY_ID       = "study_expe_126_001"
 export const SEED_BE_STUDY_EXPE_ID = "00000000-0000-0001-0000-000000000003"
 export const SEED_EXPE_INSIGHT_ID  = "00000000-0000-0001-0000-000000000004"
 
 export const DEMO_EXPE_SPACE = {
   id: EXPE_SPACE_ID,
-  name: "Expe Room 126",
+  name: "EXPE Room 126",
   description: "Stanford ME310 experiment room",
   address: null,
   total_area_sqft: null,
   building_type: "office",
-  floor_plan_url: null,
-  grid_resolution: 20,
+  floor_plan_url: "/api/file?pathname=floor-plans%2F1780254532724.jpg",
+  grid_resolution: 32,
   metadata: {},
   is_default: false,
   created_at: "2024-01-01T00:00:00Z",
   updated_at: "2024-01-01T00:00:00Z",
 }
 
+const _TS_EXPE = { created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" }
 export const ZONES_EXPE = [
-  { id: EXPE_ROOM_ID, space_id: EXPE_SPACE_ID, name: "Room 126", zone_type: "meeting_room", grid_x: 3, grid_y: 3, grid_width: 14, grid_height: 14, color: "#F59E0B", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+  { id: EXPE_QUIET_ZONE_ID, space_id: EXPE_SPACE_ID, name: "Quiet Zone",       zone_type: "workspace", grid_x: 1,  grid_y: 2,  grid_width: 10, grid_height: 10, color: "#10B981", capacity: null, metadata: {}, ..._TS_EXPE },
+  { id: EXPE_ROOM_ID,       space_id: EXPE_SPACE_ID, name: "Interaction Zone", zone_type: "workspace", grid_x: 11, grid_y: 2,  grid_width: 10, grid_height: 10, color: "#10B981", capacity: null, metadata: {}, ..._TS_EXPE },
+  { id: EXPE_OBS_AREA_ID,   space_id: EXPE_SPACE_ID, name: "Observation Area", zone_type: "workspace", grid_x: 1,  grid_y: 13, grid_width: 20, grid_height: 3,  color: "#10B981", capacity: null, metadata: {}, ..._TS_EXPE },
 ]
 
-export const DEMO_CAMERA_PLACEMENTS_EXPE: import("@/lib/types").CameraPlacement[] = []
+export const DEMO_CAMERA_PLACEMENTS_EXPE: import("@/lib/types").CameraPlacement[] = [
+  { id: "cam-expe-interact", zoneId: EXPE_ROOM_ID,      x: 284, y: 279, fracX: 0.3682961532070455, fracY: 0.58125, direction: "up-right" as CameraDir, label: "camera_2" },
+  { id: "cam-expe-quiet",    zoneId: EXPE_QUIET_ZONE_ID, x: 244, y: 279, fracX: 0.3162128198737122, fracY: 0.58125, direction: "up-left"  as CameraDir, label: "camera_1" },
+]
 
 export const DEMO_METRICS_EXPE = [
   {
@@ -373,10 +381,10 @@ const BE_STUDY_BASE_EXPE = {
   study_id: EXPE_STUDY_ID,
   building_id: EXPE_SPACE_ID,
   user_id: null, session_id: null,
-  study_goal: "Monitor Room 126 for occupancy during a working session.",
+  study_goal: "Monitor the Conference Room for occupancy during a working session.",
   study_plan: {}, task_graph: {}, graph_plan: {},
   metadata: {
-    study_name: "Expe Room 126 Occupancy Study",
+    study_name: "LGQ Conference Room Study",
     monitored_zone_id: EXPE_ROOM_ID,
     target_zones: [EXPE_ROOM_ID],
   },
