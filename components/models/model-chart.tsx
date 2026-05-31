@@ -229,10 +229,10 @@ export function ModelChart({
               tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
               axisLine={{ stroke: "var(--chart-axis)" }}
               tickLine={{ stroke: "var(--chart-axis)" }}
-              width={56}
+              width={72}
               label={
                 (yAxisLabel ?? yLabel)
-                  ? { value: yAxisLabel ?? yLabel, angle: -90, position: "insideLeft", fill: "var(--chart-axis)", fontSize: 11 }
+                  ? { value: yAxisLabel ?? yLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: 11 }
                   : undefined
               }
             />

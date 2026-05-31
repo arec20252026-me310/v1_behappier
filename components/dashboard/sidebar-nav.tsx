@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Maximize2,
+  Minimize2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
@@ -162,12 +163,14 @@ export function SidebarNav() {
             "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
             showcaseMode
               ? "text-orange-400 hover:bg-sidebar-accent"
-              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             collapsed && "justify-center px-0"
           )}
           title={showcaseMode ? "Turn off showcase mode" : "Showcase mode"}
         >
-          <Maximize2 className="h-5 w-5 shrink-0" />
+          {showcaseMode
+            ? <Minimize2 className="h-5 w-5 shrink-0" />
+            : <Maximize2 className="h-5 w-5 shrink-0" />}
           {!collapsed && <span className="text-base font-semibold">{showcaseMode ? "Showcase On" : "Showcase Mode"}</span>}
         </button>
         <Link

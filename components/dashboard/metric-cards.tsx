@@ -20,6 +20,11 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
 
   useEffect(() => {
     setHidden(localStorage.getItem("behappier_showcase_mode") === "true")
+    function handleStorage(e: StorageEvent) {
+      if (e.key === "behappier_showcase_mode") setHidden(e.newValue === "true")
+    }
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
   }, [])
 
   useEffect(() => {
