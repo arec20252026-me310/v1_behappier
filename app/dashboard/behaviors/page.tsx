@@ -3,7 +3,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { MetricsManager } from "@/components/metrics/metrics-manager"
 import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { getDefaultSpace } from "@/lib/spaces"
-import { DEMO_SPACE, DEMO_LGQ_SPACE, DEMO_METRICS, LGQ_SPACE_ID } from "@/lib/demo-seeds"
+import { DEMO_SPACE, DEMO_LGQ_SPACE, DEMO_EXPE_SPACE, DEMO_METRICS, LGQ_SPACE_ID, EXPE_SPACE_ID } from "@/lib/demo-seeds"
 import type { Metric } from "@/lib/types"
 
 export default async function MetricsPage() {
@@ -15,14 +15,15 @@ export default async function MetricsPage() {
   const hasStudy  = demo && (scenario === "study-in-progress" || scenario === "study-complete" || scenario === "model-created")
 
   const demoSpaceId = demo ? await getDemoSpaceId() : null
-  const isLGQ = demoSpaceId === LGQ_SPACE_ID
+  const isLGQ  = demoSpaceId === LGQ_SPACE_ID
+  const isExpe = demoSpaceId === EXPE_SPACE_ID
 
   const space = demo
-    ? (hasSpace ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE) : null)
+    ? (hasSpace ? (isLGQ ? DEMO_LGQ_SPACE : isExpe ? DEMO_EXPE_SPACE : DEMO_SPACE) : null)
     : await getDefaultSpace()
 
   let metrics: Metric[] = []
-  if (demo && hasStudy && !isLGQ) {
+  if (demo && hasStudy && !isLGQ && !isExpe) {
     metrics = DEMO_METRICS as Metric[]
   } else if (space) {
     const { data } = await supabase

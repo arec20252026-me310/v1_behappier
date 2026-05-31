@@ -3,7 +3,11 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { SpaceEditor } from "@/components/space/space-editor"
 import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { getAllSpaces, getDefaultSpace } from "@/lib/spaces"
-import { DEMO_SPACE, ZONES, CAMERAS, DEMO_LGQ_SPACE, ZONES_LGQ, CAMERAS_LGQ, LGQ_SPACE_ID } from "@/lib/demo-seeds"
+import {
+  DEMO_SPACE, ZONES, CAMERAS,
+  DEMO_LGQ_SPACE, ZONES_LGQ, CAMERAS_LGQ, LGQ_SPACE_ID,
+  DEMO_EXPE_SPACE, ZONES_EXPE, CAMERAS_EXPE, EXPE_SPACE_ID,
+} from "@/lib/demo-seeds"
 import type { HACameraMapping, Space, Zone, Camera } from "@/lib/types"
 
 export const dynamic = 'force-dynamic'
@@ -21,14 +25,15 @@ export default async function SpacePage({ searchParams }: { searchParams: Promis
   let allSpaces: Space[] = []
 
   if (demo) {
-    allSpaces = scenario !== "blank" ? [DEMO_SPACE as Space, DEMO_LGQ_SPACE as Space] : []
+    allSpaces = scenario !== "blank" ? [DEMO_SPACE as Space, DEMO_LGQ_SPACE as Space, DEMO_EXPE_SPACE as Space] : []
     if (scenario !== "blank") {
       const cookieSpaceId = await getDemoSpaceId()
       const activeSpaceId = params.space_id ?? cookieSpaceId ?? null
-      const isLGQ = activeSpaceId === LGQ_SPACE_ID
-      space = isLGQ ? DEMO_LGQ_SPACE as Space : DEMO_SPACE as Space
-      zones = isLGQ ? ZONES_LGQ as Zone[] : ZONES as Zone[]
-      cameras = isLGQ ? CAMERAS_LGQ as Camera[] : CAMERAS as Camera[]
+      const isLGQ  = activeSpaceId === LGQ_SPACE_ID
+      const isExpe = activeSpaceId === EXPE_SPACE_ID
+      space   = isLGQ ? DEMO_LGQ_SPACE as Space  : isExpe ? DEMO_EXPE_SPACE as Space  : DEMO_SPACE as Space
+      zones   = isLGQ ? ZONES_LGQ as Zone[]      : isExpe ? ZONES_EXPE as Zone[]      : ZONES as Zone[]
+      cameras = isLGQ ? CAMERAS_LGQ as Camera[]  : isExpe ? CAMERAS_EXPE as Camera[]  : CAMERAS as Camera[]
     }
   } else {
     allSpaces = await getAllSpaces()

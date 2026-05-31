@@ -15,20 +15,20 @@ function scenarioRedirect(scenario: DemoScenario): string {
 export async function enableDemoMode(scenario: DemoScenario = "blank") {
   const cookieStore = await cookies()
 
-  // Preserve the current demo space selection if already set.
-  // On first activation, check if the user's real default space is a known demo space
-  // and carry it over so the selected space doesn't reset to Peterson Loft.
-  if (!cookieStore.get("demo_space_id")?.value) {
-    const supabase = await createClient()
-    const { data: defaultSpace } = await supabase
-      .from("spaces")
-      .select("id")
-      .eq("is_default", true)
-      .limit(1)
-      .single()
-    if (defaultSpace?.id && DEMO_SPACE_IDS.has(defaultSpace.id)) {
-      cookieStore.set("demo_space_id", defaultSpace.id, { path: "/", httpOnly: false })
-    }
+  // Always re-detect the real default space so entering demo mode from EXPE Room 126
+  // or LGQ carries that space into demo mode instead of resetting to Peterson Loft.
+  const supabase = await createClient()
+  const { data: defaultSpace } = await supabase
+    .from("spaces")
+    .select("id")
+    .eq("is_default", true)
+    .limit(1)
+    .single()
+  if (defaultSpace?.id && DEMO_SPACE_IDS.has(defaultSpace.id)) {
+    cookieStore.set("demo_space_id", defaultSpace.id, { path: "/", httpOnly: false })
+  } else {
+    // Real default is not a demo space — clear so it falls back to Peterson Loft
+    cookieStore.delete("demo_space_id")
   }
 
   cookieStore.set("demo_mode", scenario, { path: "/", httpOnly: false })

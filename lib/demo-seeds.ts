@@ -360,8 +360,13 @@ export const ZONES_EXPE = [
   { id: EXPE_OBS_AREA_ID,   space_id: EXPE_SPACE_ID, name: "Observation Area", zone_type: "workspace", grid_x: 1,  grid_y: 13, grid_width: 20, grid_height: 3,  color: "#10B981", capacity: null, metadata: {}, ..._TS_EXPE },
 ]
 
+export const CAMERAS_EXPE = [
+  { id: "ef83a572-e62e-403e-824e-0fb52e64fca5", zone_id: EXPE_ROOM_ID,       name: "camera_2", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_2", placement_x: 284, placement_y: 279, placement_frac_x: 0.3682961532070455, placement_frac_y: 0.58125, placement_direction: "up-right" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "1a0af4da-ba24-4710-b74e-903f7840fe9e", zone_id: EXPE_QUIET_ZONE_ID, name: "camera_1", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_1", placement_x: 244, placement_y: 279, placement_frac_x: 0.3162128198737122, placement_frac_y: 0.58125, placement_direction: "up-left"  }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+]
+
 export const DEMO_CAMERA_PLACEMENTS_EXPE: import("@/lib/types").CameraPlacement[] = [
-  { id: "cam-expe-interact", zoneId: EXPE_ROOM_ID,      x: 284, y: 279, fracX: 0.3682961532070455, fracY: 0.58125, direction: "up-right" as CameraDir, label: "camera_2" },
+  { id: "cam-expe-interact", zoneId: EXPE_ROOM_ID,       x: 284, y: 279, fracX: 0.3682961532070455, fracY: 0.58125, direction: "up-right" as CameraDir, label: "camera_2" },
   { id: "cam-expe-quiet",    zoneId: EXPE_QUIET_ZONE_ID, x: 244, y: 279, fracX: 0.3162128198737122, fracY: 0.58125, direction: "up-left"  as CameraDir, label: "camera_1" },
 ]
 

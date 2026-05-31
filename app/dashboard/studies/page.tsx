@@ -8,6 +8,8 @@ import {
   BE_STUDY_IN_PROGRESS, BE_STUDY_COMPLETE, DEMO_DETECTIONS, STUDY_ID,
   DEMO_LGQ_SPACE, ZONES_LGQ, LGQ_SPACE_ID,
   BE_STUDY_IN_PROGRESS_LGQ, BE_STUDY_COMPLETE_LGQ, DEMO_DETECTIONS_LGQ, LGQ_STUDY_ID,
+  DEMO_EXPE_SPACE, ZONES_EXPE, EXPE_SPACE_ID,
+  BE_STUDY_IN_PROGRESS_EXPE, BE_STUDY_COMPLETE_EXPE, DEMO_DETECTIONS_EXPE, EXPE_STUDY_ID,
 } from "@/lib/demo-seeds"
 
 export default async function StudiesPage() {
@@ -16,11 +18,12 @@ export default async function StudiesPage() {
   const supabase = await createClient()
 
   const demoSpaceId = await getDemoSpaceId()
-  const isLGQ = demoSpaceId === LGQ_SPACE_ID
+  const isLGQ  = demoSpaceId === LGQ_SPACE_ID
+  const isExpe = demoSpaceId === EXPE_SPACE_ID
 
   const hasSpace = demo && scenario !== "blank"
   const space = hasSpace
-    ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE)
+    ? (isLGQ ? DEMO_LGQ_SPACE : isExpe ? DEMO_EXPE_SPACE : DEMO_SPACE)
     : demo ? null : await getDefaultSpace()
   const spaceName = space?.name ?? undefined
 
@@ -37,9 +40,9 @@ export default async function StudiesPage() {
 
   const beStudies = demo
     ? (scenario === "study-in-progress"
-        ? [isLGQ ? BE_STUDY_IN_PROGRESS_LGQ : BE_STUDY_IN_PROGRESS]
+        ? [isLGQ ? BE_STUDY_IN_PROGRESS_LGQ : isExpe ? BE_STUDY_IN_PROGRESS_EXPE : BE_STUDY_IN_PROGRESS]
         : (scenario === "study-complete" || scenario === "model-created")
-          ? [isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE]
+          ? [isLGQ ? BE_STUDY_COMPLETE_LGQ : isExpe ? BE_STUDY_COMPLETE_EXPE : BE_STUDY_COMPLETE]
           : [])
     : space ? ((await supabase
         .from("BE_studies")
@@ -48,15 +51,17 @@ export default async function StudiesPage() {
         .order("created_at", { ascending: false })).data ?? []) : []
 
   const zones = demo
-    ? (hasSpace ? (isLGQ ? ZONES_LGQ : ZONES) : [])
+    ? (hasSpace ? (isLGQ ? ZONES_LGQ : isExpe ? ZONES_EXPE : ZONES) : [])
     : space ? ((await supabase.from("zones").select("*").eq("space_id", space.id)).data ?? []) : []
 
   let metrics
   if (demo) {
     if (!hasStudy) {
       metrics = []
-    } else if (isLGQ) {
-      const { data } = await supabase.from("metrics").select("*").eq("space_id", LGQ_SPACE_ID).eq("is_active", true)
+    } else if (isLGQ || isExpe) {
+      // Fetch real metrics from Supabase (both LGQ and EXPE have real space rows)
+      const spaceId = isLGQ ? LGQ_SPACE_ID : EXPE_SPACE_ID
+      const { data } = await supabase.from("metrics").select("*").eq("space_id", spaceId).eq("is_active", true)
       metrics = data ?? []
     } else {
       metrics = DEMO_METRICS.filter(m => m.is_active)
@@ -67,8 +72,8 @@ export default async function StudiesPage() {
 
   const cameras = demo ? [] : ((await supabase.from("cameras").select("*")).data ?? [])
 
-  const demoStudyId = isLGQ ? LGQ_STUDY_ID : STUDY_ID
-  const demoDetections = isLGQ ? DEMO_DETECTIONS_LGQ : DEMO_DETECTIONS
+  const demoStudyId  = isLGQ ? LGQ_STUDY_ID  : isExpe ? EXPE_STUDY_ID  : STUDY_ID
+  const demoDetections = isLGQ ? DEMO_DETECTIONS_LGQ : isExpe ? DEMO_DETECTIONS_EXPE : DEMO_DETECTIONS
 
   return (
     <div className="flex flex-col h-full">

@@ -6,7 +6,11 @@ import { MarkInsightsViewed } from "@/components/insights/mark-insights-viewed"
 import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { isReviewMode } from "@/lib/review-mode"
 import { getDefaultSpace } from "@/lib/spaces"
-import { BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS, DEMO_SPACE, DEMO_LGQ_SPACE, LGQ_SPACE_ID, BE_INSIGHT_OUTPUT_LGQ, BE_STUDY_COMPLETE_LGQ, DEMO_METRICS_LGQ } from "@/lib/demo-seeds"
+import {
+  BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS, DEMO_SPACE,
+  DEMO_LGQ_SPACE, LGQ_SPACE_ID, BE_INSIGHT_OUTPUT_LGQ, BE_STUDY_COMPLETE_LGQ, DEMO_METRICS_LGQ,
+  DEMO_EXPE_SPACE, EXPE_SPACE_ID, BE_INSIGHT_OUTPUT_EXPE, BE_STUDY_COMPLETE_EXPE, DEMO_METRICS_EXPE,
+} from "@/lib/demo-seeds"
 
 export const dynamic = 'force-dynamic'
 
@@ -17,9 +21,10 @@ export default async function InsightsPage() {
   const supabase = await createClient()
 
   const demoSpaceId = await getDemoSpaceId()
-  const isLGQ = demoSpaceId === LGQ_SPACE_ID
+  const isLGQ  = demoSpaceId === LGQ_SPACE_ID
+  const isExpe = demoSpaceId === EXPE_SPACE_ID
 
-  const defaultSpace = demo ? (isLGQ ? DEMO_LGQ_SPACE : DEMO_SPACE) : await getDefaultSpace()
+  const defaultSpace = demo ? (isLGQ ? DEMO_LGQ_SPACE : isExpe ? DEMO_EXPE_SPACE : DEMO_SPACE) : await getDefaultSpace()
   const spaceName = defaultSpace?.name ?? undefined
 
   // For real data, only show insights from studies belonging to the default space
@@ -33,7 +38,7 @@ export default async function InsightsPage() {
   }
 
   const { data: outputs } = demo
-    ? { data: (scenario === "study-complete" || scenario === "model-created") ? [isLGQ ? BE_INSIGHT_OUTPUT_LGQ : BE_INSIGHT_OUTPUT] : [] }
+    ? { data: (scenario === "study-complete" || scenario === "model-created") ? [isLGQ ? BE_INSIGHT_OUTPUT_LGQ : isExpe ? BE_INSIGHT_OUTPUT_EXPE : BE_INSIGHT_OUTPUT] : [] }
     : spaceStudyIds.length > 0
       ? await supabase
           .from("BE_insight_outputs")
@@ -48,7 +53,7 @@ export default async function InsightsPage() {
   let studyGoals: Record<string, string> = {}
   let camerasByStudy: Record<string, string> = {}
   if (demo && (scenario === "study-complete" || scenario === "model-created")) {
-    const demoStudy = isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE
+    const demoStudy = isLGQ ? BE_STUDY_COMPLETE_LGQ : isExpe ? BE_STUDY_COMPLETE_EXPE : BE_STUDY_COMPLETE
     studyDurations = { [demoStudy.study_id]: demoStudy.duration_seconds * 1000 }
     const demoName = (demoStudy.metadata as Record<string, unknown>)?.study_name
     if (typeof demoName === "string" && demoName) studyGoals[demoStudy.study_id] = demoName
@@ -79,7 +84,7 @@ export default async function InsightsPage() {
   let metricDescriptions: Record<string, string> = {}
   if (demo) {
     metricDescriptions = Object.fromEntries(
-      (isLGQ ? DEMO_METRICS_LGQ : DEMO_METRICS).map(m => [m.name, withCitation(m.description, m.literature_reference)])
+      (isLGQ ? DEMO_METRICS_LGQ : isExpe ? DEMO_METRICS_EXPE : DEMO_METRICS).map(m => [m.name, withCitation(m.description, m.literature_reference)])
     )
   } else {
     const { data: metrics } = await supabase.from("metrics").select("name, description, literature_reference")
