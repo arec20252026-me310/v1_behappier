@@ -1,7 +1,8 @@
 import { DashboardHeader } from "@/components/dashboard/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Microscope, MapPin, Palette } from "lucide-react"
+import { Microscope, MapPin, Palette, LayoutDashboard } from "lucide-react"
 import { ThemeSwitcher } from "@/components/settings/theme-switcher"
+import { DashboardSettings } from "@/components/settings/dashboard-settings"
 import { isReviewMode } from "@/lib/review-mode"
 import { enableReviewMode, disableReviewMode } from "@/app/actions/review"
 import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
@@ -58,6 +59,21 @@ export default async function SettingsPage() {
               Choose between light and dark mode. Light mode is the default.
             </p>
             <ThemeSwitcher />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4 text-orange-400" />
+              Dashboard
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Show or hide the four metric summary cards at the top of the Dashboard tab.
+            </p>
+            <DashboardSettings />
           </CardContent>
         </Card>
 

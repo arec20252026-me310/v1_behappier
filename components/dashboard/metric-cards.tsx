@@ -16,6 +16,11 @@ interface MetricCardsProps {
 
 export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCount, latestInsightAt, isDemo = false }: MetricCardsProps) {
   const [newInsightsCount, setNewInsightsCount] = useState(insightsCount)
+  const [hidden, setHidden] = useState(false)
+
+  useEffect(() => {
+    setHidden(localStorage.getItem("behappier_hide_metric_cards") === "true")
+  }, [])
 
   useEffect(() => {
     if (isDemo) { setNewInsightsCount(insightsCount); return }
@@ -27,6 +32,8 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
       setNewInsightsCount(insightsCount)
     }
   }, [isDemo, latestInsightAt, insightsCount])
+
+  if (hidden) return null
 
   const cards = [
     {
