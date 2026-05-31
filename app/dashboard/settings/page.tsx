@@ -50,21 +50,6 @@ export default async function SettingsPage() {
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-base font-medium flex items-center gap-2">
-              <Palette className="h-4 w-4 text-purple-400" />
-              Appearance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Choose between light and dark mode. Light mode is the default.
-            </p>
-            <ThemeSwitcher />
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-base font-medium flex items-center gap-2">
               <Maximize2 className="h-4 w-4 text-orange-400" />
               Showcase Mode
             </CardTitle>
@@ -112,6 +97,21 @@ export default async function SettingsPage() {
                 Review mode is currently active. New studies will include snapshot saving.
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Palette className="h-4 w-4 text-purple-400" />
+              Appearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Choose between light and dark mode. Light mode is the default.
+            </p>
+            <ThemeSwitcher />
           </CardContent>
         </Card>
       </div>

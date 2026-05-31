@@ -287,6 +287,12 @@ export default async function DashboardPage() {
       .map(m => [m.name, withCitation(m.description, m.literature_reference)])
   )
 
+  const studyNames: Record<string, string> = Object.fromEntries(
+    (allFetchedStudies as { study_id: string; metadata: Record<string, unknown> }[])
+      .filter(s => typeof s.metadata?.study_name === "string" && s.metadata.study_name)
+      .map(s => [s.study_id, s.metadata.study_name as string])
+  )
+
   return (
     <div className="flex flex-col h-full">
       <DashboardHeader
@@ -346,6 +352,7 @@ export default async function DashboardPage() {
                   latestOutput={latestOutput}
                   completedOutputs={completedOutputs}
                   metricDescriptions={metricDescriptions}
+                  studyNames={studyNames}
                   studyDurationMs={(() => {
                     const s = allFetchedStudies.find(s => s.study_id === (completedOutputs[0] ?? latestOutput)?.study_id)
                     return s?.duration_seconds ? s.duration_seconds * 1000 : undefined

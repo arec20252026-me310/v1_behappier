@@ -28,6 +28,7 @@ interface OccupancyChartProps {
   completedOutputs?: BEInsightOutput[]
   studyDurationMs?: number
   metricDescriptions?: Record<string, string>
+  studyNames?: Record<string, string>
   // Legacy single-study (demo mode)
   activeStudyId?: string
   activeStudyStatus?: string
@@ -80,6 +81,7 @@ export function OccupancyChart({
   completedOutputs,
   studyDurationMs,
   metricDescriptions,
+  studyNames,
   activeStudyId,
   activeStudyStatus,
   demoDetections,
@@ -252,8 +254,8 @@ export function OccupancyChart({
               : n === 2 ? 200 : 160
             return (
               <div key={output.study_id} className={idx > 0 ? "border-t border-border/50 pt-1 mt-1" : ""}>
-                <p className="text-[10px] font-mono text-muted-foreground/60 mb-0.5 truncate">
-                  Study {idx + 1}: {output.study_id}
+                <p className="text-xs text-muted-foreground/60 mb-0.5 truncate">
+                  Study {idx + 1}: {studyNames?.[output.study_id] ?? output.study_id}
                 </p>
                 <TimeSeriesChart
                   series={series}
@@ -288,8 +290,8 @@ export function OccupancyChart({
           return (
             <div key={study_id} className={idx > 0 && n > 1 ? "border-t border-border/50 pt-1 mt-1" : ""}>
               {n > 1 && (
-                <p className="text-[10px] font-mono text-muted-foreground/60 mb-0.5 truncate">
-                  Study {idx + 1}: {study_id}
+                <p className="text-xs text-muted-foreground/60 mb-0.5 truncate">
+                  Study {idx + 1}: {studyNames?.[study_id] ?? study_id}
                 </p>
               )}
               {detections.length === 0 ? (
@@ -357,8 +359,8 @@ export function OccupancyChart({
                       className={`flex flex-col ${allActiveStudies.length >= 3 ? "flex-1 min-h-0 overflow-hidden" : ""} ${idx > 0 ? `border-t border-border ${allActiveStudies.length >= 3 ? "pt-2" : "pt-4"}` : ""}`}
                     >
                       {allActiveStudies.length > 1 && (
-                        <p className="text-[10px] font-mono text-muted-foreground/60 mb-0.5 truncate">
-                          Study {idx + 1}: {s.study_id}
+                        <p className="text-xs text-muted-foreground/60 mb-0.5 truncate">
+                          Study {idx + 1}: {studyNames?.[s.study_id] ?? s.study_id}
                         </p>
                       )}
                       <p className={`font-medium text-muted-foreground uppercase tracking-wide ${allActiveStudies.length >= 3 ? "text-xs mb-1" : "text-xl mb-3"}`}>Latest Detection</p>
