@@ -317,16 +317,11 @@ export function ZoneGrid({
             onClick={(e) => { e.stopPropagation(); onSelectZone(zone) }}
           >
             <div className="p-1 h-full flex flex-col overflow-hidden">
-              <span
-                className="text-sm font-semibold truncate leading-tight text-white"
-                style={{
-                  textShadow: '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.5)'
-                }}
-              >
+              <span className="zone-label-shadow text-sm font-semibold truncate leading-tight text-white">
                 {zone.name}
               </span>
               {zone.zone_type && zone.grid_height > 1 && (
-                <span className="text-xs text-white/80 capitalize truncate" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
+                <span className="zone-type-shadow text-xs text-white/80 capitalize truncate">
                   {zone.zone_type.replace("_", " ")}
                 </span>
               )}

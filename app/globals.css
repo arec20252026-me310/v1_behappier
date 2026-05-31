@@ -208,6 +208,20 @@
   }
 }
 
+.zone-label-shadow {
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.5);
+}
+.dark .zone-label-shadow {
+  text-shadow: none;
+}
+
+.zone-type-shadow {
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+}
+.dark .zone-type-shadow {
+  text-shadow: none;
+}
+
 .zone-flashing {
   animation: zone-pulse 1.5s ease-in-out infinite;
   border-width: 2px !important;
