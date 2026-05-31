@@ -213,12 +213,12 @@ export function ModelChart({
               scale="linear"
               ticks={xTicks}
               tickFormatter={xTickFormatter}
-              tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
+              tick={{ fill: "var(--chart-axis)", fontSize: 12 }}
               axisLine={{ stroke: "var(--chart-axis)" }}
               tickLine={{ stroke: "var(--chart-axis)" }}
               label={
                 (xAxisLabel ?? xLabel)
-                  ? { value: xAxisLabel ?? xLabel, position: "insideBottom", offset: -10, fill: "var(--chart-axis)", fontSize: 11 }
+                  ? { value: xAxisLabel ?? xLabel, position: "insideBottom", offset: -10, fill: "var(--chart-axis)", fontSize: 13 }
                   : undefined
               }
             />
@@ -226,13 +226,13 @@ export function ModelChart({
               type="number"
               domain={[yDomainMin, yDomainMax]}
               tickFormatter={yTickFormatter}
-              tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
+              tick={{ fill: "var(--chart-axis)", fontSize: 12 }}
               axisLine={{ stroke: "var(--chart-axis)" }}
               tickLine={{ stroke: "var(--chart-axis)" }}
-              width={72}
+              width={80}
               label={
                 (yAxisLabel ?? yLabel)
-                  ? { value: yAxisLabel ?? yLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: 11 }
+                  ? { value: yAxisLabel ?? yLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: 13 }
                   : undefined
               }
             />
