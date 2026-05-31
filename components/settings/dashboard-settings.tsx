@@ -13,6 +13,7 @@ export function DashboardSettings() {
     const next = !showcaseMode
     setShowcaseMode(next)
     localStorage.setItem("behappier_showcase_mode", next ? "true" : "false")
+    window.dispatchEvent(new StorageEvent("storage", { key: "behappier_showcase_mode", newValue: next ? "true" : "false" }))
 
     if (next) {
       try {

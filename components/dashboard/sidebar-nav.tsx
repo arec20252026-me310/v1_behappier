@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clapperboard,
+  Maximize2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
@@ -55,10 +56,30 @@ const navItems = [
 export function SidebarNav() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const [showcaseMode, setShowcaseMode] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   useEffect(() => {
-    if (localStorage.getItem("behappier_showcase_mode") === "true") {
-      setCollapsed(true)
+    const showcase = localStorage.getItem("behappier_showcase_mode") === "true"
+    setShowcaseMode(showcase)
+    if (showcase) setCollapsed(true)
+    setIsFullscreen(!!document.fullscreenElement)
+
+    function handleStorage(e: StorageEvent) {
+      if (e.key === "behappier_showcase_mode") {
+        const on = e.newValue === "true"
+        setShowcaseMode(on)
+        setCollapsed(on)
+      }
+    }
+    function handleFullscreenChange() {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    window.addEventListener("storage", handleStorage)
+    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    return () => {
+      window.removeEventListener("storage", handleStorage)
+      document.removeEventListener("fullscreenchange", handleFullscreenChange)
     }
   }, [])
 
@@ -110,6 +131,19 @@ export function SidebarNav() {
       </nav>
 
       <div className="p-2 border-t border-sidebar-border space-y-0.5">
+        {showcaseMode && !isFullscreen && (
+          <button
+            onClick={() => document.documentElement.requestFullscreen()}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-orange-400 hover:bg-sidebar-accent",
+              collapsed && "justify-center px-0"
+            )}
+            title="Enter fullscreen"
+          >
+            <Maximize2 className="h-5 w-5 shrink-0" />
+            {!collapsed && <span className="text-base font-semibold">Enter Fullscreen</span>}
+          </button>
+        )}
         <Link
           href="/dashboard/demo"
           className={cn(
