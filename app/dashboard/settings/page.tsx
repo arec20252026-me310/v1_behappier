@@ -1,9 +1,8 @@
 import Link from "next/link"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Microscope, MapPin, Palette, Maximize2, Clapperboard } from "lucide-react"
+import { Microscope, MapPin, Palette, Clapperboard } from "lucide-react"
 import { ThemeSwitcher } from "@/components/settings/theme-switcher"
-import { DashboardSettings } from "@/components/settings/dashboard-settings"
 import { isReviewMode } from "@/lib/review-mode"
 import { enableReviewMode, disableReviewMode } from "@/app/actions/review"
 import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
@@ -48,22 +47,7 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-base font-medium flex items-center gap-2">
-              <Maximize2 className="h-4 w-4 text-orange-400" />
-              Showcase Mode
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Hides the metric summary cards, collapses the sidebar, and enters fullscreen for a clean presentation view.
-            </p>
-            <DashboardSettings />
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
+<Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <Clapperboard className="h-4 w-4 text-muted-foreground/60" />
