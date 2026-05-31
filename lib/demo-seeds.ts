@@ -329,6 +329,94 @@ export const BE_INSIGHT_OUTPUT_LGQ = {
   ],
 }
 
+// ── Space — Expe Room 126 ────────────────────────────────────────────────────
+export const EXPE_SPACE_ID = "00000000-0000-0001-0000-000000000001"
+export const EXPE_ROOM_ID  = "00000000-0000-0001-0000-000000000002"
+export const EXPE_STUDY_ID = "study_expe_126_001"
+export const SEED_BE_STUDY_EXPE_ID = "00000000-0000-0001-0000-000000000003"
+export const SEED_EXPE_INSIGHT_ID  = "00000000-0000-0001-0000-000000000004"
+
+export const DEMO_EXPE_SPACE = {
+  id: EXPE_SPACE_ID,
+  name: "Expe Room 126",
+  description: "Stanford ME310 experiment room",
+  address: null,
+  total_area_sqft: null,
+  building_type: "office",
+  floor_plan_url: null,
+  grid_resolution: 20,
+  metadata: {},
+  is_default: false,
+  created_at: "2024-01-01T00:00:00Z",
+  updated_at: "2024-01-01T00:00:00Z",
+}
+
+export const ZONES_EXPE = [
+  { id: EXPE_ROOM_ID, space_id: EXPE_SPACE_ID, name: "Room 126", zone_type: "meeting_room", grid_x: 3, grid_y: 3, grid_width: 14, grid_height: 14, color: "#F59E0B", capacity: null, metadata: {}, ...{ created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" } },
+]
+
+export const DEMO_CAMERA_PLACEMENTS_EXPE: import("@/lib/types").CameraPlacement[] = []
+
+export const DEMO_METRICS_EXPE = [
+  {
+    id: "00000000-0001-0000-0000-000000000001", space_id: EXPE_SPACE_ID,
+    name: "Occupancy", description: "Number of people present within the observed area at a given instant",
+    category: "utilization" as const, unit: "count", calculation_method: null,
+    rubric: "Count every person visible within the observed area regardless of activity. Score = total headcount. Score 0 if no people are present.",
+    literature_reference: "Fruin, J.J. (1971). Pedestrian Planning and Design. Metropolitan Association of Urban Designers and Environmental Planners.",
+    is_active: true, ..._TS_M,
+  },
+]
+
+const BE_STUDY_BASE_EXPE = {
+  id: SEED_BE_STUDY_EXPE_ID,
+  study_id: EXPE_STUDY_ID,
+  building_id: EXPE_SPACE_ID,
+  user_id: null, session_id: null,
+  study_goal: "Monitor Room 126 for occupancy during a working session.",
+  study_plan: {}, task_graph: {}, graph_plan: {},
+  metadata: {
+    study_name: "Expe Room 126 Occupancy Study",
+    monitored_zone_id: EXPE_ROOM_ID,
+    target_zones: [EXPE_ROOM_ID],
+  },
+  live_preview_status: null,
+  started_at: "2026-05-28T14:00:00.000000+00:00",
+  duration_seconds: 480,
+  created_at: "2026-05-28T13:59:45.000000+00:00",
+  updated_at: "2026-05-28T14:08:00.000000+00:00",
+}
+
+export const BE_STUDY_IN_PROGRESS_EXPE = {
+  ...BE_STUDY_BASE_EXPE,
+  status: "running",
+  current_stage: "monitoring_running" as const,
+  live_preview_status: "Monitoring running — 1 snapshot analyzed",
+}
+
+export const BE_STUDY_COMPLETE_EXPE = {
+  ...BE_STUDY_BASE_EXPE,
+  status: "complete",
+  current_stage: "complete" as const,
+}
+
+export const DEMO_DETECTIONS_EXPE = DEMO_DETECTIONS_LGQ
+
+export const BE_LIVE_METRICS_EXPE = {
+  id: "00000000-0000-0001-0000-000000000005",
+  study_id: EXPE_STUDY_ID,
+  status: "running",
+  label: "Monitoring running — 1 snapshot analyzed",
+  updated_at: "2026-05-28T14:01:00.000Z",
+  metrics: { zone_metrics: { "Room 126": { occupancy_pct: 60, count: 3 } } },
+}
+
+export const BE_INSIGHT_OUTPUT_EXPE = {
+  ...BE_INSIGHT_OUTPUT_LGQ,
+  id: SEED_EXPE_INSIGHT_ID,
+  study_id: EXPE_STUDY_ID,
+}
+
 // ── BE_studies ───────────────────────────────────────────────────────────────
 // metadata.monitored_zone_id tells the heatmap which zone to highlight
 const BE_STUDY_BASE = {

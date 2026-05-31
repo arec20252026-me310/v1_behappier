@@ -185,7 +185,7 @@ export function OccupancyChart({
   if (!isLive && completedSeries.length === 0) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
-        <CardHeader className="pb-1.5">
+        <CardHeader className="pt-1.5 pb-1.5">
           <CardTitle className="text-xl font-medium">Most Recent Study</CardTitle>
         </CardHeader>
         <CardContent>
@@ -206,7 +206,7 @@ export function OccupancyChart({
   if (isLive && totalDetections === 0) {
     return (
       <Card className="bg-card border-border pt-2 pb-4">
-        <CardHeader className="pb-1.5 flex flex-row items-center justify-between">
+        <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-xl font-medium">Current Study</CardTitle>
           </div>

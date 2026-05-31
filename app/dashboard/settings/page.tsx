@@ -8,7 +8,7 @@ import { enableReviewMode, disableReviewMode } from "@/app/actions/review"
 import { getDemoScenario, getDemoSpaceId } from "@/lib/demo-mode"
 import { getAllSpaces, getDefaultSpace } from "@/lib/spaces"
 import { DefaultSpacePicker } from "@/components/settings/default-space-picker"
-import { DEMO_SPACE, DEMO_LGQ_SPACE } from "@/lib/demo-seeds"
+import { DEMO_SPACE, DEMO_LGQ_SPACE, DEMO_EXPE_SPACE } from "@/lib/demo-seeds"
 import type { Space } from "@/lib/types"
 
 export default async function SettingsPage() {
@@ -17,7 +17,7 @@ export default async function SettingsPage() {
   const demo = scenario !== null
 
   const allSpaces: Space[] = demo
-    ? (scenario !== "blank" ? [DEMO_SPACE as Space, DEMO_LGQ_SPACE as Space] : [])
+    ? (scenario !== "blank" ? [DEMO_SPACE as Space, DEMO_LGQ_SPACE as Space, DEMO_EXPE_SPACE as Space] : [])
     : await getAllSpaces()
   const defaultSpaceId = demo
     ? await getDemoSpaceId()
