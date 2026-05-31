@@ -17,7 +17,7 @@ import {
   Clapperboard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 const navItems = [
   {
@@ -55,6 +55,12 @@ const navItems = [
 export function SidebarNav() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    if (localStorage.getItem("behappier_showcase_mode") === "true") {
+      setCollapsed(true)
+    }
+  }, [])
 
   return (
     <aside

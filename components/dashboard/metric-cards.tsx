@@ -19,7 +19,7 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
   const [hidden, setHidden] = useState(false)
 
   useEffect(() => {
-    setHidden(localStorage.getItem("behappier_hide_metric_cards") === "true")
+    setHidden(localStorage.getItem("behappier_showcase_mode") === "true")
   }, [])
 
   useEffect(() => {

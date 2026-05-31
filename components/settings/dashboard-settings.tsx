@@ -3,16 +3,28 @@
 import { useEffect, useState } from "react"
 
 export function DashboardSettings() {
-  const [showCards, setShowCards] = useState(true)
+  const [showcaseMode, setShowcaseMode] = useState(false)
 
   useEffect(() => {
-    setShowCards(localStorage.getItem("behappier_hide_metric_cards") !== "true")
+    setShowcaseMode(localStorage.getItem("behappier_showcase_mode") === "true")
   }, [])
 
-  function toggle() {
-    const next = !showCards
-    setShowCards(next)
-    localStorage.setItem("behappier_hide_metric_cards", next ? "false" : "true")
+  async function toggle() {
+    const next = !showcaseMode
+    setShowcaseMode(next)
+    localStorage.setItem("behappier_showcase_mode", next ? "true" : "false")
+
+    if (next) {
+      try {
+        await document.documentElement.requestFullscreen()
+      } catch {
+        // Fullscreen not supported or denied by browser
+      }
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen()
+      }
+    }
   }
 
   return (
@@ -20,19 +32,19 @@ export function DashboardSettings() {
       <button
         onClick={toggle}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-          showCards ? "bg-primary" : "bg-muted-foreground/30"
+          showcaseMode ? "bg-primary" : "bg-muted-foreground/30"
         }`}
         role="switch"
-        aria-checked={showCards}
+        aria-checked={showcaseMode}
       >
         <span
           className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-            showCards ? "translate-x-6" : "translate-x-1"
+            showcaseMode ? "translate-x-6" : "translate-x-1"
           }`}
         />
       </button>
       <span className="text-sm text-muted-foreground">
-        {showCards ? "Metric cards visible" : "Metric cards hidden"}
+        {showcaseMode ? "Showcase mode on" : "Showcase mode off"}
       </span>
     </div>
   )
