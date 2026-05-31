@@ -160,15 +160,12 @@ export function SidebarNav() {
         <button
           onClick={toggleShowcaseMode}
           className={cn(
-            "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors hover:bg-sidebar-accent",
-            showcaseMode && !isFullscreen
-              ? "text-orange-400 hover:text-orange-300"
-              : "text-sidebar-foreground/60 hover:text-sidebar-accent-foreground",
+            "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             collapsed && "justify-center px-0"
           )}
           title={showcaseMode ? "Turn off showcase mode" : "Showcase mode"}
         >
-          {showcaseMode && isFullscreen
+          {showcaseMode
             ? <Minimize2 className="h-5 w-5 shrink-0" />
             : <Maximize2 className="h-5 w-5 shrink-0" />}
           {!collapsed && <span className="text-base font-semibold">{showcaseMode ? "Showcase On" : "Showcase Mode"}</span>}
