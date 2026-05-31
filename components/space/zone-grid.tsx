@@ -318,7 +318,7 @@ export function ZoneGrid({
           >
             <div className="p-1 h-full flex flex-col overflow-hidden">
               <span
-                className="text-[10px] font-semibold truncate leading-tight text-white"
+                className="text-sm font-semibold truncate leading-tight text-white"
                 style={{
                   textShadow: '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.5)'
                 }}
@@ -326,7 +326,7 @@ export function ZoneGrid({
                 {zone.name}
               </span>
               {zone.zone_type && zone.grid_height > 1 && (
-                <span className="text-[8px] text-white/80 capitalize truncate" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
+                <span className="text-xs text-white/80 capitalize truncate" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
                   {zone.zone_type.replace("_", " ")}
                 </span>
               )}
