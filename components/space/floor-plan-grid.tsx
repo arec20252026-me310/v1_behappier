@@ -160,7 +160,7 @@ export function FloorPlanGrid({
           >
             <div className="absolute inset-0 flex flex-col items-center justify-center p-1 overflow-hidden">
               <span
-                className="text-[10px] sm:text-xs font-semibold text-white text-center leading-tight truncate w-full"
+                className="text-sm sm:text-base font-semibold text-white text-center leading-tight truncate w-full"
                 style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7), 0 0 6px rgba(0,0,0,0.5)' }}
               >
                 {zone.name}
