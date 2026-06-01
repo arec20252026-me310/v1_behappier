@@ -607,9 +607,9 @@ export function SpaceHeatmap({
 
       {/* Legacy Insight dialog */}
       <Dialog open={!!selectedInsight} onOpenChange={(open) => !open && setSelectedInsight(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-2">
+        <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-hidden flex flex-col p-0">
+          <div className="shrink-0 px-6 pt-6 pb-3">
+            <div className="flex items-center gap-2 mb-2">
               <div className={cn("p-1.5 rounded-full", selectedInsight?.severity === "critical" ? "bg-destructive/20" : "bg-warning/20")}>
                 <AlertTriangle className={cn("h-4 w-4", selectedInsight?.severity === "critical" ? "text-destructive" : "text-warning")} />
               </div>
@@ -617,28 +617,29 @@ export function SpaceHeatmap({
                 {selectedInsight?.severity?.toUpperCase()}
               </Badge>
             </div>
-            <DialogTitle className="text-lg font-semibold mt-2">{selectedInsight?.title}</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              {selectedInsight?.description}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedInsight?.action_items && selectedInsight.action_items.length > 0 && (
-            <div className="mt-4 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Recommended Actions:</p>
-              <ul className="space-y-1.5">
-                {selectedInsight.action_items.slice(0, 2).map((action) => (
-                  <li key={action.id} className="flex items-start gap-2 text-sm">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                    <span>{action.title}</span>
-                  </li>
-                ))}
-                {selectedInsight.action_items.length > 2 && (
-                  <li className="text-xs text-muted-foreground pl-3.5">+{selectedInsight.action_items.length - 2} more</li>
-                )}
-              </ul>
-            </div>
-          )}
-          <div className="mt-6 flex justify-end">
+            <DialogTitle className="text-lg font-semibold">{selectedInsight?.title}</DialogTitle>
+            <DialogDescription className="sr-only">Zone insight details</DialogDescription>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-3 space-y-3">
+            <p className="text-sm text-muted-foreground leading-relaxed">{selectedInsight?.description}</p>
+            {selectedInsight?.action_items && selectedInsight.action_items.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Recommended Actions:</p>
+                <ul className="space-y-1.5">
+                  {selectedInsight.action_items.slice(0, 2).map((action) => (
+                    <li key={action.id} className="flex items-start gap-2 text-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                      <span>{action.title}</span>
+                    </li>
+                  ))}
+                  {selectedInsight.action_items.length > 2 && (
+                    <li className="text-xs text-muted-foreground pl-3.5">+{selectedInsight.action_items.length - 2} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+          <div className="shrink-0 px-6 pb-5 pt-3 flex justify-end border-t border-border">
             <Link href="/dashboard/insights">
               <Button variant="default" size="sm" className="gap-2">Read More<ArrowRight className="h-4 w-4" /></Button>
             </Link>
@@ -648,53 +649,51 @@ export function SpaceHeatmap({
 
       {/* BE Insight dialog (from completed study) */}
       <Dialog open={!!selectedBEInsight} onOpenChange={(open) => !open && setSelectedBEInsight(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-2">
+        <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-hidden flex flex-col p-0">
+          <div className="shrink-0 px-6 pt-6 pb-3">
+            <div className="flex items-center gap-2 mb-2">
               <div className="p-1.5 rounded-full bg-yellow-500/20">
                 <AlertTriangle className="h-4 w-4 text-yellow-400" />
               </div>
               <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Study Complete</Badge>
             </div>
-            <DialogTitle className="text-lg font-semibold mt-2">
+            <DialogTitle className="text-lg font-semibold">
               {selectedBEInsight?.zoneName} — Insights
             </DialogTitle>
+            <DialogDescription className="sr-only">Completed study zone insights</DialogDescription>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-3 space-y-3">
             {selectedBEInsight?.summary && (
-              <DialogDescription className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                {selectedBEInsight.summary}
-              </DialogDescription>
+              <p className="text-sm text-muted-foreground leading-relaxed">{selectedBEInsight.summary}</p>
             )}
-          </DialogHeader>
-
-          {selectedBEInsight?.insights && selectedBEInsight.insights.length > 0 && (
-            <div className="mt-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Key Findings:</p>
-              <ul className="space-y-1.5">
-                {selectedBEInsight.insights.map((insight, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm">
-                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 mt-1.5 shrink-0" />
-                    <span>{insight}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {selectedBEInsight?.recommendations && selectedBEInsight.recommendations.length > 0 && (
-            <div className="mt-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Recommendations:</p>
-              <ul className="space-y-1.5">
-                {selectedBEInsight.recommendations.slice(0, 2).map((rec, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-1.5 shrink-0" />
-                    <span>{rec}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="mt-6 flex justify-end">
+            {selectedBEInsight?.insights && selectedBEInsight.insights.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Key Findings:</p>
+                <ul className="space-y-1.5">
+                  {selectedBEInsight.insights.map((insight, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 mt-1.5 shrink-0" />
+                      <span>{insight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {selectedBEInsight?.recommendations && selectedBEInsight.recommendations.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Recommendations:</p>
+                <ul className="space-y-1.5">
+                  {selectedBEInsight.recommendations.map((rec, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-1.5 shrink-0" />
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <div className="shrink-0 px-6 pb-5 pt-3 flex justify-end border-t border-border">
             <Link href="/dashboard/insights">
               <Button variant="default" size="sm" className="gap-2" onClick={() => setSelectedBEInsight(null)}>
                 View Full Report<ArrowRight className="h-4 w-4" />
