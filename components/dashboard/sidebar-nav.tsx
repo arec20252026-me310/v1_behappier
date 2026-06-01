@@ -16,9 +16,12 @@ import {
   ChevronRight,
   Maximize2,
   Minimize2,
+  Play,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
+import { launchExpeStudies } from "@/app/actions/expe-launch"
+import { EXPE_SPACE_ID } from "@/lib/demo-seeds"
 
 const navItems = [
   {
@@ -53,11 +56,20 @@ const navItems = [
   },
 ]
 
-export function SidebarNav() {
+export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [showcaseMode, setShowcaseMode] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isLaunching, setIsLaunching] = useState(false)
+
+  const isExpe = defaultSpaceId === EXPE_SPACE_ID
+
+  async function handleLaunchStudies() {
+    setIsLaunching(true)
+    await launchExpeStudies()
+    setIsLaunching(false)
+  }
 
   async function toggleShowcaseMode() {
     const next = !showcaseMode
@@ -144,6 +156,24 @@ export function SidebarNav() {
       </nav>
 
       <div className="p-2 border-t border-sidebar-border space-y-0.5">
+        {showcaseMode && isExpe && (
+          <button
+            onClick={handleLaunchStudies}
+            disabled={isLaunching}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed",
+              collapsed && "justify-center px-0"
+            )}
+            title={isLaunching ? "Launching studies…" : "Launch EXPE studies"}
+          >
+            <Play className="h-5 w-5 shrink-0" />
+            {!collapsed && (
+              <span className="text-base font-semibold">
+                {isLaunching ? "Launching…" : "Launch Studies"}
+              </span>
+            )}
+          </button>
+        )}
         {showcaseMode && !isFullscreen && (
           <button
             onClick={() => document.documentElement.requestFullscreen()}
