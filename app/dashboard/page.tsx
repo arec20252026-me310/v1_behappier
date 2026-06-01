@@ -327,7 +327,7 @@ export default async function DashboardPage() {
             const meta = (study as { metadata?: { monitored_zone_id?: string; target_zones?: string[] } }).metadata
             const zoneId = meta?.monitored_zone_id ?? meta?.target_zones?.[0] ?? null
             if (!zoneId) return []
-            const insight = beInsights.find(o => o.study_id === study.study_id && o.output_mode === "final_insights")
+            const insight = completedOutputs.find(o => o.study_id === study.study_id)
             if (!insight) return []
             return [{ zoneId, studyId: study.study_id, insights: insight }]
           })
