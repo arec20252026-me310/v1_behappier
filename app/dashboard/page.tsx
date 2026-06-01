@@ -333,7 +333,7 @@ export default async function DashboardPage() {
           })
 
           const chartStudies = activeStudies.map(s => ({ study_id: s.study_id, status: s.status }))
-          const detectionCardStudies = activeStudies.map(s => ({ studyId: s.study_id, status: s.status }))
+          const detectionCardStudies = activeStudies.map(s => ({ studyId: s.study_id, status: s.status, studyName: s.study_name ?? undefined }))
 
           return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

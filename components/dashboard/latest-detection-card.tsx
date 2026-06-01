@@ -7,6 +7,7 @@ import { LiveDetectionFeed, type DetectionRow } from "@/components/studies/live-
 interface StudyEntry {
   studyId: string
   status: string
+  studyName?: string
 }
 
 interface LatestDetectionCardProps {
@@ -38,8 +39,8 @@ export function LatestDetectionCard({ studyId, status, demoDetections, studies }
         {allStudies.map((s, idx) => (
           <div key={s.studyId} className={idx > 0 ? "pt-4 border-t border-border" : ""}>
             {allStudies.length > 1 && (
-              <p className="text-[10px] font-mono text-muted-foreground/60 mb-1.5 truncate">
-                Study {idx + 1}: {s.studyId}
+              <p className="text-xs text-muted-foreground/60 mb-1.5 truncate">
+                Study {idx + 1}: {s.studyName ?? s.studyId}
               </p>
             )}
             <LiveDetectionFeed
