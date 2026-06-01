@@ -396,26 +396,31 @@ export function OccupancyChart({
               </div>
               {/* Right: detections */}
               {isLive && allActiveStudies.length > 0 && (
-                <div className={`flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col ${allActiveStudies.length >= 3 ? "gap-0 justify-between" : "gap-4"}`}>
+                <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col">
                   {allActiveStudies.map((s, idx) => (
                     <div
                       key={s.study_id}
-                      className={`flex flex-col ${allActiveStudies.length >= 3 ? "flex-1 min-h-0 overflow-hidden" : ""} ${idx > 0 ? `border-t border-border ${allActiveStudies.length >= 3 ? "pt-2" : "pt-4"}` : ""}`}
+                      className={cn(
+                        "flex-1 min-h-0 flex flex-col overflow-hidden",
+                        idx > 0 && "border-t border-border pt-3"
+                      )}
                     >
                       {allActiveStudies.length > 1 && (
-                        <p className="text-xs text-muted-foreground/60 mb-0.5 truncate">
+                        <p className="text-xs text-muted-foreground/60 mb-0.5 truncate shrink-0">
                           Study {idx + 1}: {studyNames?.[s.study_id] ?? s.study_id}
                         </p>
                       )}
-                      <p className={`font-medium text-muted-foreground uppercase tracking-wide ${allActiveStudies.length >= 3 ? "text-xs mb-1" : "text-xl mb-3"}`}>Latest Detection</p>
-                      <LiveDetectionFeed
-                        studyId={s.study_id}
-                        status={s.status}
-                        limit={1}
-                        demoDetections={idx === 0 ? demoDetections : undefined}
-                        large
-                        studyCount={allActiveStudies.length}
-                      />
+                      <p className="text-xl font-medium text-muted-foreground uppercase tracking-wide mb-2 shrink-0">Latest Detection</p>
+                      <div className="flex-1 min-h-0 overflow-y-auto">
+                        <LiveDetectionFeed
+                          studyId={s.study_id}
+                          status={s.status}
+                          limit={1}
+                          demoDetections={idx === 0 ? demoDetections : undefined}
+                          large
+                          studyCount={allActiveStudies.length}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

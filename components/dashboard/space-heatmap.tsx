@@ -579,21 +579,23 @@ export function SpaceHeatmap({
               </div>
               {/* Right: study detections (only when a study is running) */}
               {allActiveStudies.length > 0 && (
-                <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col gap-4">
+                <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col">
                   {allActiveStudies.map((s, idx) => (
-                    <div key={s.study_id} className={cn("flex-1 min-h-0 overflow-y-auto", idx > 0 && "border-t border-border pt-4")}>
+                    <div key={s.study_id} className={cn("flex-1 min-h-0 flex flex-col overflow-hidden", idx > 0 && "border-t border-border pt-3")}>
                       {allActiveStudies.length > 1 && (
-                        <p className="text-xs font-mono text-muted-foreground mb-1 truncate">{s.study_name ?? s.study_id}</p>
+                        <p className="text-xs font-mono text-muted-foreground mb-1 truncate shrink-0">{s.study_name ?? s.study_id}</p>
                       )}
-                      <p className="text-2xl font-medium text-muted-foreground uppercase tracking-wide mb-3">Latest Detection</p>
-                      <LiveDetectionFeed
-                        studyId={s.study_id}
-                        status={s.status}
-                        limit={1}
-                        demoDetections={demoDetections}
-                        large
-                        studyCount={allActiveStudies.length}
-                      />
+                      <p className="text-xl font-medium text-muted-foreground uppercase tracking-wide mb-2 shrink-0">Latest Detection</p>
+                      <div className="flex-1 min-h-0 overflow-y-auto">
+                        <LiveDetectionFeed
+                          studyId={s.study_id}
+                          status={s.status}
+                          limit={1}
+                          demoDetections={demoDetections}
+                          large
+                          studyCount={allActiveStudies.length}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
