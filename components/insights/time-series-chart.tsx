@@ -558,7 +558,8 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
       )}
 
       {/* Chart */}
-      <div ref={chartRef} style={fillHeight ? { flex: 1, minHeight: 0, userSelect: "none" } : { height, userSelect: "none" }}>
+      <div ref={chartRef} style={fillHeight ? { flex: 1, minHeight: 0, position: "relative", userSelect: "none" } : { height, position: "relative", userSelect: "none" }}>
+        <div style={fillHeight ? { position: "absolute", inset: 0 } : {}}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
@@ -607,6 +608,7 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
             })}
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Scrubber */}

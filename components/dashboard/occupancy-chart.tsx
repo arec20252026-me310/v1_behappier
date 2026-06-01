@@ -214,7 +214,7 @@ export function OccupancyChart({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-xl font-medium">Current Study</CardTitle>
+            <CardTitle className="text-xl font-medium">{allActiveStudies.length > 1 ? "Current Studies" : "Current Study"}</CardTitle>
           </div>
           <Link href="/dashboard/insights"><Button variant="ghost" size="sm" className="text-xs">View All</Button></Link>
         </CardHeader>
@@ -367,7 +367,7 @@ export function OccupancyChart({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
-            <CardTitle className="text-xl font-medium">{isLive ? "Current Study" : completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</CardTitle>
+            <CardTitle className="text-xl font-medium">{isLive ? (allActiveStudies.length > 1 ? "Current Studies" : "Current Study") : completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</CardTitle>
             {isLive && agoText && (
               <span className="text-xs text-muted-foreground font-normal">Last detection {agoText}</span>
             )}
@@ -385,7 +385,7 @@ export function OccupancyChart({
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-5xl font-medium">{isLive ? "Current Study" : completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</DialogTitle>
+                <DialogTitle className="text-5xl font-medium">{isLive ? (allActiveStudies.length > 1 ? "Current Studies" : "Current Study") : completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</DialogTitle>
               </div>
               <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
             </DialogHeader>
