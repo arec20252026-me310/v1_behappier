@@ -221,7 +221,7 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
               )}
               title={isStopping ? "Stopping studies…" : "Stop EXPE studies"}
             >
-              <Square className="h-5 w-5 shrink-0 fill-current" />
+              <Square className="h-5 w-5 shrink-0" />
               {!collapsed && (
                 <span className="text-base font-semibold">
                   {isStopping ? "Stopping…" : "Stop Studies"}
