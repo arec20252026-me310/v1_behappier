@@ -269,7 +269,8 @@ export default async function DashboardPage() {
     if (v === null || v === undefined || v === "") return []
     return [v]
   }
-  const insightsCount = beInsights.reduce(
+  const allInsightOutputs = [...beInsights, ...completedOutputs]
+  const insightsCount = allInsightOutputs.reduce(
     (sum, o) =>
       sum +
       toArr(o.insights).length +
@@ -308,7 +309,7 @@ export default async function DashboardPage() {
           studiesCount={beStudies.length}
           insightsCount={insightsCount}
           metricsCount={metrics.length}
-          latestInsightAt={beInsights[0]?.created_at}
+          latestInsightAt={allInsightOutputs[0]?.created_at}
         />
 
         {beStudies.map(s => <StudyStatusWatcher key={s.study_id} activeStudyId={s.study_id} />)}
