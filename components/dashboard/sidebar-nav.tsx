@@ -67,6 +67,8 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
 
   async function handleLaunchStudies() {
     setIsLaunching(true)
+    localStorage.setItem("behappier_insights_viewed_at", new Date().toISOString())
+    window.dispatchEvent(new CustomEvent("behappier:insights-cleared"))
     await launchExpeStudies()
     setIsLaunching(false)
   }

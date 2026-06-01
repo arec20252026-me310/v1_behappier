@@ -217,6 +217,12 @@ export function SpaceHeatmap({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDemo, allCompletedZoneInsights.map(c => c.insights.created_at).join(",")])
 
+  useEffect(() => {
+    function handleCleared() { setInsightsViewed(true) }
+    window.addEventListener("behappier:insights-cleared", handleCleared)
+    return () => window.removeEventListener("behappier:insights-cleared", handleCleared)
+  }, [])
+
   // Build study_id → zoneId map and subscribe to all active studies' detections
   const studiesKey = allActiveStudies.map(s => s.study_id).sort().join(",")
   useEffect(() => {

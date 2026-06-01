@@ -23,8 +23,13 @@ export function MetricCards({ zonesCount, studiesCount, insightsCount, metricsCo
     function handleStorage(e: StorageEvent) {
       if (e.key === "behappier_showcase_mode") setHidden(e.newValue === "true")
     }
+    function handleCleared() { setNewInsightsCount(0) }
     window.addEventListener("storage", handleStorage)
-    return () => window.removeEventListener("storage", handleStorage)
+    window.addEventListener("behappier:insights-cleared", handleCleared)
+    return () => {
+      window.removeEventListener("storage", handleStorage)
+      window.removeEventListener("behappier:insights-cleared", handleCleared)
+    }
   }, [])
 
   useEffect(() => {
