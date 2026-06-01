@@ -17,11 +17,14 @@ import {
   Maximize2,
   Minimize2,
   Play,
+  Square,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { launchExpeStudies } from "@/app/actions/expe-launch"
+import { stopExpeStudies } from "@/app/actions/expe-stop"
 import { EXPE_SPACE_ID } from "@/lib/demo-seeds"
+import { createClient } from "@/lib/supabase/client"
 
 const navItems = [
   {
@@ -62,15 +65,33 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
   const [showcaseMode, setShowcaseMode] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isLaunching, setIsLaunching] = useState(false)
+  const [isStopping, setIsStopping] = useState(false)
+  const [isStudyRunning, setIsStudyRunning] = useState(false)
+  const [stopError, setStopError] = useState<string | null>(null)
 
   const isExpe = defaultSpaceId === EXPE_SPACE_ID
 
   async function handleLaunchStudies() {
     setIsLaunching(true)
+    setStopError(null)
     localStorage.setItem("behappier_insights_viewed_at", new Date().toISOString())
     window.dispatchEvent(new CustomEvent("behappier:insights-cleared"))
-    await launchExpeStudies()
+    const result = await launchExpeStudies()
+    if (!result.error) setIsStudyRunning(true)
     setIsLaunching(false)
+  }
+
+  async function handleStopStudies() {
+    setIsStopping(true)
+    setStopError(null)
+    const result = await stopExpeStudies()
+    if (result.error) {
+      setStopError(result.error)
+      setIsStopping(false)
+    } else {
+      setIsStudyRunning(false)
+      setIsStopping(false)
+    }
   }
 
   async function toggleShowcaseMode() {
@@ -109,6 +130,37 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
       document.removeEventListener("fullscreenchange", handleFullscreenChange)
     }
   }, [])
+
+  // Subscribe to running EXPE studies so stop button appears/disappears correctly
+  useEffect(() => {
+    if (!showcaseMode || !isExpe) { setIsStudyRunning(false); return }
+
+    const supabase = createClient()
+
+    async function checkRunning() {
+      const { data } = await supabase
+        .from("BE_studies")
+        .select("study_id")
+        .eq("building_id", EXPE_SPACE_ID)
+        .eq("status", "running")
+        .limit(1)
+      setIsStudyRunning(!!(data?.length))
+    }
+
+    checkRunning()
+
+    const channel = supabase
+      .channel("sidebar-expe-study-status")
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "BE_studies",
+        filter: `building_id=eq.${EXPE_SPACE_ID}`,
+      }, () => { checkRunning() })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [showcaseMode, isExpe])
 
   return (
     <aside
@@ -161,12 +213,13 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
         {showcaseMode && isExpe && (
           <button
             onClick={handleLaunchStudies}
-            disabled={isLaunching}
+            disabled={isLaunching || isStopping || isStudyRunning}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground disabled:opacity-50 disabled:cursor-wait",
+              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed",
+              isLaunching && "disabled:cursor-wait",
               collapsed && "justify-center px-0"
             )}
-            title={isLaunching ? "Launching studies…" : "Launch EXPE studies"}
+            title={isLaunching ? "Launching studies…" : isStudyRunning ? "Studies are running" : "Launch EXPE studies"}
           >
             <Play className="h-5 w-5 shrink-0" />
             {!collapsed && (
@@ -175,6 +228,29 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
               </span>
             )}
           </button>
+        )}
+        {showcaseMode && isExpe && isStudyRunning && (
+          <button
+            onClick={handleStopStudies}
+            disabled={isStopping}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-red-400 hover:bg-sidebar-accent hover:text-red-300 disabled:opacity-50 disabled:cursor-wait",
+              collapsed && "justify-center px-0"
+            )}
+            title={isStopping ? "Stopping studies…" : "Stop EXPE studies"}
+          >
+            <Square className="h-5 w-5 shrink-0 fill-current" />
+            {!collapsed && (
+              <span className="text-base font-semibold">
+                {isStopping ? "Stopping…" : "Stop Studies"}
+              </span>
+            )}
+          </button>
+        )}
+        {showcaseMode && isExpe && !collapsed && stopError && (
+          <p className="px-4 py-1 text-xs text-destructive truncate" title={stopError}>
+            Stop failed: {stopError}
+          </p>
         )}
         {showcaseMode && !isFullscreen && (
           <button
