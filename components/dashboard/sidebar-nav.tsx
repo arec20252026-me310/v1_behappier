@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import {
@@ -61,6 +61,7 @@ const navItems = [
 
 export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
   const [showcaseMode, setShowcaseMode] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -77,7 +78,7 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
     localStorage.setItem("behappier_insights_viewed_at", new Date().toISOString())
     window.dispatchEvent(new CustomEvent("behappier:insights-cleared"))
     const result = await launchExpeStudies()
-    if (!result.error) setIsStudyRunning(true)
+    if (!result.error) { setIsStudyRunning(true); router.refresh() }
     setIsLaunching(false)
   }
 
@@ -91,6 +92,7 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
     } else {
       setIsStudyRunning(false)
       setIsStopping(false)
+      router.refresh()
     }
   }
 
