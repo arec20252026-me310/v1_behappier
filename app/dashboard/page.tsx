@@ -356,6 +356,7 @@ export default async function DashboardPage() {
                   completedOutputs={completedOutputs}
                   metricDescriptions={metricDescriptions}
                   studyNames={studyNames}
+                  showAllCompleted={space?.id === EXPE_SPACE_ID}
                   studyDurationMs={(() => {
                     const s = allFetchedStudies.find(s => s.study_id === (completedOutputs[0] ?? latestOutput)?.study_id)
                     return s?.duration_seconds ? s.duration_seconds * 1000 : undefined

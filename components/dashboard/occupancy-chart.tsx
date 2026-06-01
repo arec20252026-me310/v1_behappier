@@ -30,6 +30,7 @@ interface OccupancyChartProps {
   studyDurationMs?: number
   metricDescriptions?: Record<string, string>
   studyNames?: Record<string, string>
+  showAllCompleted?: boolean
   // Legacy single-study (demo mode)
   activeStudyId?: string
   activeStudyStatus?: string
@@ -83,6 +84,7 @@ export function OccupancyChart({
   studyDurationMs,
   metricDescriptions,
   studyNames,
+  showAllCompleted = false,
   activeStudyId,
   activeStudyStatus,
   demoDetections,
@@ -98,12 +100,13 @@ export function OccupancyChart({
   // Determine which completed outputs to show based on localStorage viewed timestamp
   useEffect(() => {
     if (!completedOutputs || completedOutputs.length === 0) { setVisibleOutputs([]); return }
+    if (showAllCompleted) { setVisibleOutputs(completedOutputs); return }
     const viewedAt = localStorage.getItem("behappier_insights_viewed_at")
     const unreviewed = viewedAt
       ? completedOutputs.filter(o => new Date(o.created_at) > new Date(viewedAt))
       : completedOutputs
     setVisibleOutputs(unreviewed.length > 0 ? unreviewed.slice(0, 3) : completedOutputs.slice(0, 1))
-  }, [completedOutputs])
+  }, [completedOutputs, showAllCompleted])
 
   // Merge legacy single-study prop with multi-study prop
   const allActiveStudies: ActiveStudyEntry[] = useMemo(() => {
