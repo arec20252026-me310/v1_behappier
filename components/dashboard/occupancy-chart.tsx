@@ -285,12 +285,36 @@ export function OccupancyChart({
           />
         )
       }
-      // Multiple completed studies — compact=true hides preset buttons and scrubber,
-      // so only ~30px of series-toggle overhead applies (vs 130px for live mode).
-      const completedOverhead = 30
-      const completedPerStudyHeight = enlarged
-        ? Math.max(150, Math.floor(enlargedChartAreaHeight / n) - completedOverhead - 26)
-        : (n === 2 ? 200 : 160)
+      // Multiple completed studies — enlarged uses CSS flex so charts fill the space
+      // without needing a ResizeObserver measurement that may be stale.
+      if (enlarged) {
+        return (
+          <div className="h-full flex flex-col">
+            {completedSeries.map(({ output, series }, idx) => (
+              <div
+                key={output.study_id}
+                className={cn("flex-1 min-h-0 overflow-hidden flex flex-col", idx > 0 && "border-t border-border/50 pt-1")}
+              >
+                <p className="mb-0.5 shrink-0 truncate text-muted-foreground/60 text-sm">
+                  Study {idx + 1}: {studyNames?.[output.study_id] ?? output.study_id}
+                </p>
+                <div className="flex-1 min-h-0 flex flex-col">
+                  <TimeSeriesChart
+                    series={series}
+                    fillHeight
+                    xAxisLabel="Timestamp"
+                    yAxisLabel={series.length === 1 ? series[0].title : undefined}
+                    seriesDescriptions={metricDescriptions}
+                    isLive={false}
+                    compact={n > 1}
+                    enlarged
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      }
       return (
         <div className="flex flex-col overflow-y-auto">
           {completedSeries.map(({ output, series }, idx) => (
@@ -298,18 +322,18 @@ export function OccupancyChart({
               key={output.study_id}
               className={cn(idx > 0 ? "border-t border-border/50 pt-1 mt-1" : "")}
             >
-              <p className={cn("mb-0.5 truncate text-muted-foreground/60", enlarged ? "text-sm" : "text-xs")}>
+              <p className="mb-0.5 truncate text-muted-foreground/60 text-xs">
                 Study {idx + 1}: {studyNames?.[output.study_id] ?? output.study_id}
               </p>
               <TimeSeriesChart
                 series={series}
-                height={completedPerStudyHeight}
+                height={n === 2 ? 200 : 160}
                 xAxisLabel="Timestamp"
                 yAxisLabel={series.length === 1 ? series[0].title : undefined}
                 seriesDescriptions={metricDescriptions}
                 isLive={false}
                 compact={n > 1}
-                enlarged={enlarged}
+                enlarged={false}
               />
             </div>
           ))}
@@ -456,7 +480,7 @@ export function OccupancyChart({
             })() : (
               /* Single study or non-live: original left/right layout */
               <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
-                <div ref={enlargedChartAreaRef} className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-y-auto h-full`}>
+                <div ref={enlargedChartAreaRef} className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-hidden h-full`}>
                   {renderCharts(true)}
                 </div>
                 {isLive && allActiveStudies.length > 0 && (
