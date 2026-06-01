@@ -15,7 +15,7 @@ import {
 import { MapPin, AlertTriangle, ArrowRight, Maximize2, Users } from "lucide-react"
 import { CameraMapIcon } from "@/components/space/camera-map-icon"
 import Link from "next/link"
-// Link kept for insight dialogs below
+import { useRouter } from "next/navigation"
 import type { Zone, Insight, Space, Study, CameraPlacement, BELivePreviewMetrics, BEInsightOutput, BEStudy } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { LiveDetectionFeed, type DetectionRow } from "@/components/studies/live-detection-feed"
@@ -148,6 +148,7 @@ export function SpaceHeatmap({
   tracksOccupancy,
   isDemo = false,
 }: SpaceHeatmapProps) {
+  const router = useRouter()
   const [hasActiveStudy, setHasActiveStudy] = useState(false)
   const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null)
   const [selectedBEInsight, setSelectedBEInsight] = useState<BEInsightSelection | null>(null)
@@ -643,9 +644,12 @@ export function SpaceHeatmap({
             )}
           </div>
           <div className="shrink-0 px-6 pb-5 pt-3 flex justify-end border-t border-border">
-            <Link href="/dashboard/insights">
-              <Button variant="default" size="sm" className="gap-2">Read More<ArrowRight className="h-4 w-4" /></Button>
-            </Link>
+            <Button variant="default" size="sm" className="gap-2" onClick={async () => {
+              if (localStorage.getItem("behappier_showcase_mode") === "true") {
+                try { await document.documentElement.requestFullscreen() } catch {}
+              }
+              router.push("/dashboard/insights")
+            }}>Read More<ArrowRight className="h-4 w-4" /></Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -697,11 +701,15 @@ export function SpaceHeatmap({
             )}
           </div>
           <div className="shrink-0 px-6 pb-5 pt-3 flex justify-end border-t border-border">
-            <Link href="/dashboard/insights">
-              <Button variant="default" size="sm" className="gap-2" onClick={() => setSelectedBEInsight(null)}>
-                View Full Report<ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            <Button variant="default" size="sm" className="gap-2" onClick={async () => {
+              setSelectedBEInsight(null)
+              if (localStorage.getItem("behappier_showcase_mode") === "true") {
+                try { await document.documentElement.requestFullscreen() } catch {}
+              }
+              router.push("/dashboard/insights")
+            }}>
+              View Full Report<ArrowRight className="h-4 w-4" />
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
