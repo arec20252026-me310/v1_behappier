@@ -85,6 +85,7 @@ export interface ChartSeries {
 interface TimeSeriesChartProps {
   series: ChartSeries[]
   height?: number | string
+  fillHeight?: boolean
   studyDurationMs?: number
   xAxisLabel?: string
   yAxisLabel?: string
@@ -238,7 +239,7 @@ const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
 
-export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive, compact = false, enlarged = false }: TimeSeriesChartProps) {
+export function TimeSeriesChart({ series, height = 280, fillHeight = false, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive, compact = false, enlarged = false }: TimeSeriesChartProps) {
   const effectiveYAxisLabel = yAxisLabel ?? (series.length > 1 ? "Multiple behaviors" : undefined)
   const allData = mergeSeriesData(series)
   const total = allData.length
@@ -473,7 +474,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
   if (!series.length) return null
 
   return (
-    <div className="space-y-2">
+    <div className={fillHeight ? "h-full flex flex-col gap-2" : "space-y-2"}>
       {/* Series toggle checkboxes */}
       {series.length > 1 && (
         <div className="flex flex-wrap gap-3 px-1">
@@ -557,7 +558,7 @@ export function TimeSeriesChart({ series, height = 280, studyDurationMs, xAxisLa
       )}
 
       {/* Chart */}
-      <div ref={chartRef} style={{ height, userSelect: "none" }}>
+      <div ref={chartRef} style={fillHeight ? { flex: 1, minHeight: 0, userSelect: "none" } : { height, userSelect: "none" }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />

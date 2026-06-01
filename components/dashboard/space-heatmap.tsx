@@ -29,6 +29,7 @@ interface ActiveStudyEntry {
   study_id: string
   status: string
   monitoredZoneId: string | null
+  study_name?: string | null
 }
 
 interface CompletedZoneInsight {
@@ -576,7 +577,7 @@ export function SpaceHeatmap({
                   {allActiveStudies.map((s) => (
                     <div key={s.study_id}>
                       {allActiveStudies.length > 1 && (
-                        <p className="text-[10px] font-mono text-muted-foreground mb-1 truncate">{s.study_id}</p>
+                        <p className="text-xs font-mono text-muted-foreground mb-1 truncate">{s.study_name ?? s.study_id}</p>
                       )}
                       <p className="text-2xl font-medium text-muted-foreground uppercase tracking-wide mb-3">Latest Detection</p>
                       <LiveDetectionFeed

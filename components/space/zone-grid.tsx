@@ -136,9 +136,14 @@ export function ZoneGrid({
     e.stopPropagation()
     setDraggingCamera(cam.id)
     setSelectedCamera(cam.id)
-    setCameraDragStart({ x: e.clientX, y: e.clientY, camX: cam.x, camY: cam.y })
+    setCameraDragStart({
+      x: e.clientX,
+      y: e.clientY,
+      camX: cam.fracX != null ? cam.fracX * gridWidth : cam.x,
+      camY: cam.fracY != null ? cam.fracY * gridHeight : cam.y,
+    })
     onSelectZone(null)
-  }, [onSelectZone])
+  }, [onSelectZone, gridWidth, gridHeight])
 
   const handleCameraRightClick = useCallback((e: React.MouseEvent, cam: CameraPlacement) => {
     e.preventDefault()
@@ -201,7 +206,7 @@ export function ZoneGrid({
 
       onUpdateCameras(cameras.map(c => c.id === draggingCamera ? { ...c, x: newX, y: newY, fracX, fracY } : c))
     }
-  }, [dragging, resizing, draggingCamera, dragStart, resizeStart, cameraDragStart, zones, cameras, onUpdateZone, onUpdateCameras, gridCols, gridRows, gridWidth, gridHeight, cellSize])
+  }, [dragging, resizing, draggingCamera, dragStart, resizeStart, cameraDragStart, zones, cameras, onUpdateZone, onUpdateCameras, gridCols, gridRows, gridWidth, gridHeight, cellSize, imgOffsetX, imgOffsetY])
 
   const handleMouseUp = useCallback(() => {
     setDragging(null)
@@ -210,13 +215,15 @@ export function ZoneGrid({
   }, [])
 
   const getCameraZone = useCallback((cam: CameraPlacement) => {
-    const gridX = (cam.x - imgOffsetX) / cellSize
-    const gridY = (cam.y - imgOffsetY) / cellSize
+    const contentX = cam.fracX != null ? cam.fracX * gridWidth : cam.x
+    const contentY = cam.fracY != null ? cam.fracY * gridHeight : cam.y
+    const gridX = (contentX - imgOffsetX) / cellSize
+    const gridY = (contentY - imgOffsetY) / cellSize
     return zones.find(z =>
       gridX >= z.grid_x && gridX < z.grid_x + z.grid_width &&
       gridY >= z.grid_y && gridY < z.grid_y + z.grid_height
     )
-  }, [zones, cellSize, imgOffsetX, imgOffsetY])
+  }, [zones, cellSize, imgOffsetX, imgOffsetY, gridWidth, gridHeight])
 
   const getZoneCenter = useCallback((zoneId: string) => {
     const zone = zones.find(z => z.id === zoneId)
@@ -361,11 +368,13 @@ export function ZoneGrid({
             if (insideZone?.id === cam.zoneId) return null
             const center = getZoneCenter(cam.zoneId)
             if (!center || !assignedZone) return null
+            const camVisualX = cam.fracX != null ? cam.fracX * gridWidth + imgOffsetX : cam.x + imgOffsetX
+            const camVisualY = cam.fracY != null ? cam.fracY * gridHeight + imgOffsetY : cam.y + imgOffsetY
             return (
               <g key={`link-${cam.id}`}>
                 <line
-                  x1={cam.x + imgOffsetX}
-                  y1={cam.y + imgOffsetY}
+                  x1={camVisualX}
+                  y1={camVisualY}
                   x2={center.x}
                   y2={center.y}
                   stroke="rgba(99,179,237,0.5)"
@@ -374,8 +383,8 @@ export function ZoneGrid({
                   markerEnd="url(#arrowhead)"
                 />
                 <text
-                  x={(cam.x + imgOffsetX + center.x) / 2}
-                  y={(cam.y + imgOffsetY + center.y) / 2 - 4}
+                  x={(camVisualX + center.x) / 2}
+                  y={(camVisualY + center.y) / 2 - 4}
                   textAnchor="middle"
                   fontSize={8}
                   fill="rgba(99,179,237,0.9)"
@@ -392,6 +401,8 @@ export function ZoneGrid({
         {mounted && cameras.map((cam) => {
           const isCamSelected = selectedCamera === cam.id
           const ICON_SIZE = 28
+          const camLeft = cam.fracX != null ? cam.fracX * gridWidth + imgOffsetX : cam.x + imgOffsetX
+          const camTop = cam.fracY != null ? cam.fracY * gridHeight + imgOffsetY : cam.y + imgOffsetY
           return (
             <div
               key={cam.id}
@@ -400,8 +411,8 @@ export function ZoneGrid({
                 draggingCamera === cam.id && "opacity-90"
               )}
               style={{
-                left: cam.x + imgOffsetX,
-                top: cam.y + imgOffsetY,
+                left: camLeft,
+                top: camTop,
                 zIndex: isCamSelected ? 30 : 20,
                 transform: "translate(-50%, -50%)",
               }}

@@ -314,11 +314,12 @@ export default async function DashboardPage() {
         {(() => {
           // Include both "running" and "analyzing" so zones stay lit during analysis
           const activeStudies = beStudies.map(s => {
-            const meta = (s as { metadata?: { monitored_zone_id?: string; target_zones?: string[] } }).metadata
+            const meta = (s as { metadata?: { monitored_zone_id?: string; target_zones?: string[]; study_name?: string } }).metadata
             return {
               study_id: s.study_id,
               status: s.status,
               monitoredZoneId: meta?.monitored_zone_id ?? meta?.target_zones?.[0] ?? null,
+              study_name: meta?.study_name ?? null,
             }
           })
 

@@ -17,6 +17,7 @@ import { TimeSeriesChart } from "@/components/insights/time-series-chart"
 import type { ChartSeries } from "@/components/insights/time-series-chart"
 import { createClient } from "@/lib/supabase/client"
 import { LiveDetectionFeed, type DetectionRow } from "@/components/studies/live-detection-feed"
+import { cn } from "@/lib/utils"
 
 interface ActiveStudyEntry {
   study_id: string
@@ -235,7 +236,8 @@ export function OccupancyChart({
         return (
           <TimeSeriesChart
             series={series}
-            height={enlarged ? "calc(88vh - 110px)" : 350}
+            height={enlarged ? undefined : 350}
+            fillHeight={enlarged}
             studyDurationMs={studyDurationMs}
             xAxisLabel="Timestamp"
             yAxisLabel={series.length === 1 ? series[0].title : undefined}
@@ -245,21 +247,37 @@ export function OccupancyChart({
           />
         )
       }
-      // Multiple completed studies with unreviewed insights
+      // Multiple completed studies
       return (
-        <div className="flex flex-col">
-          {completedSeries.map(({ output, series }, idx) => {
-            const chartHeight = enlarged
-              ? `calc((88vh - ${80 + n * 60 + (n - 1) * 4}px) / ${n})`
-              : n === 2 ? 200 : 160
-            return (
-              <div key={output.study_id} className={idx > 0 ? "border-t border-border/50 pt-1 mt-1" : ""}>
-                <p className="text-xs text-muted-foreground/60 mb-0.5 truncate">
-                  Study {idx + 1}: {studyNames?.[output.study_id] ?? output.study_id}
-                </p>
+        <div className={enlarged ? "h-full flex flex-col" : "flex flex-col"}>
+          {completedSeries.map(({ output, series }, idx) => (
+            <div
+              key={output.study_id}
+              className={cn(
+                idx > 0 ? "border-t border-border/50 pt-1 mt-1" : "",
+                enlarged ? "flex-1 min-h-0 flex flex-col" : ""
+              )}
+            >
+              <p className={cn("mb-0.5 truncate text-muted-foreground/60", enlarged ? "text-sm shrink-0" : "text-xs")}>
+                Study {idx + 1}: {studyNames?.[output.study_id] ?? output.study_id}
+              </p>
+              {enlarged ? (
+                <div className="flex-1 min-h-0">
+                  <TimeSeriesChart
+                    series={series}
+                    fillHeight
+                    xAxisLabel="Timestamp"
+                    yAxisLabel={series.length === 1 ? series[0].title : undefined}
+                    seriesDescriptions={metricDescriptions}
+                    isLive={false}
+                    compact={n > 1}
+                    enlarged={enlarged}
+                  />
+                </div>
+              ) : (
                 <TimeSeriesChart
                   series={series}
-                  height={chartHeight}
+                  height={n === 2 ? 200 : 160}
                   xAxisLabel="Timestamp"
                   yAxisLabel={series.length === 1 ? series[0].title : undefined}
                   seriesDescriptions={metricDescriptions}
@@ -267,30 +285,31 @@ export function OccupancyChart({
                   compact={n > 1}
                   enlarged={enlarged}
                 />
-              </div>
-            )
-          })}
+              )}
+            </div>
+          ))}
         </div>
       )
     }
 
     const n = allActiveStudies.length
     return (
-      <div className="flex flex-col">
+      <div className={enlarged ? "h-full flex flex-col" : "flex flex-col"}>
         {allActiveStudies.map(({ study_id }, idx) => {
           const detections = perStudyDetections[study_id] ?? []
           const liveSeries = buildLiveSeries(detections)
-          // Enlarged: 90px chrome per subplot (buttons+scrubber+stats+gaps) + 20px label + 80px fixed overhead
-          // Compact (dashboard): no chrome, just chart canvas
-          const chartHeight = enlarged
-            ? `calc((88vh - ${80 + n * 90 + (n - 1) * 4}px) / ${n})`
-            : n === 1 ? 200 : n === 2 ? 180 : 150
           const isCompact = !enlarged && n > 1
 
           return (
-            <div key={study_id} className={idx > 0 && n > 1 ? "border-t border-border/50 pt-1 mt-1" : ""}>
+            <div
+              key={study_id}
+              className={cn(
+                idx > 0 && n > 1 ? "border-t border-border/50 pt-1 mt-1" : "",
+                enlarged ? "flex-1 min-h-0 flex flex-col" : ""
+              )}
+            >
               {n > 1 && (
-                <p className="text-xs text-muted-foreground/60 mb-0.5 truncate">
+                <p className={cn("mb-0.5 truncate text-muted-foreground/60", enlarged ? "text-sm shrink-0" : "text-xs")}>
                   Study {idx + 1}: {studyNames?.[study_id] ?? study_id}
                 </p>
               )}
@@ -299,10 +318,23 @@ export function OccupancyChart({
                   <BarChart3 className="h-3 w-3 animate-pulse" />
                   <span>Waiting for data…</span>
                 </div>
+              ) : enlarged ? (
+                <div className="flex-1 min-h-0">
+                  <TimeSeriesChart
+                    series={liveSeries}
+                    fillHeight
+                    xAxisLabel="Timestamp"
+                    yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
+                    seriesDescriptions={metricDescriptions}
+                    isLive={true}
+                    compact={false}
+                    enlarged={enlarged}
+                  />
+                </div>
               ) : (
                 <TimeSeriesChart
                   series={liveSeries}
-                  height={chartHeight}
+                  height={n === 1 ? 200 : n === 2 ? 180 : 150}
                   xAxisLabel="Timestamp"
                   yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
                   seriesDescriptions={metricDescriptions}
@@ -347,7 +379,7 @@ export function OccupancyChart({
             </DialogHeader>
             <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
               {/* Left: chart(s) — 60% width when live, full width otherwise */}
-              <div className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-hidden`}>
+              <div className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-hidden h-full`}>
                 {renderCharts(true)}
               </div>
               {/* Right: detections */}

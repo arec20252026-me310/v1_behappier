@@ -32,13 +32,16 @@ const TEMPLATES = [
     suffix: "q",
     study_name: "Quiet Zone Occupancy and Collaboration Study",
     zone_id: "816023aa-06f3-4446-9574-a7bb13c1c1de",
-    camera_id: "camera_1",
+    camera_id: "camera_2",
+    // ts + 1000 → 1 second newer → appears first in created_at DESC ordering (Study 1)
+    tsOffset: 1000,
   },
   {
     suffix: "i",
     study_name: "Interaction Zone Occupancy and Collaboration Study",
     zone_id: "f0725c0e-5921-4fa9-824f-dc1e6313d5ac",
-    camera_id: "camera_2",
+    camera_id: "camera_3",
+    tsOffset: 0,
   },
 ]
 
@@ -66,7 +69,7 @@ async function startOneStudy(
     session_id: crypto.randomUUID(),
     status: "draft",
     current_stage: "draft",
-    created_at: new Date().toISOString(),
+    created_at: new Date(ts + template.tsOffset).toISOString(),
     study_goal: STUDY_GOAL,
     duration_seconds: 300,
     metadata: {
