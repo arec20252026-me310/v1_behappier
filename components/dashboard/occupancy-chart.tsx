@@ -245,12 +245,12 @@ export function OccupancyChart({
   }
 
   const renderCharts = (enlarged: boolean) => {
-    // Compute explicit per-chart canvas height for multi-study enlarged view.
-    // 130px accounts for series checkboxes + preset buttons + scrubber + live indicator.
-    // 26px per study accounts for the study label row.
-    const multiStudyCount = isLive ? allActiveStudies.length : completedSeries.length
-    const perStudyChartHeight = enlarged && multiStudyCount > 1
-      ? Math.max(150, Math.floor(enlargedChartAreaHeight / multiStudyCount) - 130 - (multiStudyCount > 1 ? 26 : 0))
+    // Per-chart height for live multi-study (3+ studies) enlarged view only.
+    // 130px = series checkboxes + preset buttons + scrubber + live indicator.
+    // 26px = study label row. Non-live completed path uses its own formula below.
+    const multiStudyCount = allActiveStudies.length
+    const perStudyChartHeight = enlarged && isLive && multiStudyCount > 1
+      ? Math.max(150, Math.floor(enlargedChartAreaHeight / multiStudyCount) - 130 - 26)
       : 0
 
     if (!isLive) {
@@ -285,7 +285,12 @@ export function OccupancyChart({
           />
         )
       }
-      // Multiple completed studies
+      // Multiple completed studies — compact=true hides preset buttons and scrubber,
+      // so only ~30px of series-toggle overhead applies (vs 130px for live mode).
+      const completedOverhead = 30
+      const completedPerStudyHeight = enlarged
+        ? Math.max(150, Math.floor(enlargedChartAreaHeight / n) - completedOverhead - 26)
+        : (n === 2 ? 200 : 160)
       return (
         <div className="flex flex-col overflow-y-auto">
           {completedSeries.map(({ output, series }, idx) => (
@@ -298,7 +303,7 @@ export function OccupancyChart({
               </p>
               <TimeSeriesChart
                 series={series}
-                height={enlarged ? perStudyChartHeight : (n === 2 ? 200 : 160)}
+                height={completedPerStudyHeight}
                 xAxisLabel="Timestamp"
                 yAxisLabel={series.length === 1 ? series[0].title : undefined}
                 seriesDescriptions={metricDescriptions}
@@ -382,20 +387,24 @@ export function OccupancyChart({
               <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
             </DialogHeader>
 
-            {/* 2×2 grid: one row per study, chart left / detection right */}
+            {/* 2×2 layout: one row per study, chart left / detection right.
+                Row heights are pinned to explicit pixels from ResizeObserver so content
+                (especially long detection text) cannot push the row taller. */}
             {isLive && allActiveStudies.length === 2 ? (() => {
-              const perStudyChartHeight = enlargedChartAreaHeight > 0
-                ? Math.max(120, Math.floor(enlargedChartAreaHeight / 2) - 160)
-                : 200
+              const rowHeight = enlargedChartAreaHeight > 0 ? Math.floor(enlargedChartAreaHeight / 2) : 0
+              const perStudyChartHeight = rowHeight > 0 ? Math.max(120, rowHeight - 160) : 200
               return (
-                <div ref={enlargedChartAreaRef} className="flex-1 min-h-0 grid grid-rows-2 overflow-hidden">
+                <div ref={enlargedChartAreaRef} className="flex-1 min-h-0 overflow-hidden flex flex-col">
                   {allActiveStudies.map((s, idx) => {
                     const detections = perStudyDetections[s.study_id] ?? []
                     const liveSeries = buildLiveSeries(detections)
                     return (
                       <div
                         key={s.study_id}
-                        className={cn("grid grid-cols-[60%_1fr] min-h-0 overflow-hidden", idx > 0 && "border-t border-border")}
+                        style={rowHeight > 0
+                          ? { height: rowHeight, maxHeight: rowHeight, overflow: "hidden", flexShrink: 0 }
+                          : { flex: "1 1 0", minHeight: 0, overflow: "hidden" }}
+                        className={cn("grid grid-cols-[60%_1fr]", idx > 0 && "border-t border-border")}
                       >
                         {/* Chart cell */}
                         <div className="min-h-0 overflow-hidden pr-6 pt-1">
