@@ -155,6 +155,8 @@ export function SpaceHeatmap({
   const [cameras, setCameras] = useState<CameraPlacement[]>(cameraProp)
   const [insightsViewed, setInsightsViewed] = useState(false)
   const [isEnlarged, setIsEnlarged] = useState(false)
+  const [detectionPanelHeight, setDetectionPanelHeight] = useState(0)
+  const detectionPanelRef = useRef<HTMLDivElement>(null)
   // Per-zone occupancy: zoneId → latest count
   const [zoneOccupancies, setZoneOccupancies] = useState<Record<string, number>>({})
 
@@ -223,6 +225,17 @@ export function SpaceHeatmap({
     window.addEventListener("behappier:insights-cleared", handleCleared)
     return () => window.removeEventListener("behappier:insights-cleared", handleCleared)
   }, [])
+
+  useEffect(() => {
+    if (!isEnlarged) return
+    const el = detectionPanelRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      setDetectionPanelHeight(entries[0].contentRect.height)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [isEnlarged])
 
   // Build study_id → zoneId map and subscribe to all active studies' detections
   const studiesKey = allActiveStudies.map(s => s.study_id).sort().join(",")
@@ -580,9 +593,17 @@ export function SpaceHeatmap({
               </div>
               {/* Right: study detections (only when a study is running) */}
               {allActiveStudies.length > 0 && (
-                <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col">
-                  {allActiveStudies.map((s, idx) => (
-                    <div key={s.study_id} className={cn("flex-1 min-h-0 flex flex-col overflow-hidden", idx > 0 && "border-t border-border pt-3")}>
+                <div ref={detectionPanelRef} className="flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col">
+                  {allActiveStudies.map((s, idx) => {
+                    const rowHeight = detectionPanelHeight > 0 ? Math.floor(detectionPanelHeight / allActiveStudies.length) : 0
+                    return (
+                    <div
+                      key={s.study_id}
+                      style={rowHeight > 0
+                        ? { height: rowHeight, maxHeight: rowHeight, overflow: "hidden", flexShrink: 0 }
+                        : { flex: "1 1 0", minHeight: 0, overflow: "hidden" }}
+                      className={cn("flex flex-col", idx > 0 && "border-t border-border pt-3")}
+                    >
                       {allActiveStudies.length > 1 && (
                         <p className="text-xs font-mono text-muted-foreground mb-1 truncate shrink-0">{s.study_name ?? s.study_id}</p>
                       )}
@@ -598,7 +619,8 @@ export function SpaceHeatmap({
                         />
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
