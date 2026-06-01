@@ -381,43 +381,101 @@ export function OccupancyChart({
               </div>
               <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
             </DialogHeader>
-            <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
-              {/* Left: chart(s) — 60% width when live, full width otherwise */}
-              <div ref={enlargedChartAreaRef} className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-y-auto h-full`}>
-                {renderCharts(true)}
-              </div>
-              {/* Right: detections */}
-              {isLive && allActiveStudies.length > 0 && (
-                <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col">
-                  {allActiveStudies.map((s, idx) => (
-                    <div
-                      key={s.study_id}
-                      className={cn(
-                        "flex-1 min-h-0 flex flex-col overflow-hidden",
-                        idx > 0 && "border-t border-border pt-3"
-                      )}
-                    >
-                      {allActiveStudies.length > 1 && (
-                        <p className="text-xs text-muted-foreground/60 mb-0.5 truncate shrink-0">
-                          Study {idx + 1}: {studyNames?.[s.study_id] ?? s.study_id}
-                        </p>
-                      )}
-                      <p className="text-xl font-medium text-muted-foreground uppercase tracking-wide mb-2 shrink-0">Latest Detection</p>
-                      <div className="flex-1 min-h-0 overflow-y-auto">
-                        <LiveDetectionFeed
-                          studyId={s.study_id}
-                          status={s.status}
-                          limit={1}
-                          demoDetections={idx === 0 ? demoDetections : undefined}
-                          large
-                          studyCount={allActiveStudies.length}
-                        />
+
+            {/* 2×2 grid: one row per study, chart left / detection right */}
+            {isLive && allActiveStudies.length === 2 ? (() => {
+              const perStudyChartHeight = enlargedChartAreaHeight > 0
+                ? Math.max(120, Math.floor(enlargedChartAreaHeight / 2) - 160)
+                : 200
+              return (
+                <div ref={enlargedChartAreaRef} className="flex-1 min-h-0 grid grid-rows-2 overflow-hidden">
+                  {allActiveStudies.map((s, idx) => {
+                    const detections = perStudyDetections[s.study_id] ?? []
+                    const liveSeries = buildLiveSeries(detections)
+                    return (
+                      <div
+                        key={s.study_id}
+                        className={cn("grid grid-cols-[60%_1fr] min-h-0 overflow-hidden", idx > 0 && "border-t border-border")}
+                      >
+                        {/* Chart cell */}
+                        <div className="min-h-0 overflow-hidden pr-6 pt-1">
+                          <p className="text-sm text-muted-foreground/60 mb-0.5 truncate">
+                            Study {idx + 1}: {studyNames?.[s.study_id] ?? s.study_id}
+                          </p>
+                          {detections.length === 0 ? (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60 py-2">
+                              <BarChart3 className="h-3 w-3 animate-pulse" />
+                              <span>Waiting for data…</span>
+                            </div>
+                          ) : (
+                            <TimeSeriesChart
+                              series={liveSeries}
+                              height={perStudyChartHeight}
+                              xAxisLabel="Timestamp"
+                              yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
+                              seriesDescriptions={metricDescriptions}
+                              isLive={true}
+                              compact={false}
+                              enlarged
+                            />
+                          )}
+                        </div>
+                        {/* Detection cell */}
+                        <div className="border-l border-border pl-6 flex flex-col overflow-hidden pt-1">
+                          <p className="text-xs text-muted-foreground/60 mb-0.5 truncate shrink-0">
+                            Study {idx + 1}: {studyNames?.[s.study_id] ?? s.study_id}
+                          </p>
+                          <p className="text-xl font-medium text-muted-foreground uppercase tracking-wide mb-2 shrink-0">
+                            Latest Detection
+                          </p>
+                          <div className="flex-1 min-h-0 overflow-y-auto">
+                            <LiveDetectionFeed
+                              studyId={s.study_id}
+                              status={s.status}
+                              limit={1}
+                              demoDetections={idx === 0 ? demoDetections : undefined}
+                              large
+                              studyCount={allActiveStudies.length}
+                            />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
-              )}
-            </div>
+              )
+            })() : (
+              /* Single study or non-live: original left/right layout */
+              <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
+                <div ref={enlargedChartAreaRef} className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-y-auto h-full`}>
+                  {renderCharts(true)}
+                </div>
+                {isLive && allActiveStudies.length > 0 && (
+                  <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col">
+                    {allActiveStudies.map((s, idx) => (
+                      <div key={s.study_id} className={cn("flex-1 min-h-0 flex flex-col overflow-hidden", idx > 0 && "border-t border-border pt-3")}>
+                        {allActiveStudies.length > 1 && (
+                          <p className="text-xs text-muted-foreground/60 mb-0.5 truncate shrink-0">
+                            Study {idx + 1}: {studyNames?.[s.study_id] ?? s.study_id}
+                          </p>
+                        )}
+                        <p className="text-xl font-medium text-muted-foreground uppercase tracking-wide mb-2 shrink-0">Latest Detection</p>
+                        <div className="flex-1 min-h-0 overflow-y-auto">
+                          <LiveDetectionFeed
+                            studyId={s.study_id}
+                            status={s.status}
+                            limit={1}
+                            demoDetections={idx === 0 ? demoDetections : undefined}
+                            large
+                            studyCount={allActiveStudies.length}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

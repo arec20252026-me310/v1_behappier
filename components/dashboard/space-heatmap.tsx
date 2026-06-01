@@ -579,9 +579,12 @@ export function SpaceHeatmap({
               </div>
               {/* Right: study detections (only when a study is running) */}
               {allActiveStudies.length > 0 && (
-                <div className="flex-1 min-w-0 border-l border-border pl-6 overflow-hidden flex flex-col">
+                <div className={cn(
+                  "flex-1 min-w-0 border-l border-border pl-6 overflow-hidden",
+                  allActiveStudies.length === 2 ? "grid grid-rows-2" : "flex flex-col"
+                )}>
                   {allActiveStudies.map((s, idx) => (
-                    <div key={s.study_id} className={cn("flex-1 min-h-0 flex flex-col overflow-hidden", idx > 0 && "border-t border-border pt-3")}>
+                    <div key={s.study_id} className={cn("min-h-0 flex flex-col overflow-hidden", idx > 0 && "border-t border-border pt-3")}>
                       {allActiveStudies.length > 1 && (
                         <p className="text-xs font-mono text-muted-foreground mb-1 truncate shrink-0">{s.study_name ?? s.study_id}</p>
                       )}
