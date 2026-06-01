@@ -211,41 +211,41 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
 
       <div className="p-2 border-t border-sidebar-border space-y-0.5">
         {showcaseMode && isExpe && (
-          <button
-            onClick={handleLaunchStudies}
-            disabled={isLaunching || isStopping || isStudyRunning}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed",
-              isLaunching && "disabled:cursor-wait",
-              collapsed && "justify-center px-0"
-            )}
-            title={isLaunching ? "Launching studies…" : isStudyRunning ? "Studies are running" : "Launch EXPE studies"}
-          >
-            <Play className="h-5 w-5 shrink-0" />
-            {!collapsed && (
-              <span className="text-base font-semibold">
-                {isLaunching ? "Launching…" : "Launch Studies"}
-              </span>
-            )}
-          </button>
-        )}
-        {showcaseMode && isExpe && isStudyRunning && (
-          <button
-            onClick={handleStopStudies}
-            disabled={isStopping}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-red-400 hover:bg-sidebar-accent hover:text-red-300 disabled:opacity-50 disabled:cursor-wait",
-              collapsed && "justify-center px-0"
-            )}
-            title={isStopping ? "Stopping studies…" : "Stop EXPE studies"}
-          >
-            <Square className="h-5 w-5 shrink-0 fill-current" />
-            {!collapsed && (
-              <span className="text-base font-semibold">
-                {isStopping ? "Stopping…" : "Stop Studies"}
-              </span>
-            )}
-          </button>
+          isStudyRunning ? (
+            <button
+              onClick={handleStopStudies}
+              disabled={isStopping}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground disabled:opacity-50 disabled:cursor-wait",
+                collapsed && "justify-center px-0"
+              )}
+              title={isStopping ? "Stopping studies…" : "Stop EXPE studies"}
+            >
+              <Square className="h-5 w-5 shrink-0 fill-current" />
+              {!collapsed && (
+                <span className="text-base font-semibold">
+                  {isStopping ? "Stopping…" : "Stop Studies"}
+                </span>
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={handleLaunchStudies}
+              disabled={isLaunching}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground disabled:opacity-50 disabled:cursor-wait",
+                collapsed && "justify-center px-0"
+              )}
+              title={isLaunching ? "Launching studies…" : "Launch EXPE studies"}
+            >
+              <Play className="h-5 w-5 shrink-0" />
+              {!collapsed && (
+                <span className="text-base font-semibold">
+                  {isLaunching ? "Launching…" : "Launch Studies"}
+                </span>
+              )}
+            </button>
+          )
         )}
         {showcaseMode && isExpe && !collapsed && stopError && (
           <p className="px-4 py-1 text-xs text-destructive truncate" title={stopError}>
