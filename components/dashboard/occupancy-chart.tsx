@@ -265,13 +265,13 @@ export function OccupancyChart({
       }
       // Multiple completed studies
       return (
-        <div className={enlarged ? "h-full flex flex-col" : "flex flex-col"}>
+        <div className={enlarged ? "h-full flex flex-col overflow-hidden" : "flex flex-col"}>
           {completedSeries.map(({ output, series }, idx) => (
             <div
               key={output.study_id}
               className={cn(
-                idx > 0 ? "border-t border-border/50 pt-1 mt-1" : "",
-                enlarged ? "flex-1 min-h-0 flex flex-col" : ""
+                idx > 0 ? (enlarged ? "border-t border-border/50" : "border-t border-border/50 pt-1 mt-1") : "",
+                enlarged ? (n === 2 ? "h-1/2 flex flex-col overflow-hidden" : "flex-1 min-h-0 flex flex-col") : ""
               )}
             >
               <p className={cn("mb-0.5 truncate text-muted-foreground/60", enlarged ? "text-sm shrink-0" : "text-xs")}>
@@ -308,7 +308,7 @@ export function OccupancyChart({
 
     const n = allActiveStudies.length
     return (
-      <div className={enlarged ? "h-full flex flex-col" : "flex flex-col"}>
+      <div className={enlarged ? "h-full flex flex-col overflow-hidden" : "flex flex-col"}>
         {allActiveStudies.map(({ study_id }, idx) => {
           const detections = perStudyDetections[study_id] ?? []
           const liveSeries = buildLiveSeries(detections)
@@ -318,8 +318,8 @@ export function OccupancyChart({
             <div
               key={study_id}
               className={cn(
-                idx > 0 && n > 1 ? "border-t border-border/50 pt-1 mt-1" : "",
-                enlarged ? "flex-1 min-h-0 flex flex-col" : ""
+                idx > 0 && n > 1 ? (enlarged ? "border-t border-border/50" : "border-t border-border/50 pt-1 mt-1") : "",
+                enlarged ? (n === 2 ? "h-1/2 flex flex-col overflow-hidden" : "flex-1 min-h-0 flex flex-col") : ""
               )}
             >
               {n > 1 && (
