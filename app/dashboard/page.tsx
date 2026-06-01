@@ -239,6 +239,14 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(maxCompletedStudies)
     if (completedInsights) completedOutputs.push(...(completedInsights as BEInsightOutput[]))
+    // Reorder to match completedStudies order (which mirrors the live beStudies order).
+    // completedInsights is sorted by insight created_at, which differs from study created_at.
+    const studyIdOrder = completedStudies.slice(0, maxCompletedStudies).map((s: { study_id: string }) => s.study_id)
+    completedOutputs.sort((a, b) => {
+      const ai = studyIdOrder.indexOf(a.study_id)
+      const bi = studyIdOrder.indexOf(b.study_id)
+      return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi)
+    })
     completedStudyInsights = completedOutputs[0] ?? null
   }
 
