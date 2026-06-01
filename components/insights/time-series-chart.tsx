@@ -474,7 +474,7 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
   if (!series.length) return null
 
   return (
-    <div className={fillHeight ? "h-full flex flex-col gap-2" : "space-y-2"}>
+    <div className={fillHeight ? "flex-1 min-h-0 flex flex-col gap-2" : "space-y-2"}>
       {/* Series toggle checkboxes */}
       {series.length > 1 && (
         <div className="flex flex-wrap gap-3 px-1">

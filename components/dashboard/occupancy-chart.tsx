@@ -233,17 +233,30 @@ export function OccupancyChart({
       if (n === 0) return null
       if (n === 1) {
         const { series } = completedSeries[0]
+        if (enlarged) return (
+          <div className="h-full flex flex-col">
+            <TimeSeriesChart
+              series={series}
+              fillHeight
+              studyDurationMs={studyDurationMs}
+              xAxisLabel="Timestamp"
+              yAxisLabel={series.length === 1 ? series[0].title : undefined}
+              seriesDescriptions={metricDescriptions}
+              isLive={false}
+              enlarged
+            />
+          </div>
+        )
         return (
           <TimeSeriesChart
             series={series}
-            height={enlarged ? undefined : 350}
-            fillHeight={enlarged}
+            height={350}
             studyDurationMs={studyDurationMs}
             xAxisLabel="Timestamp"
             yAxisLabel={series.length === 1 ? series[0].title : undefined}
             seriesDescriptions={metricDescriptions}
             isLive={false}
-            enlarged={enlarged}
+            enlarged={false}
           />
         )
       }
@@ -262,18 +275,16 @@ export function OccupancyChart({
                 Study {idx + 1}: {studyNames?.[output.study_id] ?? output.study_id}
               </p>
               {enlarged ? (
-                <div className="flex-1 min-h-0">
-                  <TimeSeriesChart
-                    series={series}
-                    fillHeight
-                    xAxisLabel="Timestamp"
-                    yAxisLabel={series.length === 1 ? series[0].title : undefined}
-                    seriesDescriptions={metricDescriptions}
-                    isLive={false}
-                    compact={n > 1}
-                    enlarged={enlarged}
-                  />
-                </div>
+                <TimeSeriesChart
+                  series={series}
+                  fillHeight
+                  xAxisLabel="Timestamp"
+                  yAxisLabel={series.length === 1 ? series[0].title : undefined}
+                  seriesDescriptions={metricDescriptions}
+                  isLive={false}
+                  compact={n > 1}
+                  enlarged
+                />
               ) : (
                 <TimeSeriesChart
                   series={series}
@@ -283,7 +294,7 @@ export function OccupancyChart({
                   seriesDescriptions={metricDescriptions}
                   isLive={false}
                   compact={n > 1}
-                  enlarged={enlarged}
+                  enlarged={false}
                 />
               )}
             </div>
@@ -319,18 +330,16 @@ export function OccupancyChart({
                   <span>Waiting for data…</span>
                 </div>
               ) : enlarged ? (
-                <div className="flex-1 min-h-0">
-                  <TimeSeriesChart
-                    series={liveSeries}
-                    fillHeight
-                    xAxisLabel="Timestamp"
-                    yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
-                    seriesDescriptions={metricDescriptions}
-                    isLive={true}
-                    compact={false}
-                    enlarged={enlarged}
-                  />
-                </div>
+                <TimeSeriesChart
+                  series={liveSeries}
+                  fillHeight
+                  xAxisLabel="Timestamp"
+                  yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
+                  seriesDescriptions={metricDescriptions}
+                  isLive={true}
+                  compact={false}
+                  enlarged
+                />
               ) : (
                 <TimeSeriesChart
                   series={liveSeries}
