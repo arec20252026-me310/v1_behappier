@@ -212,6 +212,8 @@ export default async function DashboardPage() {
 
   const allFetchedStudies = [...beStudies]
 
+  const maxCompletedStudies = space?.id === EXPE_SPACE_ID ? 2 : 3
+
   let completedStudies: typeof beStudies = []
   let completedStudyInsights = null
   const { data: completed } = space ? await supabase
@@ -220,22 +222,22 @@ export default async function DashboardPage() {
     .eq("building_id", space.id)
     .eq("status", "complete")
     .order("created_at", { ascending: false })
-    .limit(4) : { data: [] }
+    .limit(maxCompletedStudies) : { data: [] }
   completedStudies = completed ?? []
   allFetchedStudies.push(...completedStudies)
   allSpaceStudyIds.push(...completedStudies.map((s: { study_id: string }) => s.study_id))
 
-  // Fetch final_insights for up to 3 most recent completed studies
+  // Fetch final_insights for most recent completed studies
   const completedOutputs: BEInsightOutput[] = []
   if (completedStudies.length > 0) {
-    const top3Ids = completedStudies.slice(0, 3).map((s: { study_id: string }) => s.study_id)
+    const topIds = completedStudies.slice(0, maxCompletedStudies).map((s: { study_id: string }) => s.study_id)
     const { data: completedInsights } = await supabase
       .from("BE_insight_outputs")
       .select("*")
-      .in("study_id", top3Ids)
+      .in("study_id", topIds)
       .eq("output_mode", "final_insights")
       .order("created_at", { ascending: false })
-      .limit(3)
+      .limit(maxCompletedStudies)
     if (completedInsights) completedOutputs.push(...(completedInsights as BEInsightOutput[]))
     completedStudyInsights = completedOutputs[0] ?? null
   }
