@@ -95,6 +95,8 @@ export function OccupancyChart({
   const [lastDetectionAt, setLastDetectionAt] = useState<number | null>(null)
   const [agoText, setAgoText] = useState<string | null>(null)
   const [visibleOutputs, setVisibleOutputs] = useState<BEInsightOutput[]>([])
+  const [enlargedChartAreaHeight, setEnlargedChartAreaHeight] = useState(0)
+  const enlargedChartAreaRef = useRef<HTMLDivElement>(null)
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
 
   // Determine which completed outputs to show based on localStorage viewed timestamp
@@ -181,6 +183,18 @@ export function OccupancyChart({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studiesKey, demoDetections])
 
+  // Measure the enlarged chart column so charts get an explicit pixel height
+  useEffect(() => {
+    if (!isEnlarged) return
+    const el = enlargedChartAreaRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      setEnlargedChartAreaHeight(entries[0].contentRect.height)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [isEnlarged])
+
   // visibleOutputs drives the chart when not live; fall back to latestOutput for demo mode
   const completedSeries = visibleOutputs.length > 0
     ? visibleOutputs.map(o => ({ output: o, series: extractLineSeries(o) }))
@@ -231,6 +245,14 @@ export function OccupancyChart({
   }
 
   const renderCharts = (enlarged: boolean) => {
+    // Compute explicit per-chart canvas height for multi-study enlarged view.
+    // 130px accounts for series checkboxes + preset buttons + scrubber + live indicator.
+    // 26px per study accounts for the study label row.
+    const multiStudyCount = isLive ? allActiveStudies.length : completedSeries.length
+    const perStudyChartHeight = enlarged && multiStudyCount > 1
+      ? Math.max(150, Math.floor(enlargedChartAreaHeight / multiStudyCount) - 130 - (multiStudyCount > 1 ? 26 : 0))
+      : 0
+
     if (!isLive) {
       const n = completedSeries.length
       if (n === 0) return null
@@ -265,41 +287,25 @@ export function OccupancyChart({
       }
       // Multiple completed studies
       return (
-        <div className={enlarged ? "h-full flex flex-col overflow-hidden" : "flex flex-col"}>
+        <div className="flex flex-col overflow-y-auto">
           {completedSeries.map(({ output, series }, idx) => (
             <div
               key={output.study_id}
-              className={cn(
-                idx > 0 ? (enlarged ? "border-t border-border/50" : "border-t border-border/50 pt-1 mt-1") : "",
-                enlarged ? (n === 2 ? "h-1/2 flex flex-col overflow-hidden" : "flex-1 min-h-0 flex flex-col") : ""
-              )}
+              className={cn(idx > 0 ? "border-t border-border/50 pt-1 mt-1" : "")}
             >
-              <p className={cn("mb-0.5 truncate text-muted-foreground/60", enlarged ? "text-sm shrink-0" : "text-xs")}>
+              <p className={cn("mb-0.5 truncate text-muted-foreground/60", enlarged ? "text-sm" : "text-xs")}>
                 Study {idx + 1}: {studyNames?.[output.study_id] ?? output.study_id}
               </p>
-              {enlarged ? (
-                <TimeSeriesChart
-                  series={series}
-                  fillHeight
-                  xAxisLabel="Timestamp"
-                  yAxisLabel={series.length === 1 ? series[0].title : undefined}
-                  seriesDescriptions={metricDescriptions}
-                  isLive={false}
-                  compact={n > 1}
-                  enlarged
-                />
-              ) : (
-                <TimeSeriesChart
-                  series={series}
-                  height={n === 2 ? 200 : 160}
-                  xAxisLabel="Timestamp"
-                  yAxisLabel={series.length === 1 ? series[0].title : undefined}
-                  seriesDescriptions={metricDescriptions}
-                  isLive={false}
-                  compact={n > 1}
-                  enlarged={false}
-                />
-              )}
+              <TimeSeriesChart
+                series={series}
+                height={enlarged ? perStudyChartHeight : (n === 2 ? 200 : 160)}
+                xAxisLabel="Timestamp"
+                yAxisLabel={series.length === 1 ? series[0].title : undefined}
+                seriesDescriptions={metricDescriptions}
+                isLive={false}
+                compact={n > 1}
+                enlarged={enlarged}
+              />
             </div>
           ))}
         </div>
@@ -308,7 +314,7 @@ export function OccupancyChart({
 
     const n = allActiveStudies.length
     return (
-      <div className={enlarged ? "h-full flex flex-col overflow-hidden" : "flex flex-col"}>
+      <div className="flex flex-col overflow-y-auto">
         {allActiveStudies.map(({ study_id }, idx) => {
           const detections = perStudyDetections[study_id] ?? []
           const liveSeries = buildLiveSeries(detections)
@@ -317,13 +323,10 @@ export function OccupancyChart({
           return (
             <div
               key={study_id}
-              className={cn(
-                idx > 0 && n > 1 ? (enlarged ? "border-t border-border/50" : "border-t border-border/50 pt-1 mt-1") : "",
-                enlarged ? (n === 2 ? "h-1/2 flex flex-col overflow-hidden" : "flex-1 min-h-0 flex flex-col") : ""
-              )}
+              className={cn(idx > 0 && n > 1 ? "border-t border-border/50 pt-1 mt-1" : "")}
             >
               {n > 1 && (
-                <p className={cn("mb-0.5 truncate text-muted-foreground/60", enlarged ? "text-sm shrink-0" : "text-xs")}>
+                <p className={cn("mb-0.5 truncate text-muted-foreground/60", enlarged ? "text-sm" : "text-xs")}>
                   Study {idx + 1}: {studyNames?.[study_id] ?? study_id}
                 </p>
               )}
@@ -332,21 +335,10 @@ export function OccupancyChart({
                   <BarChart3 className="h-3 w-3 animate-pulse" />
                   <span>Waiting for data…</span>
                 </div>
-              ) : enlarged ? (
-                <TimeSeriesChart
-                  series={liveSeries}
-                  fillHeight
-                  xAxisLabel="Timestamp"
-                  yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
-                  seriesDescriptions={metricDescriptions}
-                  isLive={true}
-                  compact={false}
-                  enlarged
-                />
               ) : (
                 <TimeSeriesChart
                   series={liveSeries}
-                  height={n === 1 ? 200 : n === 2 ? 180 : 150}
+                  height={enlarged ? perStudyChartHeight : (n === 1 ? 200 : n === 2 ? 180 : 150)}
                   xAxisLabel="Timestamp"
                   yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
                   seriesDescriptions={metricDescriptions}
@@ -391,7 +383,7 @@ export function OccupancyChart({
             </DialogHeader>
             <div className="flex-1 min-h-0 flex flex-row gap-6 overflow-hidden">
               {/* Left: chart(s) — 60% width when live, full width otherwise */}
-              <div className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-hidden h-full`}>
+              <div ref={enlargedChartAreaRef} className={`${isLive && allActiveStudies.length > 0 ? "w-[60%] shrink-0" : "flex-1 min-w-0"} overflow-y-auto h-full`}>
                 {renderCharts(true)}
               </div>
               {/* Right: detections */}
