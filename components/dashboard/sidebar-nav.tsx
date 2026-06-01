@@ -161,7 +161,7 @@ export function SidebarNav({ defaultSpaceId }: { defaultSpaceId?: string }) {
             onClick={handleLaunchStudies}
             disabled={isLaunching}
             className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed",
+              "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground disabled:opacity-50 disabled:cursor-wait",
               collapsed && "justify-center px-0"
             )}
             title={isLaunching ? "Launching studies…" : "Launch EXPE studies"}
