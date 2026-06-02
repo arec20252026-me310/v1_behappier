@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,6 @@ import { FloorPlanGrid } from "@/components/space/floor-plan-grid"
 import type { Space, Zone, Metric, BEStudy, Camera } from "@/lib/types"
 import { LiveDetectionFeed, type DetectionRow } from "./live-detection-feed"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { deleteStudy } from "@/app/actions/study"
 import { Spinner } from "@/components/ui/spinner"
 import { formatDistanceToNow } from "date-fns"
@@ -119,39 +118,7 @@ function buildMessageText(form: FormData, metrics: Metric[], zones: Zone[], came
 export function StudiesManager({ space, initialStudies, zones, metrics, cameras = [], demoDetectionsByStudy, demo = false, spaceName }: StudiesManagerProps) {
   const router = useRouter()
   const sessionId = useRef<string>(crypto.randomUUID())
-  const [studies, setStudies] = useState<BEStudy[]>(initialStudies)
-
-  // Sync state when server re-renders with fresh initialStudies (e.g. after router.refresh())
-  useEffect(() => { setStudies(initialStudies) }, [initialStudies])
-
-  // Live subscription so study status updates (draft → running, running → complete, etc.)
-  // are reflected immediately without waiting for a manual refresh
-  useEffect(() => {
-    if (!space) return
-    const supabase = createClient()
-    const channel = supabase
-      .channel(`studies-manager-${space.id}`)
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "BE_studies",
-        filter: `building_id=eq.${space.id}`,
-      }, (payload) => {
-        const updated = payload.new as BEStudy
-        setStudies(prev => prev.map(s => s.study_id === updated.study_id ? { ...s, ...updated } : s))
-      })
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "BE_studies",
-        filter: `building_id=eq.${space.id}`,
-      }, (payload) => {
-        const inserted = payload.new as BEStudy
-        setStudies(prev => prev.some(s => s.study_id === inserted.study_id) ? prev : [inserted, ...prev])
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [space?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const studies = initialStudies
 
   const [showForm, setShowForm] = useState(false)
   const [editingStudy, setEditingStudy] = useState<BEStudy | null>(null)
