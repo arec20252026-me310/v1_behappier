@@ -306,7 +306,7 @@ export function OccupancyChart({
                     yAxisLabel={series.length === 1 ? series[0].title : undefined}
                     seriesDescriptions={metricDescriptions}
                     isLive={false}
-                    compact={n > 1}
+                    compact={false}
                     enlarged
                   />
                 </div>
