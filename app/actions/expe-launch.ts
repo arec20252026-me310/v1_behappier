@@ -119,9 +119,11 @@ export async function launchExpeStudies(): Promise<{ error?: string }> {
   const review_mode = await isReviewMode()
   const ts = Date.now()
 
-  const results = await Promise.all(
-    TEMPLATES.map((t) => startOneStudy(supabase, n8nUrl, review_mode, ts, t))
-  )
+  const results: { error?: string }[] = []
+  for (let i = 0; i < TEMPLATES.length; i++) {
+    if (i > 0) await new Promise(resolve => setTimeout(resolve, 1000))
+    results.push(await startOneStudy(supabase, n8nUrl, review_mode, ts, TEMPLATES[i]))
+  }
 
   const failed = results.find((r) => r.error)
   if (failed) return failed
