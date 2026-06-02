@@ -19,6 +19,8 @@ import { useRouter } from "next/navigation"
 import type { Zone, Insight, Space, Study, CameraPlacement, BELivePreviewMetrics, BEInsightOutput, BEStudy } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { LiveDetectionFeed, type DetectionRow } from "@/components/studies/live-detection-feed"
+import { EXPE_SPACE_ID } from "@/lib/demo-seeds"
+import { ZoneDetailDialog } from "@/components/dashboard/zone-detail-dialog"
 
 interface ZoneWithOccupancy extends Zone {
   currentOccupancy: number
@@ -155,6 +157,7 @@ export function SpaceHeatmap({
   const [cameras, setCameras] = useState<CameraPlacement[]>(cameraProp)
   const [insightsViewed, setInsightsViewed] = useState(false)
   const [isEnlarged, setIsEnlarged] = useState(false)
+  const [selectedZone, setSelectedZone] = useState<Zone | null>(null)
   const [detectionPanelHeight, setDetectionPanelHeight] = useState(0)
   const detectionPanelRef = useRef<HTMLDivElement>(null)
   // Per-zone occupancy: zoneId → latest count
@@ -361,6 +364,11 @@ export function SpaceHeatmap({
   }
 
   const handleZoneClick = (zone: ZoneWithOccupancy) => {
+    // In EXPE showcase mode, open the zone detail TV view instead of insight dialogs
+    if (localStorage.getItem("behappier_showcase_mode") === "true" && space?.id === EXPE_SPACE_ID) {
+      setSelectedZone(zone)
+      return
+    }
     // Check if this zone has a completed insight
     const zoneInsight = allCompletedZoneInsights.find(c => c.zoneId === zone.id)
     if (zoneInsight && !insightsViewed) {
@@ -672,6 +680,20 @@ export function SpaceHeatmap({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Zone detail TV view — EXPE showcase mode only */}
+      <ZoneDetailDialog
+        zone={selectedZone}
+        onClose={() => setSelectedZone(null)}
+        activeStudies={allActiveStudies}
+        mapGeometry={{
+          floorPlanUrl: floorPlanUrl ?? null,
+          effectiveCols,
+          effectiveRows,
+          imgOffsetXFrac,
+          imgOffsetYFrac,
+        }}
+      />
 
       {/* BE Insight dialog (from completed study) */}
       <Dialog open={!!selectedBEInsight} onOpenChange={(open) => !open && setSelectedBEInsight(null)}>
