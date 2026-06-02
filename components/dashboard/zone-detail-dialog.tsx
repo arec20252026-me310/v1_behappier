@@ -208,8 +208,8 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
               {/* Top 1/3: metric tiles side by side */}
               <div className="h-1/3 shrink-0 flex flex-row border-b border-border">
                 <div className="flex-1 flex flex-col items-center justify-center gap-2 p-6">
-                  <span className="text-3xl font-semibold uppercase tracking-widest text-muted-foreground">
-                    Occupancy
+                  <span className="text-3xl font-semibold uppercase tracking-widest text-muted-foreground text-center">
+                    Occupancy Count
                   </span>
                   <span className="text-[8rem] font-bold leading-none tabular-nums">
                     {values.occupancy !== null ? values.occupancy : "—"}
