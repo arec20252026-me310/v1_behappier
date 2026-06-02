@@ -343,7 +343,7 @@ export default async function DashboardPage() {
             return [{ zoneId, studyId: study.study_id, insights: insight }]
           })
 
-          const chartStudies = [
+          const chartStudiesUnsorted = [
             ...activeStudies.map(s => ({ study_id: s.study_id, status: s.status })),
             // In EXPE mode, fill up to 2 total with recently completed studies so both
             // zones stay visible when one finishes before the other. Never exceed 2.
@@ -354,6 +354,13 @@ export default async function DashboardPage() {
                   .map(s => ({ study_id: (s as { study_id: string }).study_id, status: s.status }))
               : []),
           ]
+          // In EXPE mode, always pin Quiet Zone (_q) as Study 1, Interaction Zone (_i) as Study 2
+          const chartStudies = space?.id === EXPE_SPACE_ID
+            ? [...chartStudiesUnsorted].sort((a, b) => {
+                const rank = (id: string) => id.endsWith("_q") ? 0 : id.endsWith("_i") ? 1 : 2
+                return rank(a.study_id) - rank(b.study_id)
+              })
+            : chartStudiesUnsorted
           const detectionCardStudies = activeStudies.map(s => ({ studyId: s.study_id, status: s.status, studyName: s.study_name ?? undefined }))
 
           return (
