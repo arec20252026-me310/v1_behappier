@@ -208,19 +208,19 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
               {/* Top 1/3: metric tiles side by side */}
               <div className="h-1/3 shrink-0 flex flex-row border-b border-border">
                 <div className="flex-1 flex flex-col items-center justify-center gap-2 p-6">
-                  <span className="text-xl font-semibold uppercase tracking-widest text-muted-foreground">
+                  <span className="text-3xl font-semibold uppercase tracking-widest text-muted-foreground">
                     Occupancy
                   </span>
-                  <span className="text-[6rem] font-bold leading-none tabular-nums">
+                  <span className="text-[8rem] font-bold leading-none tabular-nums">
                     {values.occupancy !== null ? values.occupancy : "—"}
                   </span>
                 </div>
                 <div className="border-l border-border" />
                 <div className="flex-1 flex flex-col items-center justify-center gap-2 p-6">
-                  <span className="text-xl font-semibold uppercase tracking-widest text-muted-foreground text-center">
+                  <span className="text-3xl font-semibold uppercase tracking-widest text-muted-foreground text-center">
                     Collaboration Index
                   </span>
-                  <span className="text-[6rem] font-bold leading-none tabular-nums">
+                  <span className="text-[8rem] font-bold leading-none tabular-nums">
                     {values.collaborationIndex !== null ? values.collaborationIndex : "—"}
                   </span>
                 </div>
@@ -232,7 +232,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
                   className="w-full flex items-center justify-between px-8 py-4 border-b border-border hover:bg-muted/40 transition-colors shrink-0"
                   onClick={() => setNotesExpanded(v => !v)}
                 >
-                  <span className="text-lg font-semibold uppercase tracking-widest text-muted-foreground">
+                  <span className="text-2xl font-semibold uppercase tracking-widest text-muted-foreground">
                     Latest Detection
                   </span>
                   {notesExpanded
