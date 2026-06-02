@@ -15,11 +15,13 @@ interface LatestDetectionCardProps {
   studyId?: string
   status?: string
   demoDetections?: DetectionRow[]
+  // Per-study demo detections keyed by study_id
+  demoDetectionsMap?: Record<string, DetectionRow[]>
   // Multi-study (real mode)
   studies?: StudyEntry[]
 }
 
-export function LatestDetectionCard({ studyId, status, demoDetections, studies }: LatestDetectionCardProps) {
+export function LatestDetectionCard({ studyId, status, demoDetections, demoDetectionsMap, studies }: LatestDetectionCardProps) {
   const allStudies: StudyEntry[] = studies && studies.length > 0
     ? studies
     : studyId ? [{ studyId, status: status ?? "running" }] : []
@@ -47,7 +49,7 @@ export function LatestDetectionCard({ studyId, status, demoDetections, studies }
               studyId={s.studyId}
               status={s.status}
               limit={1}
-              demoDetections={idx === 0 ? demoDetections : undefined}
+              demoDetections={demoDetectionsMap?.[s.studyId] ?? (idx === 0 ? demoDetections : undefined)}
             />
           </div>
         ))}

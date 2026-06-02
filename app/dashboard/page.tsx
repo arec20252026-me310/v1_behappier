@@ -135,9 +135,17 @@ export default async function DashboardPage() {
               livePreviewMetrics={scenario === "study-in-progress" ? null : demoLive}
               completedStudy={demoCompletedStudy}
               completedStudyInsights={demoCompletedInsights}
-              activeStudyId={scenario === "study-in-progress" ? (displayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id) : undefined}
-              activeStudyStatus={scenario === "study-in-progress" ? (displayStudy?.status ?? BE_STUDY_IN_PROGRESS.status) : undefined}
-              activeStudyMonitoredZoneId={scenario === "study-in-progress" ? (displayStudy?.metadata?.monitored_zone_id ?? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id) : undefined}
+              activeStudies={isExpe && scenario === "study-in-progress"
+                ? expeInProgressStudies!.map(s => ({
+                    study_id: s.study_id,
+                    status: s.status,
+                    monitoredZoneId: s.metadata.monitored_zone_id ?? null,
+                    study_name: s.metadata.study_name,
+                  }))
+                : undefined}
+              activeStudyId={!isExpe && scenario === "study-in-progress" ? (displayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id) : undefined}
+              activeStudyStatus={!isExpe && scenario === "study-in-progress" ? (displayStudy?.status ?? BE_STUDY_IN_PROGRESS.status) : undefined}
+              activeStudyMonitoredZoneId={!isExpe && scenario === "study-in-progress" ? (displayStudy?.metadata?.monitored_zone_id ?? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id) : undefined}
               demoDetections={scenario === "study-in-progress" ? _detections : undefined}
               tracksOccupancy={scenario === "study-in-progress"}
               isDemo={true}
@@ -164,12 +172,25 @@ export default async function DashboardPage() {
                 } : undefined}
                 demoDetections={!isExpe && scenario === "study-in-progress" ? _detections : undefined}
               />
-              {scenario === "study-in-progress" && !isExpe && (
-                <LatestDetectionCard
-                  studyId={displayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id}
-                  status={displayStudy?.status ?? BE_STUDY_IN_PROGRESS.status}
-                  demoDetections={_detections.slice(-1)}
-                />
+              {scenario === "study-in-progress" && (
+                isExpe ? (
+                  <LatestDetectionCard
+                    studies={[
+                      { studyId: EXPE_STUDY_Q_ID, status: "running", studyName: "Quiet Zone Study" },
+                      { studyId: EXPE_STUDY_I_ID, status: "running", studyName: "Interaction Zone Study" },
+                    ]}
+                    demoDetectionsMap={{
+                      [EXPE_STUDY_Q_ID]: DEMO_DETECTIONS_EXPE_Q.slice(-1),
+                      [EXPE_STUDY_I_ID]: DEMO_DETECTIONS_EXPE_I.slice(-1),
+                    }}
+                  />
+                ) : (
+                  <LatestDetectionCard
+                    studyId={displayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id}
+                    status={displayStudy?.status ?? BE_STUDY_IN_PROGRESS.status}
+                    demoDetections={_detections.slice(-1)}
+                  />
+                )
               )}
             </div>
           </div>
