@@ -6,23 +6,7 @@ import { revalidatePath } from "next/cache"
 
 const EXPE_SPACE_ID = "99eab524-a616-450c-9aa4-892f3346b854"
 
-const BEHAVIOR_TARGETS = [
-  {
-    behavior_name: "Occupancy",
-    behavior_description: "Number of people present within the observed area at a given instant",
-    behavior_units: "count",
-    behavior_rubric:
-      "Count every person visible within the observed area regardless of activity (seated, standing, walking). Include partially visible people if more than half their body is in frame. Score = total headcount. Score 0 if no people are present.",
-  },
-  {
-    behavior_name: "Collaboration Index",
-    behavior_description:
-      "Active collaborative clusters of 2 or more people within conversational distance, weighted by group size",
-    behavior_units: "score",
-    behavior_rubric:
-      "Identify distinct clusters of 2 or more people within approximately 2 meters of each other who are oriented toward one another (facing, in a circle, or side-by-side with shared attention). Score each cluster by the number of people in it minus 1: a group of 2 = 1 point, a group of 3 = 2 points, a group of 4 = 3 points, and so on. Do not count people who are physically close but clearly working independently (heads down, backs turned, no shared gaze or object). Score = sum of points across all clusters. Score 0 if no collaborative groups are visible.",
-  },
-]
+const TARGET_METRIC_NAMES = ["Occupancy", "Collaboration Index"]
 
 const STUDY_GOAL =
   "I want to know how many people are in the space at any given time and how collaborative they are."
@@ -53,12 +37,20 @@ function getServiceClient() {
   )
 }
 
+type BehaviorTarget = {
+  behavior_name: string
+  behavior_description: string
+  behavior_units: string
+  behavior_rubric: string
+}
+
 async function startOneStudy(
   supabase: ReturnType<typeof getServiceClient>,
   n8nUrl: string,
   review_mode: boolean,
   ts: number,
-  template: (typeof TEMPLATES)[number]
+  template: (typeof TEMPLATES)[number],
+  behaviorTargets: BehaviorTarget[]
 ): Promise<{ error?: string }> {
   const study_id = `study_${ts}_${template.suffix}`
 
@@ -89,7 +81,7 @@ async function startOneStudy(
       body: JSON.stringify({
         study_id,
         zone_ids: [template.zone_id],
-        behavior_targets: BEHAVIOR_TARGETS,
+        behavior_targets: behaviorTargets,
         setup_instructions: `Monitor the ${template.study_name.replace(" Occupancy and Collaboration Study", "")} for 5 minutes. Track occupancy count and collaboration index.`,
         camera_id: template.camera_id,
         review_mode,
@@ -120,10 +112,27 @@ export async function launchExpeStudies(): Promise<{ error?: string }> {
   const review_mode = await isReviewMode()
   const ts = Date.now()
 
+  // Fetch current rubrics from the metrics table so UI edits are picked up
+  const { data: metricsRows } = await supabase
+    .from("metrics")
+    .select("name, description, unit, rubric")
+    .eq("space_id", EXPE_SPACE_ID)
+    .in("name", TARGET_METRIC_NAMES)
+
+  const behaviorTargets: BehaviorTarget[] = TARGET_METRIC_NAMES.map(metricName => {
+    const row = metricsRows?.find((m: { name: string }) => m.name === metricName)
+    return {
+      behavior_name: metricName,
+      behavior_description: (row as { description?: string | null } | undefined)?.description ?? "",
+      behavior_units: (row as { unit?: string | null } | undefined)?.unit ?? "",
+      behavior_rubric: (row as { rubric?: string | null } | undefined)?.rubric ?? "",
+    }
+  })
+
   const results: { error?: string }[] = []
   for (let i = 0; i < TEMPLATES.length; i++) {
     if (i > 0) await new Promise(resolve => setTimeout(resolve, 1000))
-    results.push(await startOneStudy(supabase, n8nUrl, review_mode, ts, TEMPLATES[i]))
+    results.push(await startOneStudy(supabase, n8nUrl, review_mode, ts, TEMPLATES[i], behaviorTargets))
   }
 
   const failed = results.find((r) => r.error)
