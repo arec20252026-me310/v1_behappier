@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
@@ -71,22 +71,38 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
   const [notesExpanded, setNotesExpanded] = useState(true)
   const paneRef = useRef<HTMLDivElement>(null)
   const [paneSize, setPaneSize] = useState({ w: 0, h: 0 })
+  // Load the floor plan AR locally — browser cache makes this instant after heatmap has loaded it
+  const [localAR, setLocalAR] = useState<number | null>(mapGeometry.imgAspectRatio)
 
   const isLive = activeStudies.some(
     s => s.monitoredZoneId === zone?.id && s.status === "running"
   )
 
-  // Measure left pane dimensions so the crop math uses real pixels
+  // Keep localAR in sync with parent (parent may have it before dialog mounts)
   useEffect(() => {
+    if (mapGeometry.imgAspectRatio) {
+      setLocalAR(mapGeometry.imgAspectRatio)
+      return
+    }
+    const url = mapGeometry.floorPlanUrl
+    if (!url) return
+    const img = new Image()
+    img.onload = () => setLocalAR(img.naturalWidth / img.naturalHeight)
+    img.src = url
+  }, [mapGeometry.floorPlanUrl, mapGeometry.imgAspectRatio])
+
+  // Measure the left pane synchronously on mount and on live state change (pane resizes w-full ↔ w-1/2)
+  useLayoutEffect(() => {
     const el = paneRef.current
     if (!el) return
+    setPaneSize({ w: el.clientWidth, h: el.clientHeight })
     const ro = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect
       setPaneSize({ w: width, h: height })
     })
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
+  }, [isLive])
 
   useEffect(() => {
     if (!zone) return
@@ -126,8 +142,8 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
   // Compute cropped image position: scale image so the zone region fills the pane width,
   // then center the zone vertically within the pane.
   const cropImg = (() => {
-    const { floorPlanUrl, effectiveCols, effectiveRows, imgOffsetXFrac, imgOffsetYFrac, imgAspectRatio } = mapGeometry
-    if (!floorPlanUrl || !zone || !imgAspectRatio || paneSize.w === 0 || paneSize.h === 0) return null
+    const { floorPlanUrl, effectiveCols, effectiveRows, imgOffsetXFrac, imgOffsetYFrac } = mapGeometry
+    if (!floorPlanUrl || !zone || !localAR || paneSize.w === 0 || paneSize.h === 0) return null
 
     // Fraction of the image (0–1) that the zone occupies, accounting for letterbox padding
     const contentW = 1 - 2 * imgOffsetXFrac
@@ -139,7 +155,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
 
     // Scale image so the zone's width exactly fills the pane width
     const imgW = paneSize.w / zoneXwidth
-    const imgH = imgW / imgAspectRatio
+    const imgH = imgW / localAR
 
     const imgLeft = -zoneXstart * imgW
     // Center zone vertically in pane
