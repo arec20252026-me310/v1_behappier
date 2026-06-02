@@ -103,10 +103,11 @@ async function startOneStudy(
     return { error: err instanceof Error ? err.message : "n8n call failed" }
   }
 
-  await supabase
+  const { error: updateError } = await supabase
     .from("BE_studies")
     .update({ status: "running", started_at: new Date().toISOString() })
     .eq("study_id", study_id)
+  if (updateError) return { error: updateError.message }
 
   return {}
 }
