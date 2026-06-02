@@ -119,10 +119,11 @@ export function OccupancyChart({
 
   const studiesKey = allActiveStudies.map(s => s.study_id).sort().join(",")
   const isLive = allActiveStudies.length > 0
+  const hasRunningStudy = allActiveStudies.some(s => s.status === "running" || s.status === "analyzing")
 
-  // Update "X ago" label every second while live
+  // Update "X ago" label every second while a study is running
   useEffect(() => {
-    if (!isLive || lastDetectionAt === null) { setAgoText(null); return }
+    if (!hasRunningStudy || lastDetectionAt === null) { setAgoText(null); return }
     const update = () => {
       const s = Math.floor((Date.now() - lastDetectionAt) / 1000)
       setAgoText(s < 60 ? `${s}s ago` : `${Math.floor(s / 60)}m ago`)
@@ -344,10 +345,11 @@ export function OccupancyChart({
     const n = allActiveStudies.length
     return (
       <div className="flex flex-col overflow-y-auto">
-        {allActiveStudies.map(({ study_id }, idx) => {
+        {allActiveStudies.map(({ study_id, status }, idx) => {
           const detections = perStudyDetections[study_id] ?? []
           const liveSeries = buildLiveSeries(detections)
           const isCompact = !enlarged && n > 1
+          const studyIsLive = status === "running" || status === "analyzing"
 
           return (
             <div
@@ -371,7 +373,7 @@ export function OccupancyChart({
                   xAxisLabel="Timestamp"
                   yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
                   seriesDescriptions={metricDescriptions}
-                  isLive={true}
+                  isLive={studyIsLive}
                   compact={isCompact}
                   enlarged={enlarged}
                 />
@@ -388,8 +390,8 @@ export function OccupancyChart({
       <Card className="bg-card border-border pt-2 pb-4">
         <CardHeader className="pt-1.5 pb-1.5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
-            <CardTitle className="text-xl font-medium">{isLive ? (allActiveStudies.length > 1 ? "Current Studies" : "Current Study") : completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</CardTitle>
-            {isLive && agoText && (
+            <CardTitle className="text-xl font-medium">{hasRunningStudy ? (allActiveStudies.length > 1 ? "Current Studies" : "Current Study") : isLive || completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</CardTitle>
+            {hasRunningStudy && agoText && (
               <span className="text-xs text-muted-foreground font-normal">Last detection {agoText}</span>
             )}
           </div>
@@ -406,7 +408,7 @@ export function OccupancyChart({
           <div className="flex flex-col h-full p-4">
             <DialogHeader className="shrink-0 pb-3">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-5xl font-medium">{isLive ? (allActiveStudies.length > 1 ? "Current Studies" : "Current Study") : completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</DialogTitle>
+                <DialogTitle className="text-5xl font-medium">{hasRunningStudy ? (allActiveStudies.length > 1 ? "Current Studies" : "Current Study") : isLive || completedSeries.length > 1 ? "Recent Studies" : "Most Recent Study"}</DialogTitle>
               </div>
               <DialogDescription className="sr-only">Enlarged occupancy chart</DialogDescription>
             </DialogHeader>
@@ -422,6 +424,7 @@ export function OccupancyChart({
                   {allActiveStudies.map((s, idx) => {
                     const detections = perStudyDetections[s.study_id] ?? []
                     const liveSeries = buildLiveSeries(detections)
+                    const studyIsLive = s.status === "running" || s.status === "analyzing"
                     return (
                       <div
                         key={s.study_id}
@@ -447,7 +450,7 @@ export function OccupancyChart({
                               xAxisLabel="Timestamp"
                               yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
                               seriesDescriptions={metricDescriptions}
-                              isLive={true}
+                              isLive={studyIsLive}
                               compact={false}
                               enlarged
                             />
