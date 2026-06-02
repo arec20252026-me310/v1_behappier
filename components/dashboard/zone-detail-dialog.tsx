@@ -242,9 +242,9 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
                 {notesExpanded && (
                   <div className="flex-1 min-h-0 overflow-y-auto px-8 py-5">
                     {values.timestamp && (
-                      <p className="text-base text-muted-foreground mb-4">{values.timestamp}</p>
+                      <p className="text-2xl text-muted-foreground mb-4">{values.timestamp}</p>
                     )}
-                    <p className="text-xl leading-relaxed">
+                    <p className="text-3xl leading-relaxed">
                       {values.notes ?? "Waiting for detection…"}
                     </p>
                   </div>
