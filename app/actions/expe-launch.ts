@@ -105,7 +105,7 @@ async function startOneStudy(
 
   const { error: updateError } = await supabase
     .from("BE_studies")
-    .update({ status: "running", started_at: new Date().toISOString() })
+    .update({ status: "running", current_stage: "monitoring_running", started_at: new Date().toISOString() })
     .eq("study_id", study_id)
   if (updateError) return { error: updateError.message }
 
