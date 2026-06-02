@@ -174,8 +174,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
         <div className="flex flex-row h-full">
           {/* Left pane: zone image — full width when no study running */}
           <div
-            className={cn("relative overflow-hidden shrink-0", isLive ? "w-1/2" : "w-full")}
-            style={{ backgroundColor: zone?.color ?? "#6366f1" }}
+            className={cn("relative overflow-hidden shrink-0 bg-black", isLive ? "w-1/2" : "w-full")}
           >
             {zoneImageSrc && (
               // eslint-disable-next-line @next/next/no-img-element
