@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
@@ -69,40 +69,23 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     timestamp: null,
   })
   const [notesExpanded, setNotesExpanded] = useState(true)
-  const paneRef = useRef<HTMLDivElement>(null)
-  const [paneSize, setPaneSize] = useState({ w: 0, h: 0 })
-  // Load the floor plan AR locally — browser cache makes this instant after heatmap has loaded it
+  // Load floor plan AR locally so we don't depend on the parent having loaded it yet.
+  // new Image() is synchronous from browser cache once the heatmap has fetched it.
   const [localAR, setLocalAR] = useState<number | null>(mapGeometry.imgAspectRatio)
 
   const isLive = activeStudies.some(
     s => s.monitoredZoneId === zone?.id && s.status === "running"
   )
 
-  // Keep localAR in sync with parent (parent may have it before dialog mounts)
   useEffect(() => {
-    if (mapGeometry.imgAspectRatio) {
-      setLocalAR(mapGeometry.imgAspectRatio)
-      return
-    }
+    const ar = mapGeometry.imgAspectRatio
+    if (ar) { setLocalAR(ar); return }
     const url = mapGeometry.floorPlanUrl
     if (!url) return
     const img = new Image()
     img.onload = () => setLocalAR(img.naturalWidth / img.naturalHeight)
     img.src = url
   }, [mapGeometry.floorPlanUrl, mapGeometry.imgAspectRatio])
-
-  // Measure the left pane synchronously on mount and on live state change (pane resizes w-full ↔ w-1/2)
-  useLayoutEffect(() => {
-    const el = paneRef.current
-    if (!el) return
-    setPaneSize({ w: el.clientWidth, h: el.clientHeight })
-    const ro = new ResizeObserver(entries => {
-      const { width, height } = entries[0].contentRect
-      setPaneSize({ w: width, h: height })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [isLive])
 
   useEffect(() => {
     if (!zone) return
@@ -139,13 +122,19 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     return () => { supabase.removeChannel(channel) }
   }, [zone?.id])
 
-  // Compute cropped image position: scale image so the zone region fills the pane width,
-  // then center the zone vertically within the pane.
+  // Compute cropped image position.
+  // The dialog is always 92vw × 92vh; left pane is half when live, full otherwise.
+  // Using window dimensions directly avoids measuring the pane via a ref (portals can
+  // return clientWidth=0 before the browser has laid out the portal element).
   const cropImg = (() => {
+    if (typeof window === "undefined") return null
     const { floorPlanUrl, effectiveCols, effectiveRows, imgOffsetXFrac, imgOffsetYFrac } = mapGeometry
-    if (!floorPlanUrl || !zone || !localAR || paneSize.w === 0 || paneSize.h === 0) return null
+    if (!floorPlanUrl || !zone || !localAR) return null
 
-    // Fraction of the image (0–1) that the zone occupies, accounting for letterbox padding
+    const paneW = window.innerWidth * 0.92 * (isLive ? 0.5 : 1.0)
+    const paneH = window.innerHeight * 0.92
+
+    // Zone's position in image-normalized coords (0–1), accounting for letterbox padding
     const contentW = 1 - 2 * imgOffsetXFrac
     const contentH = 1 - 2 * imgOffsetYFrac
     const zoneXstart = (zone.grid_x / effectiveCols) / contentW
@@ -154,14 +143,14 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     const zoneYheight = (zone.grid_height / effectiveRows) / contentH
 
     // Scale image so the zone's width exactly fills the pane width
-    const imgW = paneSize.w / zoneXwidth
+    const imgW = paneW / zoneXwidth
     const imgH = imgW / localAR
 
     const imgLeft = -zoneXstart * imgW
     // Center zone vertically in pane
     const zoneTopPx = zoneYstart * imgH
     const zoneHeightPx = zoneYheight * imgH
-    const imgTop = -(zoneTopPx + (zoneHeightPx - paneSize.h) / 2)
+    const imgTop = -(zoneTopPx + (zoneHeightPx - paneH) / 2)
 
     return { src: floorPlanUrl, imgW, imgH, imgLeft, imgTop }
   })()
@@ -175,7 +164,6 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
         <div className="flex flex-row h-full">
           {/* Left pane: cropped floor plan — full width when no study running */}
           <div
-            ref={paneRef}
             className={cn("relative overflow-hidden shrink-0", isLive ? "w-1/2" : "w-full")}
             style={{ backgroundColor: zone?.color ?? "#6366f1" }}
           >
