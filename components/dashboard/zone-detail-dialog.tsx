@@ -167,7 +167,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
 
   return (
     <Dialog open={!!zone} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[92vw] w-[92vw] h-[92vh] p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[98vw] w-[98vw] h-[98vh] p-0 gap-0 overflow-hidden">
         <DialogTitle className="sr-only">{zone?.name ?? "Zone Detail"}</DialogTitle>
         <DialogDescription className="sr-only">Live zone detail view</DialogDescription>
 
@@ -183,13 +183,9 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
                 src={zoneImageSrc}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover"
-                style={{ pointerEvents: "none" }}
+                style={{ pointerEvents: "none", opacity: 0.75 }}
               />
             )}
-            <div
-              className="absolute inset-0"
-              style={{ backgroundColor: zone?.color ?? "#6366f1", opacity: 0.2 }}
-            />
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
               <span className="text-5xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                 {zone?.name}
