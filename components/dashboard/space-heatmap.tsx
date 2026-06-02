@@ -364,10 +364,14 @@ export function SpaceHeatmap({
   }
 
   const handleZoneClick = (zone: ZoneWithOccupancy) => {
-    // In EXPE showcase mode, open the zone detail TV view instead of insight dialogs
+    // In EXPE showcase mode, open the zone detail TV view — but only when the zone
+    // has no pending completed insights to show (those still use the insight popup).
     if (localStorage.getItem("behappier_showcase_mode") === "true" && space?.id === EXPE_SPACE_ID) {
-      setSelectedZone(zone)
-      return
+      const hasPendingInsight = allCompletedZoneInsights.some(c => c.zoneId === zone.id) && !insightsViewed
+      if (!hasPendingInsight) {
+        setSelectedZone(zone)
+        return
+      }
     }
     // Check if this zone has a completed insight
     const zoneInsight = allCompletedZoneInsights.find(c => c.zoneId === zone.id)
@@ -692,6 +696,7 @@ export function SpaceHeatmap({
           effectiveRows,
           imgOffsetXFrac,
           imgOffsetYFrac,
+          imgAspectRatio,
         }}
       />
 

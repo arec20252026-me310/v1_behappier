@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
@@ -18,6 +18,7 @@ export interface MapGeometry {
   effectiveRows: number
   imgOffsetXFrac: number
   imgOffsetYFrac: number
+  imgAspectRatio: number | null
 }
 
 interface ActiveStudyEntry {
@@ -68,10 +69,24 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     timestamp: null,
   })
   const [notesExpanded, setNotesExpanded] = useState(true)
+  const paneRef = useRef<HTMLDivElement>(null)
+  const [paneSize, setPaneSize] = useState({ w: 0, h: 0 })
 
   const isLive = activeStudies.some(
     s => s.monitoredZoneId === zone?.id && s.status === "running"
   )
+
+  // Measure left pane dimensions so the crop math uses real pixels
+  useEffect(() => {
+    const el = paneRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect
+      setPaneSize({ w: width, h: height })
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!zone) return
@@ -108,19 +123,31 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     return () => { supabase.removeChannel(channel) }
   }, [zone?.id])
 
-  const bgStyle: React.CSSProperties = (() => {
-    const { floorPlanUrl, effectiveCols, effectiveRows, imgOffsetXFrac, imgOffsetYFrac } = mapGeometry
-    if (!floorPlanUrl || !zone) return { backgroundColor: zone?.color ?? "#6366f1" }
-    const bgSizeX = (1 - 2 * imgOffsetXFrac) * effectiveCols / zone.grid_width * 100
-    const bgSizeY = (1 - 2 * imgOffsetYFrac) * effectiveRows / zone.grid_height * 100
-    const bgPosX = -(zone.grid_x / zone.grid_width) * 100
-    const bgPosY = -(zone.grid_y / zone.grid_height) * 100
-    return {
-      backgroundImage: `url(${floorPlanUrl})`,
-      backgroundSize: `${bgSizeX}% ${bgSizeY}%`,
-      backgroundPosition: `${bgPosX}% ${bgPosY}%`,
-      backgroundRepeat: "no-repeat",
-    }
+  // Compute cropped image position: scale image so the zone region fills the pane width,
+  // then center the zone vertically within the pane.
+  const cropImg = (() => {
+    const { floorPlanUrl, effectiveCols, effectiveRows, imgOffsetXFrac, imgOffsetYFrac, imgAspectRatio } = mapGeometry
+    if (!floorPlanUrl || !zone || !imgAspectRatio || paneSize.w === 0 || paneSize.h === 0) return null
+
+    // Fraction of the image (0–1) that the zone occupies, accounting for letterbox padding
+    const contentW = 1 - 2 * imgOffsetXFrac
+    const contentH = 1 - 2 * imgOffsetYFrac
+    const zoneXstart = (zone.grid_x / effectiveCols) / contentW
+    const zoneXwidth = (zone.grid_width / effectiveCols) / contentW
+    const zoneYstart = (zone.grid_y / effectiveRows) / contentH
+    const zoneYheight = (zone.grid_height / effectiveRows) / contentH
+
+    // Scale image so the zone's width exactly fills the pane width
+    const imgW = paneSize.w / zoneXwidth
+    const imgH = imgW / imgAspectRatio
+
+    const imgLeft = -zoneXstart * imgW
+    // Center zone vertically in pane
+    const zoneTopPx = zoneYstart * imgH
+    const zoneHeightPx = zoneYheight * imgH
+    const imgTop = -(zoneTopPx + (zoneHeightPx - paneSize.h) / 2)
+
+    return { src: floorPlanUrl, imgW, imgH, imgLeft, imgTop }
   })()
 
   return (
@@ -132,9 +159,25 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
         <div className="flex flex-row h-full">
           {/* Left pane: cropped floor plan — full width when no study running */}
           <div
+            ref={paneRef}
             className={cn("relative overflow-hidden shrink-0", isLive ? "w-1/2" : "w-full")}
-            style={bgStyle}
+            style={{ backgroundColor: zone?.color ?? "#6366f1" }}
           >
+            {cropImg && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cropImg.src}
+                alt=""
+                style={{
+                  position: "absolute",
+                  width: cropImg.imgW,
+                  height: cropImg.imgH,
+                  left: cropImg.imgLeft,
+                  top: cropImg.imgTop,
+                  pointerEvents: "none",
+                }}
+              />
+            )}
             <div
               className="absolute inset-0"
               style={{ backgroundColor: zone?.color ?? "#6366f1", opacity: 0.2 }}
