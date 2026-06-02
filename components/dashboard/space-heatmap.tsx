@@ -697,6 +697,7 @@ export function SpaceHeatmap({
           imgOffsetXFrac,
           imgOffsetYFrac,
           imgAspectRatio,
+          spaceId: space?.id ?? null,
         }}
       />
 

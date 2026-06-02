@@ -19,6 +19,7 @@ export interface MapGeometry {
   imgOffsetXFrac: number
   imgOffsetYFrac: number
   imgAspectRatio: number | null
+  spaceId: string | null
 }
 
 interface ActiveStudyEntry {
@@ -72,8 +73,11 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
   // Load floor plan AR locally — browser cache makes this instant after heatmap loads it
   const [localAR, setLocalAR] = useState<number | null>(mapGeometry.imgAspectRatio)
 
-  const isLive = activeStudies.some(
-    s => s.monitoredZoneId === zone?.id && s.status === "running"
+  // isLive is driven by a live Supabase subscription rather than the server-rendered
+  // activeStudies prop, which goes stale when n8n resets a study back to draft after
+  // our server action already returned success.
+  const [isLive, setIsLive] = useState(() =>
+    activeStudies.some(s => s.monitoredZoneId === zone?.id && s.status === "running")
   )
 
   useEffect(() => {
@@ -85,6 +89,51 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     img.onload = () => setLocalAR(img.naturalWidth / img.naturalHeight)
     img.src = url
   }, [mapGeometry.floorPlanUrl, mapGeometry.imgAspectRatio])
+
+  // Subscribe to BE_studies changes so isLive reflects actual DB state, not stale props
+  useEffect(() => {
+    if (!zone) return
+    const { spaceId } = mapGeometry
+    if (!spaceId) {
+      setIsLive(activeStudies.some(s => s.monitoredZoneId === zone.id && s.status === "running"))
+      return
+    }
+
+    const supabase = createClient()
+
+    const checkIsLive = async () => {
+      const { data } = await supabase
+        .from("BE_studies")
+        .select("study_id, metadata")
+        .eq("building_id", spaceId)
+        .eq("status", "running")
+      const live = data?.some(s => {
+        const zones = (s.metadata as { target_zones?: string[] } | null)?.target_zones
+        return Array.isArray(zones) && zones.includes(zone.id)
+      }) ?? false
+      setIsLive(live)
+    }
+
+    checkIsLive()
+
+    const channel = supabase
+      .channel(`zone-study-status-${zone.id}`)
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "BE_studies",
+        filter: `building_id=eq.${spaceId}`,
+      }, () => checkIsLive())
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "BE_studies",
+        filter: `building_id=eq.${spaceId}`,
+      }, () => checkIsLive())
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [zone?.id, mapGeometry.spaceId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!zone) return
@@ -147,11 +196,9 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     const paneAR = paneW / paneH
     let imgW: number, imgH: number
     if (zoneAR > paneAR) {
-      // Zone wider than pane → constrain by width
       imgW = paneW / zoneXwidth
       imgH = imgW / localAR
     } else {
-      // Zone taller than pane → constrain by height
       imgH = paneH / zoneYheight
       imgW = imgH * localAR
     }

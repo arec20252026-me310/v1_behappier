@@ -122,7 +122,7 @@ export async function launchExpeStudies(): Promise<{ error?: string }> {
 
   const results: { error?: string }[] = []
   for (let i = 0; i < TEMPLATES.length; i++) {
-    if (i > 0) await new Promise(resolve => setTimeout(resolve, 1000))
+    if (i > 0) await new Promise(resolve => setTimeout(resolve, 3000))
     results.push(await startOneStudy(supabase, n8nUrl, review_mode, ts, TEMPLATES[i]))
   }
 
