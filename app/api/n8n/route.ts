@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
 
     await supabase
       .from("BE_studies")
-      .update({ status: "running", started_at: new Date().toISOString() })
+      .update({ status: "running", current_stage: "monitoring_running", started_at: new Date().toISOString() })
       .eq("study_id", study_id)
 
     const data = await response.json().catch(() => ({}))
