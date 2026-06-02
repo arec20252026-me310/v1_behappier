@@ -209,7 +209,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
               <div className="h-1/3 shrink-0 flex flex-row border-b border-border">
                 <div className="flex-1 flex flex-col items-center justify-center gap-2 p-6">
                   <span className="text-3xl font-semibold uppercase tracking-widest text-muted-foreground text-center">
-                    Occupancy Count
+                    Occupancy<br />Count
                   </span>
                   <span className="text-[8rem] font-bold leading-none tabular-nums">
                     {values.occupancy !== null ? values.occupancy : "—"}
