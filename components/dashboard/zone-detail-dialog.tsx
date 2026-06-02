@@ -12,6 +12,11 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Zone } from "@/lib/types"
 
+const ZONE_IMAGES: Record<string, string> = {
+  "816023aa-06f3-4446-9574-a7bb13c1c1de": "/expe/quiet-zone.png",
+  "f0725c0e-5921-4fa9-824f-dc1e6313d5ac": "/expe/interaction-zone.png",
+}
+
 export interface MapGeometry {
   floorPlanUrl: string | null
   effectiveCols: number
@@ -70,8 +75,6 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     timestamp: null,
   })
   const [notesExpanded, setNotesExpanded] = useState(true)
-  // Load floor plan AR locally — browser cache makes this instant after heatmap loads it
-  const [localAR, setLocalAR] = useState<number | null>(mapGeometry.imgAspectRatio)
 
   // isLive is driven by a live Supabase subscription rather than the server-rendered
   // activeStudies prop, which goes stale when n8n resets a study back to draft after
@@ -79,16 +82,6 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
   const [isLive, setIsLive] = useState(() =>
     activeStudies.some(s => s.monitoredZoneId === zone?.id && s.status === "running")
   )
-
-  useEffect(() => {
-    const ar = mapGeometry.imgAspectRatio
-    if (ar) { setLocalAR(ar); return }
-    const url = mapGeometry.floorPlanUrl
-    if (!url) return
-    const img = new Image()
-    img.onload = () => setLocalAR(img.naturalWidth / img.naturalHeight)
-    img.src = url
-  }, [mapGeometry.floorPlanUrl, mapGeometry.imgAspectRatio])
 
   // Subscribe to BE_studies changes so isLive reflects actual DB state, not stale props
   useEffect(() => {
@@ -170,47 +163,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     return () => { supabase.removeChannel(channel) }
   }, [zone?.id])
 
-  // Compute cropped image position using object-contain semantics for the zone:
-  // scale the image so the zone fits WITHIN the pane (neither cropping the zone
-  // width nor height), then center the zone in the pane.
-  //
-  // Uses window dimensions directly — avoids clientWidth=0 in Radix portals.
-  const cropImg = (() => {
-    if (typeof window === "undefined") return null
-    const { floorPlanUrl, effectiveCols, effectiveRows, imgOffsetXFrac, imgOffsetYFrac } = mapGeometry
-    if (!floorPlanUrl || !zone || !localAR) return null
-
-    const paneW = window.innerWidth * 0.92 * (isLive ? 0.5 : 1.0)
-    const paneH = window.innerHeight * 0.92
-
-    // Zone's position in image-normalized coords (0–1 within the actual image content)
-    const contentW = 1 - 2 * imgOffsetXFrac
-    const contentH = 1 - 2 * imgOffsetYFrac
-    const zoneXstart = (zone.grid_x / effectiveCols) / contentW
-    const zoneXwidth = (zone.grid_width / effectiveCols) / contentW
-    const zoneYstart = (zone.grid_y / effectiveRows) / contentH
-    const zoneYheight = (zone.grid_height / effectiveRows) / contentH
-
-    // Object-contain: pick the scale that makes the zone fit within the pane
-    const zoneAR = (zoneXwidth / zoneYheight) * localAR
-    const paneAR = paneW / paneH
-    let imgW: number, imgH: number
-    if (zoneAR > paneAR) {
-      imgW = paneW / zoneXwidth
-      imgH = imgW / localAR
-    } else {
-      imgH = paneH / zoneYheight
-      imgW = imgH * localAR
-    }
-
-    // Center the zone in the pane
-    const zonePxW = zoneXwidth * imgW
-    const zonePxH = zoneYheight * imgH
-    const imgLeft = (paneW - zonePxW) / 2 - zoneXstart * imgW
-    const imgTop = (paneH - zonePxH) / 2 - zoneYstart * imgH
-
-    return { src: floorPlanUrl, imgW, imgH, imgLeft, imgTop }
-  })()
+  const zoneImageSrc = zone ? (ZONE_IMAGES[zone.id] ?? null) : null
 
   return (
     <Dialog open={!!zone} onOpenChange={(open) => !open && onClose()}>
@@ -219,24 +172,18 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
         <DialogDescription className="sr-only">Live zone detail view</DialogDescription>
 
         <div className="flex flex-row h-full">
-          {/* Left pane: cropped floor plan — full width when no study running */}
+          {/* Left pane: zone image — full width when no study running */}
           <div
             className={cn("relative overflow-hidden shrink-0", isLive ? "w-1/2" : "w-full")}
             style={{ backgroundColor: zone?.color ?? "#6366f1" }}
           >
-            {cropImg && (
+            {zoneImageSrc && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={cropImg.src}
+                src={zoneImageSrc}
                 alt=""
-                style={{
-                  position: "absolute",
-                  width: cropImg.imgW,
-                  height: cropImg.imgH,
-                  left: cropImg.imgLeft,
-                  top: cropImg.imgTop,
-                  pointerEvents: "none",
-                }}
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ pointerEvents: "none" }}
               />
             )}
             <div

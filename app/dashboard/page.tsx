@@ -343,7 +343,16 @@ export default async function DashboardPage() {
             return [{ zoneId, studyId: study.study_id, insights: insight }]
           })
 
-          const chartStudies = activeStudies.map(s => ({ study_id: s.study_id, status: s.status }))
+          const chartStudies = [
+            ...activeStudies.map(s => ({ study_id: s.study_id, status: s.status })),
+            // In EXPE mode keep recently completed studies in the chart so both zones
+            // remain visible when one finishes before the other
+            ...(space?.id === EXPE_SPACE_ID
+              ? completedStudies
+                  .filter(s => !activeStudies.some(a => a.study_id === (s as { study_id: string }).study_id))
+                  .map(s => ({ study_id: (s as { study_id: string }).study_id, status: s.status }))
+              : []),
+          ]
           const detectionCardStudies = activeStudies.map(s => ({ studyId: s.study_id, status: s.status, studyName: s.study_name ?? undefined }))
 
           return (
