@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "\nconst studyId = $json.study_id ?? 'study_test_001';\nconst outputMode = $json.output_mode ?? 'final_insights';\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\nconst headers = { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json' };\n\nconst studyRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(studyId) + '&limit=1', headers });\nconst study = Array.isArray(studyRes) ? studyRes[0] : null;\nif (!study) throw new Error('Study not found: ' + studyId);\n\nconst detectionsRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_behavior_detections?study_id=eq.' + encodeURIComponent(studyId) + '&order=timestamp.asc&limit=1000', headers });\nconst detections = Array.isArray(detectionsRes) ? detectionsRes : [];\n\n// Duration label\nconst durationSeconds = study.duration_seconds ?? 0;\nlet durationLabel;\nif (durationSeconds < 60) { durationLabel = durationSeconds + ' seconds'; }\nelse if (durationSeconds < 3600) { const m = Math.round(durationSeconds / 60); durationLabel = m + ' minute' + (m === 1 ? '' : 's'); }\nelse { const h = (durationSeconds / 3600).toFixed(1); durationLabel = h + ' hour' + (h === '1.0' ? '' : 's'); }\n\nconst detectionCount = detections.length;\n\n// Build detection log table in code — NOT sent to the model\n// Format: one row per behavior per frame\nconst detectionLogRows = [];\nfor (const d of detections) {\n  const ts = d.timestamp_pt ?? d.timestamp;\n  const behaviors = d.detected_behaviors ?? [];\n  if (behaviors.length === 0) {\n    detectionLogRows.push([ts, '', '', '', d.notes ?? '']);\n  } else {\n    for (const b of behaviors) {\n      detectionLogRows.push([ts, b.name ?? '', b.value ?? 0, b.unit ?? '', d.notes ?? '']);\n    }\n  }\n}\n\nconst detectionLogTable = {\n  table_id: 'table_detection_log',\n  title: 'Detection Log',\n  columns: ['timestamp', 'behavior_name', 'value', 'unit', 'notes'],\n  rows: detectionLogRows,\n};\n\n// Compact detection_summary sent to the model for chart/insight generation\n// Uses same structure but keeps full data — model needs all values for accurate charts\nconst detectionSummary = detections.map(d => ({\n  timestamp: d.timestamp_pt ?? d.timestamp,\n  detected_behaviors: d.detected_behaviors ?? [],\n  notes: d.notes ?? '',\n}));\n\nreturn [{ json: {\n  study_id: studyId,\n  output_mode: outputMode,\n  study_plan: study.study_plan ?? {},\n  graph_plan: study.graph_plan ?? {},\n  instructions: study.metadata?.instructions ?? '',\n  data_context: {\n    duration_seconds: durationSeconds,\n    duration_label: durationLabel,\n    detection_count: detectionCount,\n    sampling_note: 'This study captured ' + detectionCount + ' data point' + (detectionCount === 1 ? '' : 's') + ' over ' + durationLabel + '.',\n  },\n  // Sent to model for chart and insight generation\n  detection_summary: detectionSummary,\n  // Built in code — merged into final output AFTER model call, never sent to model\n  _detection_log_table: detectionLogTable,\n} }];\n"
+        "jsCode": "\nconst input = $json.body ?? $json;\nconst studyId = input.study_id ?? 'study_test_001';\nconst outputMode = input.output_mode ?? 'final_insights';\nconst supabaseUrl = $env.SUPABASE_URL || 'https://SET_SUPABASE_URL';\nconst supabaseKey = $env.SUPABASE_SERVICE_ROLE_KEY || 'SET_SUPABASE_SERVICE_ROLE_KEY';\nconst headers = { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey, 'Content-Type': 'application/json' };\n\nconst studyRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_studies?study_id=eq.' + encodeURIComponent(studyId) + '&limit=1', headers });\nconst study = Array.isArray(studyRes) ? studyRes[0] : null;\nif (!study) throw new Error('Study not found: ' + studyId);\n\nconst detectionsRes = await this.helpers.httpRequest({ method: 'GET', url: supabaseUrl + '/rest/v1/BE_behavior_detections?study_id=eq.' + encodeURIComponent(studyId) + '&order=timestamp.asc&limit=1000', headers });\nconst detections = Array.isArray(detectionsRes) ? detectionsRes : [];\n\nconst durationSeconds = study.duration_seconds ?? 0;\nlet durationLabel;\nif (durationSeconds < 60) { durationLabel = durationSeconds + ' seconds'; }\nelse if (durationSeconds < 3600) { const m = Math.round(durationSeconds / 60); durationLabel = m + ' minute' + (m === 1 ? '' : 's'); }\nelse { const h = (durationSeconds / 3600).toFixed(1); durationLabel = h + ' hour' + (h === '1.0' ? '' : 's'); }\n\nconst detectionCount = detections.length;\n\nconst detectionLogRows = [];\nfor (const d of detections) {\n  const ts = d.timestamp_pt ?? d.timestamp;\n  const behaviors = d.detected_behaviors ?? [];\n  if (behaviors.length === 0) { detectionLogRows.push([ts, '', '', '', d.notes ?? '']); }\n  else { for (const b of behaviors) { detectionLogRows.push([ts, b.name ?? '', b.value ?? 0, b.unit ?? '', d.notes ?? '']); } }\n}\nconst detectionLogTable = { table_id: 'table_detection_log', title: 'Detection Log', columns: ['timestamp', 'behavior_name', 'value', 'unit', 'notes'], rows: detectionLogRows };\n\nconst behaviorMap = {};\nfor (const d of detections) {\n  const ts = d.timestamp_pt ?? d.timestamp;\n  for (const b of (d.detected_behaviors ?? [])) {\n    if (!b.name) continue;\n    if (!behaviorMap[b.name]) behaviorMap[b.name] = { unit: b.unit ?? '', labels: [], values: [], chart_type: b.chart_type ?? 'line' };\n    behaviorMap[b.name].labels.push(ts);\n    behaviorMap[b.name].values.push(typeof b.value === 'number' ? b.value : 0);\n  }\n}\nconst charts = Object.entries(behaviorMap).map(([name, data], idx) => ({\n  chart_id: 'chart_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + idx,\n  chart_type: data.chart_type,\n  title: name + ' (' + data.unit + ')',\n  data: { labels: data.labels, values: data.values },\n}));\n\nconst detectionSummary = detections.map(d => ({\n  timestamp: d.timestamp_pt ?? d.timestamp,\n  detected_behaviors: d.detected_behaviors ?? [],\n  notes: d.notes ?? '',\n}));\n\nreturn [{ json: {\n  study_id: studyId, output_mode: outputMode,\n  study_plan: study.study_plan ?? {}, graph_plan: study.graph_plan ?? {},\n  instructions: study.metadata?.instructions ?? '',\n  data_context: { duration_seconds: durationSeconds, duration_label: durationLabel, detection_count: detectionCount, sampling_note: 'This study captured ' + detectionCount + ' data point' + (detectionCount === 1 ? '' : 's') + ' over ' + durationLabel + '.' },\n  detection_summary: detectionSummary,\n  _charts: charts, _detection_log_table: detectionLogTable,\n} }];\n"
       },
       "id": "75178584-f9e6-4e39-9f36-b00824ead85a",
       "name": "Fetch Study Data from Supabase",
@@ -22,7 +22,7 @@
       "typeVersion": 2,
       "position": [
         224,
-        96
+        192
       ]
     },
     {
@@ -37,6 +37,23 @@
         0,
         192
       ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-06-trigger",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "ef76e82a-34c0-42e1-948e-d3b20717fced",
+      "name": "When Called by Watchdog",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        384
+      ],
+      "webhookId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     },
     {
       "parameters": {
@@ -57,7 +74,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: \"o4-mini\",\n  messages: [\n    { role: \"system\", content: \"You are the reporting and visualization specialist.\\nReturn a single valid JSON object only — no markdown, no code fences, no explanation.\\nThe JSON must have exactly these top-level keys: study_id, output_mode, dashboard_summary, charts, insights, recommendations.\\n\\nDo NOT include a tables key — the detection log table is handled separately in code.\\n\\nCHART DATA RULES:\\n- Each detection in detection_summary has a timestamp and detected_behaviors array with { name, value, unit }.\\n- Create one chart per behavior, plotting its value over time using the timestamp as the x-axis label.\\n- IMPORTANT: The timestamp is already in Pacific Time (PT) — copy it verbatim into chart labels. Do NOT reformat or parse it.\\n- Use the unit in the chart title (e.g. 'Occupancy (count)', 'Collaboration Index (score)').\\n- Each chart's data object must have two parallel arrays: labels (timestamps verbatim) and values (behavior values).\\n- Include ALL data points — do not truncate or summarize the chart data.\\n\\nChart format: { chart_id, chart_type (line|bar|heatmap|stat), title, data: { labels[], values[] } }\\nAlways populate study_id from the input study_id field.\\n\\nSTUDY DURATION & CONFIDENCE:\\n- The input includes a data_context object with duration_seconds, duration_label, detection_count, and sampling_note.\\n- Calibrate confidence of insights and recommendations accordingly. Only mention duration when directly relevant to a specific claim.\" },\n    { role: \"user\", content: JSON.stringify({\n      study_id: $json.study_id,\n      output_mode: $json.output_mode,\n      study_plan: $json.study_plan,\n      instructions: $json.instructions,\n      data_context: $json.data_context,\n      detection_summary: $json.detection_summary,\n    }, null, 2) }\n  ],\n}) }}",
+        "jsonBody": "={{ JSON.stringify({ model: \"o4-mini\", messages: [{ role: \"system\", content: \"You are a building behavior analysis specialist.\\nReturn a single valid JSON object only — no markdown, no code fences, no explanation.\\nThe JSON must have exactly these top-level keys: study_id, output_mode, dashboard_summary, insights, recommendations.\\n\\nDo NOT include charts or tables — these are handled separately in code.\\n\\ninsights must be a plain array of strings. Each insight is a single string sentence.\\nrecommendations must be a plain array of strings. Each recommendation is a single string sentence.\\n\\nSTUDY DURATION & CONFIDENCE:\\n- The input includes a data_context object with duration_seconds, duration_label, detection_count, and sampling_note.\\n- Calibrate confidence of insights and recommendations accordingly. Only mention duration when directly relevant to a specific claim.\" }, { role: \"user\", content: JSON.stringify({ study_id: $json.study_id, output_mode: $json.output_mode, study_plan: $json.study_plan, instructions: $json.instructions, data_context: $json.data_context, detection_summary: $json.detection_summary }, null, 2) }] }) }}",
         "options": {
           "response": {
             "response": {
@@ -72,13 +89,13 @@
       "typeVersion": 4.2,
       "position": [
         448,
-        96
+        192
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "\nconst body = $json;\nconst errors = [];\nlet rawText = '';\ntry { rawText = body.choices[0].message.content; } catch(e) { errors.push('failed_to_extract_content'); }\nlet cleaned = rawText.trim();\nif (cleaned.startsWith('```')) { cleaned = cleaned.replace(/^```(?:json)?\\n?/, '').replace(/\\n?```$/, '').trim(); }\nlet parsed = {};\ntry { parsed = JSON.parse(cleaned); } catch(e) { errors.push('json_parse_failed'); }\n// tables not required from model anymore — built in code\nfor (const field of [\"study_id\",\"output_mode\",\"dashboard_summary\",\"charts\",\"insights\",\"recommendations\"]) {\n  if (!(field in parsed)) errors.push('missing_' + field);\n}\nreturn [{ json: { raw_ai_output: rawText, parsed_output: parsed, validation_passed: errors.length === 0, validation_errors: errors } }];\n"
+        "jsCode": "\nconst body = $json;\nconst errors = [];\nlet rawText = '';\ntry { rawText = body.choices[0].message.content; } catch(e) { errors.push('failed_to_extract_content'); }\nlet cleaned = rawText.trim();\nif (cleaned.startsWith('```')) { cleaned = cleaned.replace(/^```(?:json)?\\n?/, '').replace(/\\n?```$/, '').trim(); }\nlet parsed = {};\ntry { parsed = JSON.parse(cleaned); } catch(e) { errors.push('json_parse_failed'); }\nfor (const field of [\"study_id\",\"output_mode\",\"dashboard_summary\",\"insights\",\"recommendations\"]) {\n  if (!(field in parsed)) errors.push('missing_' + field);\n}\nif (parsed.insights) { parsed.insights = parsed.insights.map(i => typeof i === 'string' ? i : (i.insight_text || i.text || JSON.stringify(i))); }\nif (parsed.recommendations) { parsed.recommendations = parsed.recommendations.map(r => typeof r === 'string' ? r : (r.recommendation_text || r.text || JSON.stringify(r))); }\nreturn [{ json: { raw_ai_output: rawText, parsed_output: parsed, validation_passed: errors.length === 0, validation_errors: errors } }];\n"
       },
       "id": "410eb960-2077-44ab-881b-7933ac934c57",
       "name": "Parse Insights Response",
@@ -86,7 +103,7 @@
       "typeVersion": 2,
       "position": [
         672,
-        96
+        192
       ]
     },
     {
@@ -120,7 +137,7 @@
       "typeVersion": 2.2,
       "position": [
         896,
-        96
+        192
       ]
     },
     {
@@ -142,7 +159,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  messages: [\n    { role: \"system\", content: \"You are a JSON repair specialist. Return ONLY a valid repaired JSON object with these exact keys: study_id, output_mode, dashboard_summary, charts, insights, recommendations. No tables key. No markdown, no code fences, no explanation.\" },\n    { role: \"user\", content: JSON.stringify({ raw_ai_output: $json.raw_ai_output, validation_errors: $json.validation_errors }, null, 2) }\n  ],\n  temperature: 0\n}) }}",
+        "jsonBody": "={{ JSON.stringify({ model: \"gpt-4o-mini\", messages: [{ role: \"system\", content: \"You are a JSON repair specialist. Return ONLY a valid repaired JSON object with these exact keys: study_id, output_mode, dashboard_summary, insights, recommendations. No charts, no tables. insights and recommendations must be plain arrays of strings. Use the study_id provided, never invent a default. No markdown, no code fences.\" }, { role: \"user\", content: JSON.stringify({ study_id: $('Fetch Study Data from Supabase').item.json.study_id, output_mode: $('Fetch Study Data from Supabase').item.json.output_mode, raw_ai_output: $json.raw_ai_output, validation_errors: $json.validation_errors }, null, 2) }], temperature: 0 }) }}",
         "options": {
           "response": {
             "response": {
@@ -157,13 +174,13 @@
       "typeVersion": 4.2,
       "position": [
         1120,
-        32
+        128
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "\nlet rawText = '';\ntry { rawText = $json.choices[0].message.content; } catch(e) {}\nlet cleaned = rawText.trim();\nif (cleaned.startsWith('```')) { cleaned = cleaned.replace(/^```(?:json)?\\n?/, '').replace(/\\n?```$/, '').trim(); }\nlet parsed = {};\ntry { parsed = JSON.parse(cleaned); } catch(e) { parsed = {}; }\nreturn [{ json: { parsed_output: parsed, validation_passed: true, validation_errors: [] } }];\n"
+        "jsCode": "\nlet rawText = '';\ntry { rawText = $json.choices[0].message.content; } catch(e) {}\nlet cleaned = rawText.trim();\nif (cleaned.startsWith('```')) { cleaned = cleaned.replace(/^```(?:json)?\\n?/, '').replace(/\\n?```$/, '').trim(); }\nlet parsed = {};\ntry { parsed = JSON.parse(cleaned); } catch(e) { parsed = {}; }\nif (parsed.insights) { parsed.insights = parsed.insights.map(i => typeof i === 'string' ? i : (i.insight_text || i.text || JSON.stringify(i))); }\nif (parsed.recommendations) { parsed.recommendations = parsed.recommendations.map(r => typeof r === 'string' ? r : (r.recommendation_text || r.text || JSON.stringify(r))); }\nreturn [{ json: { parsed_output: parsed, validation_passed: true, validation_errors: [] } }];\n"
       },
       "id": "f5312242-09f1-4397-9040-0c96ca8b71a5",
       "name": "Parse Repaired Response",
@@ -171,12 +188,12 @@
       "typeVersion": 2,
       "position": [
         1344,
-        32
+        128
       ]
     },
     {
       "parameters": {
-        "jsCode": "\nconst parsed = $json.parsed_output ?? $json;\n\n// Retrieve the detection log table built in Fetch Study Data\nlet detectionLogTable = null;\ntry {\n  detectionLogTable = $('Fetch Study Data from Supabase').item.json._detection_log_table;\n} catch(e) {}\n\n// Merge: model output gets the code-built detection log table injected\nconst tables = Array.isArray(parsed.tables) ? parsed.tables : [];\nif (detectionLogTable) {\n  // Remove any partial table the model may have tried to generate, replace with complete one\n  const withoutLog = tables.filter(t => t.table_id !== 'table_detection_log');\n  parsed.tables = [...withoutLog, detectionLogTable];\n} else {\n  parsed.tables = tables;\n}\n\nreturn [{ json: parsed }];\n"
+        "jsCode": "\nconst parsed = $json.parsed_output ?? $json;\nconst fetchNode = $('Fetch Study Data from Supabase').item.json;\nparsed.charts = fetchNode._charts ?? [];\nconst detectionLogTable = fetchNode._detection_log_table ?? null;\nconst tables = Array.isArray(parsed.tables) ? parsed.tables : [];\nif (detectionLogTable) { parsed.tables = [...tables.filter(t => t.table_id !== 'table_detection_log'), detectionLogTable]; }\nelse { parsed.tables = tables; }\nreturn [{ json: parsed }];\n"
       },
       "id": "1928103d-7263-471a-9c98-f1a5e5108ae0",
       "name": "Finalize Insight Output",
@@ -184,7 +201,7 @@
       "typeVersion": 2,
       "position": [
         1568,
-        96
+        192
       ]
     },
     {
@@ -214,7 +231,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  study_id: $json.study_id,\n  output_mode: $json.output_mode,\n  status: $json.output_mode === 'final_insights' ? 'complete' : 'preview',\n  dashboard_summary: $json.dashboard_summary,\n  charts: $json.charts,\n  tables: $json.tables,\n  insights: $json.insights,\n  recommendations: $json.recommendations,\n  created_at: new Date().toISOString()\n}) }}",
+        "jsonBody": "={{ JSON.stringify({ study_id: $json.study_id, output_mode: $json.output_mode, status: $json.output_mode === 'final_insights' ? 'complete' : 'preview', dashboard_summary: $json.dashboard_summary, charts: $json.charts, tables: $json.tables, insights: $json.insights, recommendations: $json.recommendations, created_at: new Date().toISOString() }) }}",
         "options": {}
       },
       "id": "025521ae-1b12-4993-854f-d19ab6f2815c",
@@ -223,7 +240,7 @@
       "typeVersion": 4.2,
       "position": [
         1792,
-        96
+        192
       ],
       "retryOnFail": true,
       "onError": "continueRegularOutput"
@@ -270,7 +287,7 @@
       "typeVersion": 4.2,
       "position": [
         2016,
-        96
+        192
       ]
     }
   ],
@@ -299,6 +316,17 @@
       ]
     },
     "When Called by BMA": {
+      "main": [
+        [
+          {
+            "node": "Fetch Study Data from Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Called by Watchdog": {
       "main": [
         [
           {
@@ -400,7 +428,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "79fbd59e-9e03-43ed-a18a-91672ab5b7f4",
+  "versionId": "186c45da-9702-4a36-bf0f-76402d1a873f",
   "meta": {
     "aiBuilderAssisted": true,
     "builderVariant": "mcp",
