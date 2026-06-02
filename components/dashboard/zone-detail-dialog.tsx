@@ -69,8 +69,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     timestamp: null,
   })
   const [notesExpanded, setNotesExpanded] = useState(true)
-  // Load floor plan AR locally so we don't depend on the parent having loaded it yet.
-  // new Image() is synchronous from browser cache once the heatmap has fetched it.
+  // Load floor plan AR locally — browser cache makes this instant after heatmap loads it
   const [localAR, setLocalAR] = useState<number | null>(mapGeometry.imgAspectRatio)
 
   const isLive = activeStudies.some(
@@ -105,7 +104,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
         if (data?.[0]) setValues(parseDetectionRow(data[0] as RawDetectionRow))
       })
 
-    // Subscribing by zone_id (not study_id) means this auto-transitions across studies
+    // Subscribing by zone_id (not study_id) auto-transitions across studies
     const channel = supabase
       .channel(`zone-detail-${zone.id}`)
       .on("postgres_changes", {
@@ -122,10 +121,11 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     return () => { supabase.removeChannel(channel) }
   }, [zone?.id])
 
-  // Compute cropped image position.
-  // The dialog is always 92vw × 92vh; left pane is half when live, full otherwise.
-  // Using window dimensions directly avoids measuring the pane via a ref (portals can
-  // return clientWidth=0 before the browser has laid out the portal element).
+  // Compute cropped image position using object-contain semantics for the zone:
+  // scale the image so the zone fits WITHIN the pane (neither cropping the zone
+  // width nor height), then center the zone in the pane.
+  //
+  // Uses window dimensions directly — avoids clientWidth=0 in Radix portals.
   const cropImg = (() => {
     if (typeof window === "undefined") return null
     const { floorPlanUrl, effectiveCols, effectiveRows, imgOffsetXFrac, imgOffsetYFrac } = mapGeometry
@@ -134,7 +134,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     const paneW = window.innerWidth * 0.92 * (isLive ? 0.5 : 1.0)
     const paneH = window.innerHeight * 0.92
 
-    // Zone's position in image-normalized coords (0–1), accounting for letterbox padding
+    // Zone's position in image-normalized coords (0–1 within the actual image content)
     const contentW = 1 - 2 * imgOffsetXFrac
     const contentH = 1 - 2 * imgOffsetYFrac
     const zoneXstart = (zone.grid_x / effectiveCols) / contentW
@@ -142,15 +142,25 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
     const zoneYstart = (zone.grid_y / effectiveRows) / contentH
     const zoneYheight = (zone.grid_height / effectiveRows) / contentH
 
-    // Scale image so the zone's width exactly fills the pane width
-    const imgW = paneW / zoneXwidth
-    const imgH = imgW / localAR
+    // Object-contain: pick the scale that makes the zone fit within the pane
+    const zoneAR = (zoneXwidth / zoneYheight) * localAR
+    const paneAR = paneW / paneH
+    let imgW: number, imgH: number
+    if (zoneAR > paneAR) {
+      // Zone wider than pane → constrain by width
+      imgW = paneW / zoneXwidth
+      imgH = imgW / localAR
+    } else {
+      // Zone taller than pane → constrain by height
+      imgH = paneH / zoneYheight
+      imgW = imgH * localAR
+    }
 
-    const imgLeft = -zoneXstart * imgW
-    // Center zone vertically in pane
-    const zoneTopPx = zoneYstart * imgH
-    const zoneHeightPx = zoneYheight * imgH
-    const imgTop = -(zoneTopPx + (zoneHeightPx - paneH) / 2)
+    // Center the zone in the pane
+    const zonePxW = zoneXwidth * imgW
+    const zonePxH = zoneYheight * imgH
+    const imgLeft = (paneW - zonePxW) / 2 - zoneXstart * imgW
+    const imgTop = (paneH - zonePxH) / 2 - zoneYstart * imgH
 
     return { src: floorPlanUrl, imgW, imgH, imgLeft, imgTop }
   })()
@@ -186,14 +196,18 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
               className="absolute inset-0"
               style={{ backgroundColor: zone?.color ?? "#6366f1", opacity: 0.2 }}
             />
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
               <span className="text-5xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                 {zone?.name}
               </span>
-              {isLive && (
+              {isLive ? (
                 <span className="flex items-center gap-2 text-green-400 text-xl font-semibold">
                   <span className="inline-block w-3 h-3 rounded-full bg-green-400 animate-pulse" />
                   Live
+                </span>
+              ) : (
+                <span className="text-white/70 text-xl font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
+                  Waiting for next study…
                 </span>
               )}
             </div>
@@ -202,46 +216,46 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
           {/* Right pane: metrics + detection text — only when a study is running for this zone */}
           {isLive && (
             <div className="flex-1 flex flex-col border-l border-border">
-              {/* Metric tiles side by side — always flex-1 */}
-              <div className="flex-1 min-h-0 flex flex-row border-b border-border">
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8">
-                  <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+              {/* Top 1/3: metric tiles side by side */}
+              <div className="h-1/3 shrink-0 flex flex-row border-b border-border">
+                <div className="flex-1 flex flex-col items-center justify-center gap-2 p-6">
+                  <span className="text-xl font-semibold uppercase tracking-widest text-muted-foreground">
                     Occupancy
                   </span>
-                  <span className="text-[8rem] font-bold leading-none tabular-nums">
+                  <span className="text-[6rem] font-bold leading-none tabular-nums">
                     {values.occupancy !== null ? values.occupancy : "—"}
                   </span>
                 </div>
                 <div className="border-l border-border" />
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8">
-                  <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground text-center">
+                <div className="flex-1 flex flex-col items-center justify-center gap-2 p-6">
+                  <span className="text-xl font-semibold uppercase tracking-widest text-muted-foreground text-center">
                     Collaboration Index
                   </span>
-                  <span className="text-[8rem] font-bold leading-none tabular-nums">
+                  <span className="text-[6rem] font-bold leading-none tabular-nums">
                     {values.collaborationIndex !== null ? values.collaborationIndex : "—"}
                   </span>
                 </div>
               </div>
 
-              {/* Collapsible detection text — flex-1 when expanded, shrink-0 when collapsed */}
-              <div className={notesExpanded ? "flex-1 min-h-0 flex flex-col" : "shrink-0"}>
+              {/* Bottom 2/3: collapsible detection text */}
+              <div className="flex-1 min-h-0 flex flex-col">
                 <button
-                  className="w-full flex items-center justify-between px-6 py-3 border-b border-border hover:bg-muted/40 transition-colors shrink-0"
+                  className="w-full flex items-center justify-between px-8 py-4 border-b border-border hover:bg-muted/40 transition-colors shrink-0"
                   onClick={() => setNotesExpanded(v => !v)}
                 >
-                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  <span className="text-lg font-semibold uppercase tracking-widest text-muted-foreground">
                     Latest Detection
                   </span>
                   {notesExpanded
-                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    ? <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                    : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
                 </button>
                 {notesExpanded && (
-                  <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+                  <div className="flex-1 min-h-0 overflow-y-auto px-8 py-5">
                     {values.timestamp && (
-                      <p className="text-xs text-muted-foreground mb-3">{values.timestamp}</p>
+                      <p className="text-base text-muted-foreground mb-4">{values.timestamp}</p>
                     )}
-                    <p className="text-base leading-relaxed">
+                    <p className="text-xl leading-relaxed">
                       {values.notes ?? "Waiting for detection…"}
                     </p>
                   </div>
