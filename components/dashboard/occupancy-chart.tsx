@@ -35,6 +35,8 @@ interface OccupancyChartProps {
   activeStudyId?: string
   activeStudyStatus?: string
   demoDetections?: DetectionRow[]
+  // Per-study demo detections (multi-study demo mode, keyed by study_id)
+  demoDetectionsPerStudy?: Record<string, DetectionRow[]>
   // Multi-study (real mode)
   activeStudies?: ActiveStudyEntry[]
 }
@@ -88,6 +90,7 @@ export function OccupancyChart({
   activeStudyId,
   activeStudyStatus,
   demoDetections,
+  demoDetectionsPerStudy,
   activeStudies: activeStudiesProp,
 }: OccupancyChartProps) {
   const [perStudyDetections, setPerStudyDetections] = useState<Record<string, DetectionRow[]>>({})
@@ -137,6 +140,12 @@ export function OccupancyChart({
     setPerStudyDetections({})
     if (!isLive) return
 
+    if (demoDetectionsPerStudy && Object.keys(demoDetectionsPerStudy).length > 0) {
+      setPerStudyDetections(demoDetectionsPerStudy)
+      setLastDetectionAt(Date.now())
+      return
+    }
+
     if (demoDetections && allActiveStudies.length > 0) {
       setPerStudyDetections({ [allActiveStudies[0].study_id]: demoDetections })
       setLastDetectionAt(Date.now())
@@ -182,7 +191,7 @@ export function OccupancyChart({
     channelRef.current = channel
     return () => { supabase.removeChannel(channel); channelRef.current = null }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studiesKey, demoDetections])
+  }, [studiesKey, demoDetections, demoDetectionsPerStudy])
 
   // Measure the enlarged chart column so charts get an explicit pixel height
   useEffect(() => {
@@ -469,7 +478,7 @@ export function OccupancyChart({
                               studyId={s.study_id}
                               status={s.status}
                               limit={1}
-                              demoDetections={idx === 0 ? demoDetections : undefined}
+                              demoDetections={demoDetectionsPerStudy?.[s.study_id] ?? (idx === 0 ? demoDetections : undefined)}
                               large
                               studyCount={allActiveStudies.length}
                             />

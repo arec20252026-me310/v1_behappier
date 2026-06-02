@@ -334,9 +334,11 @@ export const EXPE_SPACE_ID       = "99eab524-a616-450c-9aa4-892f3346b854"
 export const EXPE_QUIET_ZONE_ID  = "816023aa-06f3-4446-9574-a7bb13c1c1de"
 export const EXPE_ROOM_ID        = "f0725c0e-5921-4fa9-824f-dc1e6313d5ac" // Interaction Zone (monitored)
 export const EXPE_OBS_AREA_ID    = "1e0c5c9b-b49c-4afe-a999-0b354b9b903a"
-export const EXPE_STUDY_ID       = "study_expe_126_001"
-export const SEED_BE_STUDY_EXPE_ID = "00000000-0000-0001-0000-000000000003"
-export const SEED_EXPE_INSIGHT_ID  = "00000000-0000-0001-0000-000000000004"
+export const EXPE_STUDY_Q_ID        = "study_1780382193242"
+export const EXPE_STUDY_I_ID        = "study_1780382887677"
+export const SEED_EXPE_Q_INSIGHT_ID = "37816e0c-c837-4be7-bbd7-b9994a171001"
+export const SEED_EXPE_I_INSIGHT_ID = "29100e93-5e21-4505-b889-4cc45dd86111"
+export const SEED_EXPE_MODEL_DATASET_ID = "00000000-0000-0001-0000-000000000010"
 
 export const DEMO_EXPE_SPACE = {
   id: EXPE_SPACE_ID,
@@ -381,53 +383,208 @@ export const DEMO_METRICS_EXPE = [
   },
 ]
 
-const BE_STUDY_BASE_EXPE = {
-  id: SEED_BE_STUDY_EXPE_ID,
-  study_id: EXPE_STUDY_ID,
+// ── EXPE detections (real data) ───────────────────────────────────────────────
+export const DEMO_DETECTIONS_EXPE_Q = [
+  { timestamp_pt: "2026-06-01 23:36:34 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=2, T1=0, T2=0, N=2, score=0. P1 center-back, facing curtain, not interacting, T0. P2 front-right, sitting, wearing headphones, T0." },
+  { timestamp_pt: "2026-06-01 23:36:46 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=2, T1=0, T2=0, N=2, score=0. P1 center-back, sitting, facing curtain, T0. P2 front-right, wearing headphones, looking at device, T0. Both seated separately, no interaction." },
+  { timestamp_pt: "2026-06-01 23:37:11 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=2, T1=0, T2=0, N=2, score=0. P1 center-back, facing curtain, not interacting, T0. P2 front-right, sitting, using phone, wearing headphones, T0. Both are seated at separate chairs with no visible interaction or shared surface." },
+  { timestamp_pt: "2026-06-01 23:37:24 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=2, T1=0, T2=0, N=2, score=0. P1 center-back, seated facing curtain, no interaction, T0. P2 front-right, seated with headphones, looking at phone, T0. Both are alone at separate chairs with no visible collaboration." },
+  { timestamp_pt: "2026-06-01 23:37:35 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=2, T1=0, T2=0, N=2, score=0. P1 center-back, seated facing curtain, not interacting, T0. P2 front-right, wearing headphones, looking at device, T0. Both are alone at separate chairs, no shared workspace or interaction." },
+  { timestamp_pt: "2026-06-01 23:37:48 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=2, T1=0, T2=0, N=2, score=0. P1 center-back, seated facing curtain, not interacting, T0. P2 front-right, seated, looking at phone, wearing headphones, T0. Both are seated separately with no shared surface or visible interaction." },
+  { timestamp_pt: "2026-06-01 23:38:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=2, T1=0, T2=0, N=2, score=0. P1 center-back, seated with headphones, facing curtain, no interaction, T0. P2 front-right, seated, looking at device, headphones on, not interacting, T0. Both individuals are sitting separately with no shared workspace." },
+  { timestamp_pt: "2026-06-01 23:38:12 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 center-back, seated in white, facing curtain, headphones, not interacting, T0. P2 center, seated in green, facing curtain, no interaction, T0. P3 front-right, seated, looking at device, headphones on, T0. Occupancy has increased (was 2), still no collaboration." },
+  { timestamp_pt: "2026-06-01 23:38:24 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 left-back, seated, wearing headphones, facing curtain, T0. P2 center-back, seated, facing curtain, not interacting, T0. P3 front-right, seated, looking at phone/device, headphones on, T0. All seated at separate chairs, no visible interaction." },
+  { timestamp_pt: "2026-06-01 23:38:37 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 left-back, white shirt, headphones, facing curtain, T0. P2 center-back, green shirt, facing curtain, no interaction, T0. P3 front-right, white/pink shirt, headphones, looking at device, T0. Solo pattern consistent with previous detections." },
+  { timestamp_pt: "2026-06-01 23:38:50 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 left-back, headphones on, facing curtain, not interacting, T0. P2 center-back, seated, facing curtain, not engaging others, T0. P3 front-right, looking at device with headphones, T0. Pattern remains unchanged." },
+  { timestamp_pt: "2026-06-01 23:39:02 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 left-back, headphones on, facing curtain, solo, T0. P2 center-back, hands on head, headphones, solo, T0. P3 front-right, using phone/device, headphones, solo, T0. Occupancy and collaboration pattern unchanged." },
+  { timestamp_pt: "2026-06-01 23:39:14 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 left-back, white shirt, headphones, turned to curtain, T0. P2 center-back, green shirt, head down, not interacting, T0. P3 front-right, white/pink shirt, headphones, looking at phone, T0. Pattern unchanged from previous detections." },
+  { timestamp_pt: "2026-06-01 23:39:26 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 left-back, head down, hand by face, headphones, T0. P2 center-back, seated facing curtain, focused forward, T0. P3 front-right, headphones, looking at phone, T0. Continued solo behavior, no collaboration or group formation." },
+  { timestamp_pt: "2026-06-01 23:39:38 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 left-back, white shirt, headphones, seated alone, facing curtain, T0. P2 center-back, green/grey shirt, seated, facing curtain, solo, T0. P3 front-right, pale pink shirt, headphones, using phone, seated solo, T0. Occupancy and solo behavior stable." },
+  { timestamp_pt: "2026-06-01 23:39:53 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 left-back, white shirt, headphones, hand to face, T0. P2 center-back, green/grey shirt, looking forward, T0. P3 front-right, white/pink shirt, headphones, looking at phone, T0. All solo at separate chairs, no visible interaction or shared workspace." },
+  { timestamp_pt: "2026-06-01 23:40:06 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=3, T1=0, T2=0, N=3, score=0. P1 left-foreground, standing, adjusting face/neck, mostly turned away, T0. P2 center-back, seated, facing curtain, T0. P3 front-right, headphones, looking at phone, T0. Consistent solo occupancy continues, no sign of collaboration." },
+  { timestamp_pt: "2026-06-01 23:40:18 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=4, T1=0, T2=0, N=4, score=0. P1 far left, white/tan shirt, headphones, looking at phone, T0. P2 center-left, white shirt, headphones, back to camera, T0. P3 center-right, green shirt, back to camera, T0. P4 far right, pale pink shirt, headphones, T0. Occupancy has increased to 4; solo behavior persists." },
+  { timestamp_pt: "2026-06-01 23:40:32 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=4, T1=0, T2=0, N=4, score=0. P1 far left, headphones, looking at phone, T0. P2 center-left, headphones, back to camera, T0. P3 center-right, green shirt, facing away, T0. P4 far right, headphones, pink shirt, looking at phone, T0. Solo occupancy trend continues, no collaboration observed." },
+  { timestamp_pt: "2026-06-01 23:40:45 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=4, T1=0, T2=0, N=4, score=0. P1 far left, headphones, looking left, T0. P2 center-left, headphones, looking down, T0. P3 center-right, facing curtain, no interaction, T0. P4 far right, headphones, smiling at phone, T0. Persistent solo pattern from previous detections." },
+  { timestamp_pt: "2026-06-01 23:40:56 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=4, T1=0, T2=0, N=4, score=0. P1 far left, tan pants, white t-shirt, headphones, looking at camera, T0. P2 center-left, white shirt, headphones, facing curtain, T0. P3 center-right, green shirt, facing curtain, T0. P4 far right, pale pink shirt, holding phone, smiling, T0. Persistent solo pattern." },
+  { timestamp_pt: "2026-06-01 23:41:10 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=4, T1=0, T2=0, N=4, score=0. P1 far left, headphones, looking at phone, T0. P2 center-left, headphones, facing curtain, T0. P3 center-right, facing curtain, T0. P4 far right, headphones, looking at phone, T0. Occupancy and solo pattern remain unchanged." },
+  { timestamp_pt: "2026-06-01 23:41:22 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 0, unit: "score" }], notes: "T0=4, T1=0, T2=0, N=4, score=0. P1 far left, headphones, looking left at camera, T0. P2 center-left, white shirt, headphones, seated back to back, T0. P3 center-right, green shirt, facing curtain, T0. P4 far right, pale pink shirt, holding phone and smiling, T0. Persistent solo pattern." },
+]
+
+export const DEMO_DETECTIONS_EXPE_I = [
+  { timestamp_pt: "2026-06-01 23:48:09 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 0.5, unit: "score" }], notes: "T0=0, T1=2, T2=0, N=2, score=0.50. P1 left, sitting at table, no visible interaction, T1. P2 right, facing table, hand at chin, T1." },
+  { timestamp_pt: "2026-06-01 23:48:20 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=2, N=2, score=1.00. P1 left, turned toward right, speaking, gesturing with hands, T2. P2 right, leaning toward left, engaging directly, T2. Both at same table, active conversation visible." },
+  { timestamp_pt: "2026-06-01 23:48:32 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=2, N=2, score=1.00. P1 left, leaning in, visibly engaged with right, T2. P2 right, facing left, direct eye contact, active engagement, T2. Both at same table, mutual focus, collaborative interaction clearly visible." },
+  { timestamp_pt: "2026-06-01 23:48:44 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=2, N=2, score=1.00. P1 left, facing right, gesturing, speaking, T2. P2 right, leaning in toward left, direct engagement, T2. Both seated at same table, actively collaborating." },
+  { timestamp_pt: "2026-06-01 23:48:56 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=3, N=3, score=1.00. P1 left, seated, facing table, engaged, T2. P2 far center, standing/leaning in, talking, eye contact, T2. P3 right, seated, gesturing animatedly toward group, T2. All at same table, direct multi-way interaction." },
+  { timestamp_pt: "2026-06-01 23:49:10 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=3, N=3, score=1.00. P1 left, hands together, actively facing group, T2. P2 center, leaning in, eye contact with others, T2. P3 right, facing table, speaking or engaged with others, T2. Strong collaborative interaction." },
+  { timestamp_pt: "2026-06-01 23:49:21 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=3, N=3, score=1.00. P1 left, turned toward tablemates, eye contact, gesturing, T2. P2 center, smiling, animated posture, facing others, T2. P3 right, gesturing and speaking toward group, T2. All at same table, active visible engagement." },
+  { timestamp_pt: "2026-06-01 23:49:33 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 far left, gesturing, direct eye contact, T2. P2 center left, engaged, facing others, T2. P3 center right, leaning in, speaking, T2. P4 far right, hands mid-gesture, facing group, T2. Active direct engagement among all group members." },
+  { timestamp_pt: "2026-06-01 23:49:45 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 far left, turned toward tablemates, speaking, T2. P2 center left, smiling, leaning forward, T2. P3 center right, hands gesturing, facing into group, T2. P4 far right, animated posture, hands open mid-conversation, T2." },
+  { timestamp_pt: "2026-06-01 23:49:56 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 far left, gesturing and turned toward group, T2. P2 center left, hands raised, appears mid-speech, T2. P3 center right, hands visible, engaged posture, T2. P4 far right, animated, gesturing, direct eye contact, T2." },
+  { timestamp_pt: "2026-06-01 23:50:08 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=2, N=2, score=1.00. P1 left, seated, leaning in, facing tablemate, T2. P2 right, seated, gesturing, speaking to other, T2. Both share table, direct engaged conversation." },
+  { timestamp_pt: "2026-06-01 23:50:20 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=2, N=2, score=1.00. P1 left, seated, facing tablemate, active conversation, T2. P2 right, seated, leaned in, looking at other, T2. Both at same table, direct visible engagement." },
+  { timestamp_pt: "2026-06-01 23:50:33 PDT", detected_behaviors: [{ name: "Occupancy", value: 2, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=2, N=2, score=1.00. P1 left, leaning forward, gesturing at tablemate, T2. P2 right, seated upright, facing and conversing with other, T2. Both at same table, visible direct engagement." },
+  { timestamp_pt: "2026-06-01 23:50:45 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=3, N=3, score=1.00. P1 left, speaking, smiling, gesturing at others, T2. P2 center, seated, facing group, attentive, T2. P3 right (back to camera), gesturing with hands toward tablemates, T2." },
+  { timestamp_pt: "2026-06-01 23:50:57 PDT", detected_behaviors: [{ name: "Occupancy", value: 3, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=3, N=3, score=1.00. P1 left, gesturing, speaking toward other tablemates, T2. P2 center, gesturing and engaging with P1 and P3, T2. P3 right, smiling, turned toward others, T2. All seated at one table, directly interacting." },
+  { timestamp_pt: "2026-06-01 23:51:09 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, gesturing, smiling, facing others, T2. P2 center-left, smiling, pointing at center-right, T2. P3 center-right, hands raised, engaged in discussion, T2. P4 right (back to camera), gesturing toward group, T2." },
+  { timestamp_pt: "2026-06-01 23:51:21 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, looking at center group, talking, T2. P2 center-left, smiling, leaning in, speaking, T2. P3 center-right, attentive posture, looking at others, T2. P4 right, gesturing hands, facing table, T2." },
+  { timestamp_pt: "2026-06-01 23:51:33 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, seated, facing group, listening, T2. P2 center-left, head turned to speaker, attentive, T2. P3 center-right, gesturing, speaking to tablemates, T2. P4 right, watching P3, hands together, T2." },
+  { timestamp_pt: "2026-06-01 23:51:45 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, gesturing and talking to group, T2. P2 center-left, hands clasped, looking at group, T2. P3 center-right, leaning forward, engaged with others, T2. P4 right, facing group, attentive, T2. All directly interacting through conversation and gestures." },
+  { timestamp_pt: "2026-06-01 23:51:59 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, turned toward center, engaged, T2. P2 center-left, smiling, leaning in, T2. P3 center-right, gesturing, talking, T2. P4 right, attentive posture, facing others, T2. Visibly interacting and engaged in group discussion." },
+  { timestamp_pt: "2026-06-01 23:52:12 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, hands raised to head, focused on group, T2. P2 center-left, gesturing upward, engaged with tablemates, T2. P3 center-right, looking at others, attentive, T2. P4 right, arms raised, engaging with group, T2." },
+  { timestamp_pt: "2026-06-01 23:52:24 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, hands preparing to gesture, facing group, T2. P2 center-left, mouth open mid-speech, gesturing at group, T2. P3 center-right, talking, arms moving in animated way, T2. P4 right, arms raised energetically, T2." },
+  { timestamp_pt: "2026-06-01 23:52:37 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, gesturing mid-discussion, facing group, T2. P2 center-left, smiling, listening, turned toward table, T2. P3 center-right, relaxed, hand at head, watching others, T2. P4 right, leaning forward, focused on conversation, T2." },
+  { timestamp_pt: "2026-06-01 23:52:49 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, hand to chin, listening to group, T2. P2 center-left, speaking and gesturing to others, T2. P3 center-right, talking, hand raised to gesture, T2. P4 right, looking at speaker, interacting with tablemates, T2." },
+  { timestamp_pt: "2026-06-01 23:53:00 PDT", detected_behaviors: [{ name: "Occupancy", value: 4, unit: "count" }, { name: "Collaboration Index", value: 1, unit: "score" }], notes: "T0=0, T1=0, T2=4, N=4, score=1.00. P1 left, smiling and gesturing toward group, T2. P2 center-left, laughing, facing group, T2. P3 center-right, talking with mouth open, hand on table, T2. P4 right, relaxed, hand to face, engaged in group, T2. All actively collaborating." },
+]
+
+// ── EXPE study objects ────────────────────────────────────────────────────────
+const BE_STUDY_BASE_EXPE_Q = {
+  id: "00000000-0000-0001-0000-000000000011",
+  study_id: EXPE_STUDY_Q_ID,
   building_id: EXPE_SPACE_ID,
   user_id: null, session_id: null,
-  study_goal: "Monitor the Conference Room for occupancy during a working session.",
+  study_goal: "I want to know how many people are in the space at any given time and how collaborative they are.",
   study_plan: {}, task_graph: {}, graph_plan: {},
   metadata: {
-    study_name: "LGQ Conference Room Study",
-    monitored_zone_id: EXPE_ROOM_ID,
-    target_zones: [EXPE_ROOM_ID],
+    study_name: "Quiet Zone Occupancy and Collaboration Study",
+    monitored_zone_id: EXPE_QUIET_ZONE_ID,
+    target_zones: [EXPE_QUIET_ZONE_ID],
+    camera_id: "camera_2",
   },
   live_preview_status: null,
-  started_at: "2026-05-28T14:00:00.000000+00:00",
-  duration_seconds: 480,
-  created_at: "2026-05-28T13:59:45.000000+00:00",
-  updated_at: "2026-05-28T14:08:00.000000+00:00",
+  started_at: "2026-06-02T06:36:33Z",
+  duration_seconds: 300,
+  created_at: "2026-06-02T06:36:34Z",
+  updated_at: "2026-06-02T06:41:22Z",
 }
 
-export const BE_STUDY_IN_PROGRESS_EXPE = {
-  ...BE_STUDY_BASE_EXPE,
+export const BE_STUDY_IN_PROGRESS_EXPE_Q = {
+  ...BE_STUDY_BASE_EXPE_Q,
   status: "running",
   current_stage: "monitoring_running" as const,
-  live_preview_status: "Monitoring running — 1 snapshot analyzed",
+  live_preview_status: "Monitoring running — 8 snapshots analyzed",
 }
 
-export const BE_STUDY_COMPLETE_EXPE = {
-  ...BE_STUDY_BASE_EXPE,
+export const BE_STUDY_COMPLETE_EXPE_Q = {
+  ...BE_STUDY_BASE_EXPE_Q,
   status: "complete",
   current_stage: "complete" as const,
 }
 
-export const DEMO_DETECTIONS_EXPE = DEMO_DETECTIONS_LGQ
-
-export const BE_LIVE_METRICS_EXPE = {
-  id: "00000000-0000-0001-0000-000000000005",
-  study_id: EXPE_STUDY_ID,
-  status: "running",
-  label: "Monitoring running — 1 snapshot analyzed",
-  updated_at: "2026-05-28T14:01:00.000Z",
-  metrics: { zone_metrics: { "Room 126": { occupancy_pct: 60, count: 3 } } },
+const BE_STUDY_BASE_EXPE_I = {
+  id: "00000000-0000-0001-0000-000000000012",
+  study_id: EXPE_STUDY_I_ID,
+  building_id: EXPE_SPACE_ID,
+  user_id: null, session_id: null,
+  study_goal: "I want to know how many people are in the space at any given time and how collaborative they are.",
+  study_plan: {}, task_graph: {}, graph_plan: {},
+  metadata: {
+    study_name: "Interaction Zone Occupancy and Collaboration Study",
+    monitored_zone_id: EXPE_ROOM_ID,
+    target_zones: [EXPE_ROOM_ID],
+    camera_id: "camera_3",
+  },
+  live_preview_status: null,
+  started_at: "2026-06-02T06:48:09Z",
+  duration_seconds: 300,
+  created_at: "2026-06-02T06:48:09Z",
+  updated_at: "2026-06-02T06:53:00Z",
 }
 
-export const BE_INSIGHT_OUTPUT_EXPE = {
-  ...BE_INSIGHT_OUTPUT_LGQ,
-  id: SEED_EXPE_INSIGHT_ID,
-  study_id: EXPE_STUDY_ID,
+export const BE_STUDY_IN_PROGRESS_EXPE_I = {
+  ...BE_STUDY_BASE_EXPE_I,
+  status: "running",
+  current_stage: "monitoring_running" as const,
+  live_preview_status: "Monitoring running — 8 snapshots analyzed",
+}
+
+export const BE_STUDY_COMPLETE_EXPE_I = {
+  ...BE_STUDY_BASE_EXPE_I,
+  status: "complete",
+  current_stage: "complete" as const,
+}
+
+// ── EXPE insight outputs ──────────────────────────────────────────────────────
+const _EXPE_Q_LABELS = ["2026-06-01 23:36:34 PDT","2026-06-01 23:36:46 PDT","2026-06-01 23:37:11 PDT","2026-06-01 23:37:24 PDT","2026-06-01 23:37:35 PDT","2026-06-01 23:37:48 PDT","2026-06-01 23:38:00 PDT","2026-06-01 23:38:12 PDT","2026-06-01 23:38:24 PDT","2026-06-01 23:38:37 PDT","2026-06-01 23:38:50 PDT","2026-06-01 23:39:02 PDT","2026-06-01 23:39:14 PDT","2026-06-01 23:39:26 PDT","2026-06-01 23:39:38 PDT","2026-06-01 23:39:53 PDT","2026-06-01 23:40:06 PDT","2026-06-01 23:40:18 PDT","2026-06-01 23:40:32 PDT","2026-06-01 23:40:45 PDT","2026-06-01 23:40:56 PDT","2026-06-01 23:41:10 PDT","2026-06-01 23:41:22 PDT"]
+const _EXPE_Q_OCC    = [2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4]
+const _EXPE_Q_COLLAB = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+
+export const BE_INSIGHT_OUTPUT_EXPE_Q = {
+  id: SEED_EXPE_Q_INSIGHT_ID,
+  study_id: EXPE_STUDY_Q_ID,
+  output_mode: "final_insights" as const,
+  status: "complete",
+  created_at: "2026-06-02T07:00:00Z",
+  dashboard_summary: "In this 5-minute snapshot with 23 detections, occupancy varied between 2 and 4 individuals and the collaboration index remained at 0 throughout.",
+  charts: [
+    { chart_id: "chart_occupancy_0",          chart_type: "line", title: "Occupancy (count)",          data: { labels: _EXPE_Q_LABELS, values: _EXPE_Q_OCC    } },
+    { chart_id: "chart_collaboration_index_1", chart_type: "line", title: "Collaboration Index (score)", data: { labels: _EXPE_Q_LABELS, values: _EXPE_Q_COLLAB } },
+  ],
+  tables: [
+    {
+      table_id: "table_detection_log",
+      title: "Detection Log",
+      columns: ["Timestamp", "Occupancy", "Collaboration Index", "Notes"],
+      rows: DEMO_DETECTIONS_EXPE_Q.map(d => [
+        d.timestamp_pt,
+        String(d.detected_behaviors.find(b => b.name === "Occupancy")?.value ?? ""),
+        String(d.detected_behaviors.find(b => b.name === "Collaboration Index")?.value ?? ""),
+        d.notes,
+      ]),
+    },
+  ],
+  insights: [
+    "During this snapshot, occupancy appeared to range steadily from two to four individuals.",
+    "The collaboration index remained at zero, suggesting no visible interaction between participants.",
+    "Behavior appears to be primarily solo-focused, with individuals engaging separately on devices.",
+    "This brief recording suggests a stable pattern of solitary activity during this snapshot.",
+  ],
+  recommendations: [
+    "Extend the observation duration to capture a more representative sample of behaviors.",
+    "Observe the area again at different times to assess variability in occupancy and interaction patterns.",
+    "Combine this brief study with additional data collection before drawing firm conclusions.",
+  ],
+}
+
+const _EXPE_I_LABELS = ["2026-06-01 23:48:09 PDT","2026-06-01 23:48:20 PDT","2026-06-01 23:48:32 PDT","2026-06-01 23:48:44 PDT","2026-06-01 23:48:56 PDT","2026-06-01 23:49:10 PDT","2026-06-01 23:49:21 PDT","2026-06-01 23:49:33 PDT","2026-06-01 23:49:45 PDT","2026-06-01 23:49:56 PDT","2026-06-01 23:50:08 PDT","2026-06-01 23:50:20 PDT","2026-06-01 23:50:33 PDT","2026-06-01 23:50:45 PDT","2026-06-01 23:50:57 PDT","2026-06-01 23:51:09 PDT","2026-06-01 23:51:21 PDT","2026-06-01 23:51:33 PDT","2026-06-01 23:51:45 PDT","2026-06-01 23:51:59 PDT","2026-06-01 23:52:12 PDT","2026-06-01 23:52:24 PDT","2026-06-01 23:52:37 PDT","2026-06-01 23:52:49 PDT","2026-06-01 23:53:00 PDT"]
+const _EXPE_I_OCC    = [2,2,2,2,3,3,3,4,4,4,2,2,2,3,3,4,4,4,4,4,4,4,4,4,4]
+const _EXPE_I_COLLAB = [0.5,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+
+export const BE_INSIGHT_OUTPUT_EXPE_I = {
+  id: SEED_EXPE_I_INSIGHT_ID,
+  study_id: EXPE_STUDY_I_ID,
+  output_mode: "final_insights" as const,
+  status: "complete",
+  created_at: "2026-06-02T07:10:00Z",
+  dashboard_summary: "During this 5-minute snapshot with 25 data points, participants appear to engage in active collaborative interactions most of the time, with occupancy varying between 2 and 4 and a high collaboration index in the majority of detections.",
+  charts: [
+    { chart_id: "chart_occupancy_0",          chart_type: "line", title: "Occupancy (count)",          data: { labels: _EXPE_I_LABELS, values: _EXPE_I_OCC    } },
+    { chart_id: "chart_collaboration_index_1", chart_type: "line", title: "Collaboration Index (score)", data: { labels: _EXPE_I_LABELS, values: _EXPE_I_COLLAB } },
+  ],
+  tables: [
+    {
+      table_id: "table_detection_log",
+      title: "Detection Log",
+      columns: ["Timestamp", "Occupancy", "Collaboration Index", "Notes"],
+      rows: DEMO_DETECTIONS_EXPE_I.map(d => [
+        d.timestamp_pt,
+        String(d.detected_behaviors.find(b => b.name === "Occupancy")?.value ?? ""),
+        String(d.detected_behaviors.find(b => b.name === "Collaboration Index")?.value ?? ""),
+        d.notes,
+      ]),
+    },
+  ],
+  insights: [
+    "During this snapshot, the group appears to engage in active collaboration in most detections, indicated by a collaboration index of 1.0.",
+    "Early observations suggest a brief period of lower engagement, with a collaboration index of 0.5 when two participants were present.",
+    "The data appears to show occupancy fluctuating between 2 and 4 participants while maintaining consistent visible interaction during this short observation.",
+  ],
+  recommendations: [
+    "Suggest extending the observation period to gather a more comprehensive view of interaction patterns.",
+    "Consider conducting additional observations at different times to verify if these tentative trends persist.",
+    "Recommend repeating the study to confirm the initial insights before making any changes based on this brief snapshot.",
+  ],
 }
 
 // ── BE_studies ───────────────────────────────────────────────────────────────
@@ -732,5 +889,68 @@ export const DEMO_FIT_ENTRIES_LGQ: FitEntry[] = [
     inputCols: ["Time Step"],
     outputCol: "Occupancy (count)",
     inputValues: { "Time Step": _LGQ_TIME_IDX },
+  },
+]
+
+// ── EXPE Models demo (model-created scenario) ─────────────────────────────────
+const _EXPE_I_TS_SHORT = ["23:48","23:48","23:48","23:48","23:48","23:49","23:49","23:49","23:49","23:49","23:50","23:50","23:50","23:50","23:50","23:51","23:51","23:51","23:51","23:51","23:52","23:52","23:52","23:52","23:53"]
+const _EXPE_I_TIME_IDX = Array.from({ length: 25 }, (_, i) => i)
+const _EXPE_I_OCC_MODEL = [2,2,2,2,3,3,3,4,4,4,2,2,2,3,3,4,4,4,4,4,4,4,4,4,4]
+
+const _EXPE_I_LSTM_PRED = [2.02,2.01,2.00,2.38,2.89,2.99,3.44,3.91,3.98,3.57,2.42,1.97,2.09,2.81,3.11,3.84,3.96,3.99,4.00,3.99,3.98,3.99,4.00,3.99,3.97]
+
+const _EXPE_I_LSTM_LOSS = Array.from({ length: 80 }, (_, i) =>
+  parseFloat((0.85 * Math.exp(-i / 14) + 0.03).toFixed(4))
+)
+
+export const DEMO_BEHAVIOR_DATASET_EXPE = {
+  filename: "expe_interaction_zone_behavior.csv",
+  columns: ["Timestamp", "Occupancy (count)"],
+  rows: _EXPE_I_OCC_MODEL.map((occ, i) => ({ "Timestamp": _EXPE_I_TS_SHORT[i], "Occupancy (count)": occ })),
+}
+
+export const DEMO_MERGED_DATASET_EXPE = {
+  filename: "expe_interaction_zone_behavior",
+  columns: ["Timestamp", "Time Step", "Occupancy (count)"],
+  rows: _EXPE_I_TIME_IDX.map((idx, i) => ({
+    "Timestamp": _EXPE_I_TS_SHORT[i],
+    "Time Step": idx,
+    "Occupancy (count)": _EXPE_I_OCC_MODEL[i],
+  })),
+}
+
+export const DEMO_MODEL_DATASET_EXPE = {
+  id: SEED_EXPE_MODEL_DATASET_ID,
+  name: "expe_interaction_zone_behavior",
+  study_id: EXPE_STUDY_I_ID,
+  columns: ["Timestamp", "Time Step", "Occupancy (count)"],
+  data: _EXPE_I_TIME_IDX.map((idx, i) => ({
+    "Timestamp": _EXPE_I_TS_SHORT[i],
+    "Time Step": idx,
+    "Occupancy (count)": _EXPE_I_OCC_MODEL[i],
+  })),
+  metadata: { rowCount: 25, merged: true },
+  created_at: "2026-06-02T06:53:19Z",
+}
+
+export const DEMO_FIT_ENTRIES_EXPE: FitEntry[] = [
+  {
+    id: "demo-expe-lstm",
+    label: "LSTM: Time Series → Occupancy (count)",
+    color: "#8b5cf6",
+    visible: true,
+    xValues: _EXPE_I_TIME_IDX,
+    yValues: _EXPE_I_OCC_MODEL,
+    fitResult: {
+      modelType: "lstm",
+      parameters: { architecture: "LSTM: Input([4,1]) → LSTM(16) → Dense(8) → Dense(1)" },
+      metrics: { r2: 0.964, rmse: 0.187, mse: 0.035 },
+      predictedY: _EXPE_I_LSTM_PRED,
+      trainingLoss: _EXPE_I_LSTM_LOSS,
+    } as FitResult,
+    inputCount: 1,
+    inputCols: ["Time Step"],
+    outputCol: "Occupancy (count)",
+    inputValues: { "Time Step": _EXPE_I_TIME_IDX },
   },
 ]

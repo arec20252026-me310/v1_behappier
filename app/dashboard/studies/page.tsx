@@ -9,7 +9,7 @@ import {
   DEMO_LGQ_SPACE, ZONES_LGQ, LGQ_SPACE_ID,
   BE_STUDY_IN_PROGRESS_LGQ, BE_STUDY_COMPLETE_LGQ, DEMO_DETECTIONS_LGQ, LGQ_STUDY_ID,
   DEMO_EXPE_SPACE, ZONES_EXPE, EXPE_SPACE_ID,
-  BE_STUDY_IN_PROGRESS_EXPE, BE_STUDY_COMPLETE_EXPE, DEMO_DETECTIONS_EXPE, EXPE_STUDY_ID,
+  BE_STUDY_IN_PROGRESS_EXPE_Q, BE_STUDY_COMPLETE_EXPE_Q, DEMO_DETECTIONS_EXPE_Q, EXPE_STUDY_Q_ID,
 } from "@/lib/demo-seeds"
 
 export default async function StudiesPage() {
@@ -40,9 +40,9 @@ export default async function StudiesPage() {
 
   const beStudies = demo
     ? (scenario === "study-in-progress"
-        ? [isLGQ ? BE_STUDY_IN_PROGRESS_LGQ : isExpe ? BE_STUDY_IN_PROGRESS_EXPE : BE_STUDY_IN_PROGRESS]
+        ? [isLGQ ? BE_STUDY_IN_PROGRESS_LGQ : isExpe ? BE_STUDY_IN_PROGRESS_EXPE_Q : BE_STUDY_IN_PROGRESS]
         : (scenario === "study-complete" || scenario === "model-created")
-          ? [isLGQ ? BE_STUDY_COMPLETE_LGQ : isExpe ? BE_STUDY_COMPLETE_EXPE : BE_STUDY_COMPLETE]
+          ? [isLGQ ? BE_STUDY_COMPLETE_LGQ : isExpe ? BE_STUDY_COMPLETE_EXPE_Q : BE_STUDY_COMPLETE]
           : [])
     : space ? ((await supabase
         .from("BE_studies")
@@ -72,8 +72,8 @@ export default async function StudiesPage() {
 
   const cameras = demo ? [] : ((await supabase.from("cameras").select("*")).data ?? [])
 
-  const demoStudyId  = isLGQ ? LGQ_STUDY_ID  : isExpe ? EXPE_STUDY_ID  : STUDY_ID
-  const demoDetections = isLGQ ? DEMO_DETECTIONS_LGQ : isExpe ? DEMO_DETECTIONS_EXPE : DEMO_DETECTIONS
+  const demoStudyId  = isLGQ ? LGQ_STUDY_ID  : isExpe ? EXPE_STUDY_Q_ID  : STUDY_ID
+  const demoDetections = isLGQ ? DEMO_DETECTIONS_LGQ : isExpe ? DEMO_DETECTIONS_EXPE_Q : DEMO_DETECTIONS
 
   return (
     <div className="flex flex-col h-full">

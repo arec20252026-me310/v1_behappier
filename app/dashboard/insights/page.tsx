@@ -9,7 +9,7 @@ import { getDefaultSpace } from "@/lib/spaces"
 import {
   BE_INSIGHT_OUTPUT, BE_STUDY_COMPLETE, DEMO_METRICS, DEMO_SPACE,
   DEMO_LGQ_SPACE, LGQ_SPACE_ID, BE_INSIGHT_OUTPUT_LGQ, BE_STUDY_COMPLETE_LGQ, DEMO_METRICS_LGQ,
-  DEMO_EXPE_SPACE, EXPE_SPACE_ID, BE_INSIGHT_OUTPUT_EXPE, BE_STUDY_COMPLETE_EXPE, DEMO_METRICS_EXPE,
+  DEMO_EXPE_SPACE, EXPE_SPACE_ID, BE_INSIGHT_OUTPUT_EXPE_Q, BE_INSIGHT_OUTPUT_EXPE_I, BE_STUDY_COMPLETE_EXPE_Q, DEMO_METRICS_EXPE,
 } from "@/lib/demo-seeds"
 
 export const dynamic = 'force-dynamic'
@@ -38,7 +38,7 @@ export default async function InsightsPage() {
   }
 
   const { data: outputs } = demo
-    ? { data: (scenario === "study-complete" || scenario === "model-created") ? [isLGQ ? BE_INSIGHT_OUTPUT_LGQ : isExpe ? BE_INSIGHT_OUTPUT_EXPE : BE_INSIGHT_OUTPUT] : [] }
+    ? { data: (scenario === "study-complete" || scenario === "model-created") ? (isExpe ? [BE_INSIGHT_OUTPUT_EXPE_Q, BE_INSIGHT_OUTPUT_EXPE_I] : [isLGQ ? BE_INSIGHT_OUTPUT_LGQ : BE_INSIGHT_OUTPUT]) : [] }
     : spaceStudyIds.length > 0
       ? await supabase
           .from("BE_insight_outputs")
@@ -53,10 +53,14 @@ export default async function InsightsPage() {
   let studyGoals: Record<string, string> = {}
   let camerasByStudy: Record<string, string> = {}
   if (demo && (scenario === "study-complete" || scenario === "model-created")) {
-    const demoStudy = isLGQ ? BE_STUDY_COMPLETE_LGQ : isExpe ? BE_STUDY_COMPLETE_EXPE : BE_STUDY_COMPLETE
+    const demoStudy = isLGQ ? BE_STUDY_COMPLETE_LGQ : isExpe ? BE_STUDY_COMPLETE_EXPE_Q : BE_STUDY_COMPLETE
     studyDurations = { [demoStudy.study_id]: demoStudy.duration_seconds * 1000 }
     const demoName = (demoStudy.metadata as Record<string, unknown>)?.study_name
     if (typeof demoName === "string" && demoName) studyGoals[demoStudy.study_id] = demoName
+    if (isExpe) {
+      studyDurations[BE_INSIGHT_OUTPUT_EXPE_I.study_id] = 300 * 1000
+      studyGoals[BE_INSIGHT_OUTPUT_EXPE_I.study_id] = "Interaction Zone Occupancy and Collaboration Study"
+    }
   } else if (studyIds.length > 0) {
     const { data: studies } = await supabase
       .from("BE_studies")
