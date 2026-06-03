@@ -255,8 +255,8 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
   }
   const leftAxisLabel  = leftSeries  ? getSeriesAxisLabel(leftSeries)  : undefined
   const rightAxisLabel = rightSeries ? getSeriesAxisLabel(rightSeries) : undefined
-  const getAxisId = (s: ChartSeries): string | undefined =>
-    canDualAxis ? (s === leftSeries ? "left" : "right") : undefined
+  const getAxisId = (s: ChartSeries): string | number =>
+    canDualAxis ? (s === leftSeries ? "left" : "right") : 0
 
   const effectiveYAxisLabel = canDualAxis ? undefined : (yAxisLabel ?? (series.length > 1 ? "Multiple behaviors" : undefined))
   const allData = mergeSeriesData(series)
@@ -588,7 +588,7 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
                 <YAxis yAxisId="right" orientation="right" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={rightAxisLabel ? { value: rightAxisLabel, angle: 90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
               </>
             ) : (
-              <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
+              <YAxis yAxisId={0} domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
             )}
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
