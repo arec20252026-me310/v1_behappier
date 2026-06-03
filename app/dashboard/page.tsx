@@ -146,7 +146,11 @@ export default async function DashboardPage() {
               activeStudyId={!isExpe && scenario === "study-in-progress" ? (displayStudy?.study_id ?? BE_STUDY_IN_PROGRESS.study_id) : undefined}
               activeStudyStatus={!isExpe && scenario === "study-in-progress" ? (displayStudy?.status ?? BE_STUDY_IN_PROGRESS.status) : undefined}
               activeStudyMonitoredZoneId={!isExpe && scenario === "study-in-progress" ? (displayStudy?.metadata?.monitored_zone_id ?? (BE_STUDY_IN_PROGRESS as { metadata?: { monitored_zone_id?: string } }).metadata?.monitored_zone_id) : undefined}
-              demoDetections={scenario === "study-in-progress" ? _detections : undefined}
+              demoDetections={!isExpe && scenario === "study-in-progress" ? _detections : undefined}
+              demoDetectionsPerStudy={isExpe && scenario === "study-in-progress" ? {
+                [EXPE_STUDY_Q_ID]: DEMO_DETECTIONS_EXPE_Q.slice(7, 8),
+                [EXPE_STUDY_I_ID]: DEMO_DETECTIONS_EXPE_I.slice(7, 8),
+              } : undefined}
               tracksOccupancy={scenario === "study-in-progress"}
               isDemo={true}
             />
@@ -180,8 +184,8 @@ export default async function DashboardPage() {
                       { studyId: EXPE_STUDY_I_ID, status: "running", studyName: "Interaction Zone Study" },
                     ]}
                     demoDetectionsMap={{
-                      [EXPE_STUDY_Q_ID]: DEMO_DETECTIONS_EXPE_Q.slice(-1),
-                      [EXPE_STUDY_I_ID]: DEMO_DETECTIONS_EXPE_I.slice(-1),
+                      [EXPE_STUDY_Q_ID]: DEMO_DETECTIONS_EXPE_Q.slice(7, 8),
+                      [EXPE_STUDY_I_ID]: DEMO_DETECTIONS_EXPE_I.slice(7, 8),
                     }}
                   />
                 ) : (

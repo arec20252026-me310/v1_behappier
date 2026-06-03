@@ -57,6 +57,7 @@ interface SpaceHeatmapProps {
   activeStudyStatus?: string
   activeStudyMonitoredZoneId?: string
   demoDetections?: DetectionRow[]
+  demoDetectionsPerStudy?: Record<string, DetectionRow[]>
   tracksOccupancy?: boolean
   isDemo?: boolean
 }
@@ -147,6 +148,7 @@ export function SpaceHeatmap({
   activeStudyStatus,
   activeStudyMonitoredZoneId,
   demoDetections,
+  demoDetectionsPerStudy,
   tracksOccupancy,
   isDemo = false,
 }: SpaceHeatmapProps) {
@@ -252,6 +254,22 @@ export function SpaceHeatmap({
       if (s.monitoredZoneId) studyToZone[s.study_id] = s.monitoredZoneId
     }
 
+    if (demoDetectionsPerStudy && Object.keys(demoDetectionsPerStudy).length > 0) {
+      const newOcc: Record<string, number> = {}
+      for (const s of allActiveStudies) {
+        if (!s.monitoredZoneId) continue
+        const detections = demoDetectionsPerStudy[s.study_id]
+        if (!detections?.length) continue
+        const last = detections[detections.length - 1]
+        const behaviors = Array.isArray(last?.detected_behaviors) ? last.detected_behaviors : []
+        const occ = (behaviors as { name: string; value: number | string }[])
+          .find(beh => beh.name.toLowerCase().includes("occupancy"))
+        if (occ != null) newOcc[s.monitoredZoneId] = Number(occ.value)
+      }
+      if (Object.keys(newOcc).length > 0) setZoneOccupancies(newOcc)
+      return
+    }
+
     if (demoDetections) {
       const last = demoDetections[demoDetections.length - 1]
       const b = (Array.isArray(last?.detected_behaviors) ? last.detected_behaviors : [])
@@ -305,7 +323,7 @@ export function SpaceHeatmap({
 
     return () => { supabase.removeChannel(channel) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studiesKey, tracksOccupancy, demoDetections])
+  }, [studiesKey, tracksOccupancy, demoDetections, demoDetectionsPerStudy])
 
   const zonesWithOccupancy = getZonesWithOccupancy(zones)
   const gridResolution = space?.grid_resolution || 8

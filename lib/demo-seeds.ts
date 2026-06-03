@@ -332,7 +332,7 @@ export const BE_INSIGHT_OUTPUT_LGQ = {
 // ── Space — EXPE Room 126 (real Supabase IDs) ─────────────────────────────────
 export const EXPE_SPACE_ID       = "99eab524-a616-450c-9aa4-892f3346b854"
 export const EXPE_QUIET_ZONE_ID  = "816023aa-06f3-4446-9574-a7bb13c1c1de"
-export const EXPE_ROOM_ID        = "f0725c0e-5921-4fa9-824f-dc1e6313d5ac" // Interaction Zone (monitored)
+export const EXPE_INTERACTION_ZONE_ID = "f0725c0e-5921-4fa9-824f-dc1e6313d5ac"
 export const EXPE_OBS_AREA_ID    = "1e0c5c9b-b49c-4afe-a999-0b354b9b903a"
 export const EXPE_STUDY_Q_ID        = "study_1780382193242"
 export const EXPE_STUDY_I_ID        = "study_1780382887677"
@@ -358,17 +358,17 @@ export const DEMO_EXPE_SPACE = {
 const _TS_EXPE = { created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" }
 export const ZONES_EXPE = [
   { id: EXPE_QUIET_ZONE_ID, space_id: EXPE_SPACE_ID, name: "Quiet Zone",       zone_type: "workspace", grid_x: 1,  grid_y: 2,  grid_width: 10, grid_height: 10, color: "#10B981", capacity: null, metadata: {}, ..._TS_EXPE },
-  { id: EXPE_ROOM_ID,       space_id: EXPE_SPACE_ID, name: "Interaction Zone", zone_type: "workspace", grid_x: 11, grid_y: 2,  grid_width: 10, grid_height: 10, color: "#10B981", capacity: null, metadata: {}, ..._TS_EXPE },
+  { id: EXPE_INTERACTION_ZONE_ID,       space_id: EXPE_SPACE_ID, name: "Interaction Zone", zone_type: "workspace", grid_x: 11, grid_y: 2,  grid_width: 10, grid_height: 10, color: "#10B981", capacity: null, metadata: {}, ..._TS_EXPE },
   { id: EXPE_OBS_AREA_ID,   space_id: EXPE_SPACE_ID, name: "Observation Area", zone_type: "workspace", grid_x: 1,  grid_y: 13, grid_width: 20, grid_height: 3,  color: "#10B981", capacity: null, metadata: {}, ..._TS_EXPE },
 ]
 
 export const CAMERAS_EXPE = [
-  { id: "ef83a572-e62e-403e-824e-0fb52e64fca5", zone_id: EXPE_ROOM_ID,       name: "camera_2", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_2", placement_x: 284, placement_y: 279, placement_frac_x: 0.3682961532070455, placement_frac_y: 0.58125, placement_direction: "up-right" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
+  { id: "ef83a572-e62e-403e-824e-0fb52e64fca5", zone_id: EXPE_INTERACTION_ZONE_ID,       name: "camera_2", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_2", placement_x: 284, placement_y: 279, placement_frac_x: 0.3682961532070455, placement_frac_y: 0.58125, placement_direction: "up-right" }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
   { id: "1a0af4da-ba24-4710-b74e-903f7840fe9e", zone_id: EXPE_QUIET_ZONE_ID, name: "camera_1", stream_url: null, status: "active" as const, field_of_view: {}, metadata: { ha_entity_id: "camera_1", placement_x: 244, placement_y: 279, placement_frac_x: 0.3162128198737122, placement_frac_y: 0.58125, placement_direction: "up-left"  }, created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-01T00:00:00Z" },
 ]
 
 export const DEMO_CAMERA_PLACEMENTS_EXPE: import("@/lib/types").CameraPlacement[] = [
-  { id: "cam-expe-interact", zoneId: EXPE_ROOM_ID,       x: 284, y: 279, fracX: 0.3682961532070455, fracY: 0.58125, direction: "up-right" as CameraDir, label: "camera_2" },
+  { id: "cam-expe-interact", zoneId: EXPE_INTERACTION_ZONE_ID,       x: 284, y: 279, fracX: 0.3682961532070455, fracY: 0.58125, direction: "up-right" as CameraDir, label: "camera_2" },
   { id: "cam-expe-quiet",    zoneId: EXPE_QUIET_ZONE_ID, x: 244, y: 279, fracX: 0.3162128198737122, fracY: 0.58125, direction: "up-left"  as CameraDir, label: "camera_1" },
 ]
 
@@ -481,8 +481,8 @@ const BE_STUDY_BASE_EXPE_I = {
   study_plan: {}, task_graph: {}, graph_plan: {},
   metadata: {
     study_name: "Interaction Zone Occupancy and Collaboration Study",
-    monitored_zone_id: EXPE_ROOM_ID,
-    target_zones: [EXPE_ROOM_ID],
+    monitored_zone_id: EXPE_INTERACTION_ZONE_ID,
+    target_zones: [EXPE_INTERACTION_ZONE_ID],
     camera_id: "camera_3",
   },
   live_preview_status: null,
