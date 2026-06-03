@@ -80,6 +80,7 @@ export interface ChartSeries {
   values: (number | null)[]
   lower?: (number | null)[]
   upper?: (number | null)[]
+  unit?: string
 }
 
 interface TimeSeriesChartProps {
@@ -93,6 +94,7 @@ interface TimeSeriesChartProps {
   isLive?: boolean
   compact?: boolean
   enlarged?: boolean
+  dualYAxis?: boolean
 }
 
 function lookupDescription(title: string, descriptions: Record<string, string>): string | undefined {
@@ -239,8 +241,24 @@ const ZOOM_SENSITIVITY = 0.002
 
 type DragMode = "pan" | "left" | "right"
 
-export function TimeSeriesChart({ series, height = 280, fillHeight = false, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive, compact = false, enlarged = false }: TimeSeriesChartProps) {
-  const effectiveYAxisLabel = yAxisLabel ?? (series.length > 1 ? "Multiple behaviors" : undefined)
+export function TimeSeriesChart({ series, height = 280, fillHeight = false, studyDurationMs, xAxisLabel, yAxisLabel, seriesDescriptions, isLive, compact = false, enlarged = false, dualYAxis = false }: TimeSeriesChartProps) {
+  const canDualAxis = dualYAxis && series.length === 2
+  const leftSeries = canDualAxis
+    ? (series.find(s => s.title.toLowerCase().includes("occupancy")) ?? series[0])
+    : null
+  const rightSeries = canDualAxis
+    ? (series.find(s => s !== leftSeries) ?? null)
+    : null
+  function getSeriesAxisLabel(s: ChartSeries): string {
+    if (s.unit && !s.title.includes("(")) return `${s.title} (${s.unit})`
+    return s.title
+  }
+  const leftAxisLabel  = leftSeries  ? getSeriesAxisLabel(leftSeries)  : undefined
+  const rightAxisLabel = rightSeries ? getSeriesAxisLabel(rightSeries) : undefined
+  const getAxisId = (s: ChartSeries): string | undefined =>
+    canDualAxis ? (s === leftSeries ? "left" : "right") : undefined
+
+  const effectiveYAxisLabel = canDualAxis ? undefined : (yAxisLabel ?? (series.length > 1 ? "Multiple behaviors" : undefined))
   const allData = mergeSeriesData(series)
   const total = allData.length
 
@@ -561,26 +579,36 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
       <div ref={chartRef} style={fillHeight ? { flex: 1, minHeight: 0, position: "relative", userSelect: "none" } : { height, userSelect: "none" }}>
         <div style={fillHeight ? { position: "absolute", inset: 0 } : { height: "100%" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={visibleData} margin={{ top: 8, right: 16, left: 4, bottom: 36 }}>
+          <ComposedChart data={visibleData} margin={{ top: 8, right: canDualAxis ? (enlarged ? 104 : 80) : 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
             <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
-            <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
+            {canDualAxis ? (
+              <>
+                <YAxis yAxisId="left" orientation="left" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={leftAxisLabel ? { value: leftAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
+                <YAxis yAxisId="right" orientation="right" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={rightAxisLabel ? { value: rightAxisLabel, angle: 90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
+              </>
+            ) : (
+              <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
+            )}
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
               const isHidden = hidden.has(s.title)
+              const axisId = getAxisId(s)
               return [
                 hasCIData(s) ? (
                   <Area key={`${s.title}_ci_base`} type="monotone" dataKey={`${s.title}_ci_base`}
+                    yAxisId={axisId}
                     stackId={`ci_${s.title}`} stroke="none" fill="transparent" legendType="none"
                     connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
                 hasCIData(s) ? (
                   <Area key={`${s.title}_ci_band`} type="monotone" dataKey={`${s.title}_ci_band`}
+                    yAxisId={axisId}
                     stackId={`ci_${s.title}`} stroke="none" fill={color} fillOpacity={0.15}
                     legendType="none" connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
-                <Line key={s.title} type="monotone" dataKey={s.title}
+                <Line key={s.title} type="monotone" dataKey={s.title} yAxisId={axisId}
                   stroke={color} strokeWidth={isDark ? 3 : 4}
                   dot={(props: Record<string, unknown>) => {
                     const { cx, cy, index } = props as { cx: number; cy: number; index: number }

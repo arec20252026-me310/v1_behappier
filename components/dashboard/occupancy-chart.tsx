@@ -54,18 +54,18 @@ function extractLineSeries(output: BEInsightOutput): ChartSeries[] {
 }
 
 function buildLiveSeries(detections: DetectionRow[]): ChartSeries[] {
-  const seriesMap = new Map<string, { labels: string[]; values: (number | null)[] }>()
+  const seriesMap = new Map<string, { labels: string[]; values: (number | null)[]; unit?: string }>()
 
   for (const row of detections) {
     const behaviors = Array.isArray(row.detected_behaviors) ? row.detected_behaviors : []
-    for (const b of behaviors) {
+    for (const b of behaviors as { name: string; value: number | string; unit?: string }[]) {
       const name = b.name
       const rawVal = b.value
       const numVal = typeof rawVal === "number" ? rawVal : Number(rawVal)
       if (isNaN(numVal)) continue
 
       if (!seriesMap.has(name)) {
-        seriesMap.set(name, { labels: [], values: [] })
+        seriesMap.set(name, { labels: [], values: [], unit: b.unit })
       }
       const entry = seriesMap.get(name)!
       entry.labels.push(row.timestamp_pt)
@@ -73,10 +73,11 @@ function buildLiveSeries(detections: DetectionRow[]): ChartSeries[] {
     }
   }
 
-  return Array.from(seriesMap.entries()).map(([title, { labels, values }]) => ({
+  return Array.from(seriesMap.entries()).map(([title, { labels, values, unit }]) => ({
     title,
     labels,
     values,
+    unit,
   }))
 }
 
@@ -98,9 +99,19 @@ export function OccupancyChart({
   const [lastDetectionAt, setLastDetectionAt] = useState<number | null>(null)
   const [agoText, setAgoText] = useState<string | null>(null)
   const [visibleOutputs, setVisibleOutputs] = useState<BEInsightOutput[]>([])
+  const [isShowcase, setIsShowcase] = useState(false)
   const [enlargedChartAreaHeight, setEnlargedChartAreaHeight] = useState(0)
   const enlargedChartAreaRef = useRef<HTMLDivElement>(null)
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null)
+
+  useEffect(() => {
+    setIsShowcase(localStorage.getItem("behappier_showcase_mode") === "true")
+    const handler = (e: StorageEvent) => {
+      if (e.key === "behappier_showcase_mode") setIsShowcase(e.newValue === "true")
+    }
+    window.addEventListener("storage", handler)
+    return () => window.removeEventListener("storage", handler)
+  }, [])
 
   // Determine which completed outputs to show based on localStorage viewed timestamp
   useEffect(() => {
@@ -279,6 +290,7 @@ export function OccupancyChart({
               seriesDescriptions={metricDescriptions}
               isLive={false}
               enlarged
+              dualYAxis={isShowcase}
             />
           </div>
         )
@@ -292,6 +304,7 @@ export function OccupancyChart({
             seriesDescriptions={metricDescriptions}
             isLive={false}
             enlarged={false}
+            dualYAxis={isShowcase}
           />
         )
       }
@@ -318,6 +331,7 @@ export function OccupancyChart({
                     isLive={false}
                     compact={false}
                     enlarged
+                    dualYAxis={isShowcase}
                   />
                 </div>
               </div>
@@ -344,6 +358,7 @@ export function OccupancyChart({
                 isLive={false}
                 compact={n > 1}
                 enlarged={false}
+                dualYAxis={isShowcase}
               />
             </div>
           ))}
@@ -385,6 +400,7 @@ export function OccupancyChart({
                   isLive={studyIsLive}
                   compact={isCompact}
                   enlarged={enlarged}
+                  dualYAxis={isShowcase}
                 />
               )}
             </div>
@@ -462,6 +478,7 @@ export function OccupancyChart({
                               isLive={studyIsLive}
                               compact={false}
                               enlarged
+                              dualYAxis={isShowcase}
                             />
                           )}
                         </div>
