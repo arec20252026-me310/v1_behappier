@@ -255,8 +255,10 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
   }
   const leftAxisLabel  = leftSeries  ? getSeriesAxisLabel(leftSeries)  : undefined
   const rightAxisLabel = rightSeries ? getSeriesAxisLabel(rightSeries) : undefined
-  const getAxisId = (s: ChartSeries): string | number =>
-    canDualAxis ? (s === leftSeries ? "left" : "right") : 0
+  const getAxisId = (s: ChartSeries): string | undefined =>
+    canDualAxis ? (s === leftSeries ? "left" : "right") : undefined
+  const leftAxisColor  = canDualAxis && leftSeries  ? SERIES_COLORS[series.indexOf(leftSeries)  % SERIES_COLORS.length] : "var(--chart-axis)"
+  const rightAxisColor = canDualAxis && rightSeries ? SERIES_COLORS[series.indexOf(rightSeries) % SERIES_COLORS.length] : "var(--chart-axis)"
 
   const effectiveYAxisLabel = canDualAxis ? undefined : (yAxisLabel ?? (series.length > 1 ? "Multiple behaviors" : undefined))
   const allData = mergeSeriesData(series)
@@ -584,31 +586,32 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
             <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
             {canDualAxis ? (
               <>
-                <YAxis yAxisId="left" orientation="left" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={leftAxisLabel ? { value: leftAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
-                <YAxis yAxisId="right" orientation="right" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={rightAxisLabel ? { value: rightAxisLabel, angle: 90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
+                <YAxis yAxisId="left" orientation="left" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: leftAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: leftAxisColor }} tickLine={{ stroke: leftAxisColor }} width={enlarged ? 112 : 96} label={leftAxisLabel ? { value: leftAxisLabel, angle: -90, position: "center", fill: leftAxisColor, fontSize: enlarged ? 17 : 15 } : undefined} />
+                <YAxis yAxisId="right" orientation="right" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: rightAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: rightAxisColor }} tickLine={{ stroke: rightAxisColor }} width={enlarged ? 112 : 96} label={rightAxisLabel ? { value: rightAxisLabel, angle: 90, position: "center", fill: rightAxisColor, fontSize: enlarged ? 17 : 15 } : undefined} />
               </>
             ) : (
-              <YAxis yAxisId={0} domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
+              <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
             )}
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
               const color = SERIES_COLORS[i % SERIES_COLORS.length]
               const isHidden = hidden.has(s.title)
               const axisId = getAxisId(s)
+              const yAxisProp = axisId !== undefined ? { yAxisId: axisId } : {}
               return [
                 hasCIData(s) ? (
                   <Area key={`${s.title}_ci_base`} type="monotone" dataKey={`${s.title}_ci_base`}
-                    yAxisId={axisId}
+                    {...yAxisProp}
                     stackId={`ci_${s.title}`} stroke="none" fill="transparent" legendType="none"
                     connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
                 hasCIData(s) ? (
                   <Area key={`${s.title}_ci_band`} type="monotone" dataKey={`${s.title}_ci_band`}
-                    yAxisId={axisId}
+                    {...yAxisProp}
                     stackId={`ci_${s.title}`} stroke="none" fill={color} fillOpacity={0.15}
                     legendType="none" connectNulls hide={isHidden} isAnimationActive={animationActive} />
                 ) : null,
-                <Line key={s.title} type="monotone" dataKey={s.title} yAxisId={axisId}
+                <Line key={s.title} type="monotone" dataKey={s.title} {...yAxisProp}
                   stroke={color} strokeWidth={isDark ? 3 : 4}
                   dot={(props: Record<string, unknown>) => {
                     const { cx, cy, index } = props as { cx: number; cy: number; index: number }
