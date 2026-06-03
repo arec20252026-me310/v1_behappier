@@ -74,6 +74,46 @@ function ChartTooltip({
 }
 
 
+interface BiLineLabelProps {
+  viewBox?: { x: number; y: number; width: number; height: number }
+  value?: string
+  angle?: number
+  fill?: string
+  fontSize?: number
+}
+
+function BiLineAxisLabel({ viewBox, value, angle = -90, fill = "currentColor", fontSize = 15 }: BiLineLabelProps) {
+  if (!viewBox || !value) return null
+  const { x, y, width, height } = viewBox
+  const cx = x + width / 2
+  const cy = y + height / 2
+  const match = value.match(/^(.*?)\s*(\([^)]+\))$/)
+  const name = match ? match[1].trim() : value
+  const unit = match ? match[2] : null
+  if (!unit) {
+    return (
+      <text transform={`translate(${cx},${cy}) rotate(${angle})`} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fontSize}>
+        {name}
+      </text>
+    )
+  }
+  // Space the two lines far enough apart that they don't overlap.
+  // Each line's rendered height ≈ its char count × (fontSize × 0.65).
+  // Use viewBox height / 3 as the half-gap so the chart height governs spacing.
+  const halfGap = Math.max((height / 3) / 2, fontSize * 2.5)
+  // For left axis (-90): name at bottom (cy+half), unit at top (cy-half) — reads bottom-to-top
+  // For right axis (+90): name at top (cy-half), unit at bottom (cy+half) — reads top-to-bottom
+  const isLeft = angle < 0
+  const nameY = isLeft ? cy + halfGap : cy - halfGap
+  const unitY = isLeft ? cy - halfGap : cy + halfGap
+  return (
+    <g>
+      <text transform={`translate(${cx},${nameY}) rotate(${angle})`} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fontSize}>{name}</text>
+      <text transform={`translate(${cx},${unitY}) rotate(${angle})`} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fontSize}>{unit}</text>
+    </g>
+  )
+}
+
 export interface ChartSeries {
   title: string
   labels: string[]
@@ -581,11 +621,11 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
       <div ref={chartRef} style={fillHeight ? { flex: 1, minHeight: 0, position: "relative", userSelect: "none" } : { height, userSelect: "none" }}>
         <div style={fillHeight ? { position: "absolute", inset: 0 } : { height: "100%" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={visibleData} margin={{ top: 8, right: canDualAxis ? (enlarged ? 104 : 80) : 16, left: 4, bottom: 36 }}>
+          <ComposedChart data={visibleData} margin={{ top: 8, right: canDualAxis ? (enlarged ? 8 : 4) : 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
             <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
-            {canDualAxis && <YAxis yAxisId="left" orientation="left" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: leftAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: leftAxisColor }} tickLine={{ stroke: leftAxisColor }} width={enlarged ? 112 : 96} label={leftAxisLabel ? { value: leftAxisLabel, angle: -90, position: "center", fill: leftAxisColor, fontSize: enlarged ? 17 : 15 } : undefined} />}
-            {canDualAxis && <YAxis yAxisId="right" orientation="right" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: rightAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: rightAxisColor }} tickLine={{ stroke: rightAxisColor }} width={enlarged ? 112 : 96} label={rightAxisLabel ? { value: rightAxisLabel, angle: 90, position: "center", fill: rightAxisColor, fontSize: enlarged ? 17 : 15 } : undefined} />}
+            {canDualAxis && <YAxis yAxisId="left" orientation="left" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: leftAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: leftAxisColor }} tickLine={{ stroke: leftAxisColor }} width={enlarged ? 120 : 104} label={leftAxisLabel ? <BiLineAxisLabel value={leftAxisLabel} angle={-90} fill={leftAxisColor} fontSize={enlarged ? 17 : 15} /> : undefined} />}
+            {canDualAxis && <YAxis yAxisId="right" orientation="right" domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: rightAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: rightAxisColor }} tickLine={{ stroke: rightAxisColor }} width={enlarged ? 130 : 112} label={rightAxisLabel ? <BiLineAxisLabel value={rightAxisLabel} angle={90} fill={rightAxisColor} fontSize={enlarged ? 17 : 15} /> : undefined} />}
             {!canDualAxis && <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />}
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {

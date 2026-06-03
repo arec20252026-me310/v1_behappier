@@ -382,7 +382,12 @@ export function SpaceHeatmap({
   }
 
   const handleZoneClick = (zone: ZoneWithOccupancy) => {
-    // In EXPE showcase mode, open the zone detail TV view — but only when the zone
+    // In demo study-running mode, open the zone detail view for any zone with an active study.
+    if (isDemo && allActiveStudies.some(s => s.monitoredZoneId === zone.id && (s.status === "running" || s.status === "analyzing"))) {
+      setSelectedZone(zone)
+      return
+    }
+    // In EXPE showcase mode (non-demo), open the zone detail TV view — but only when the zone
     // has no pending completed insights to show (those still use the insight popup).
     if (localStorage.getItem("behappier_showcase_mode") === "true" && space?.id === EXPE_SPACE_ID) {
       const hasPendingInsight = allCompletedZoneInsights.some(c => c.zoneId === zone.id) && !insightsViewed
@@ -703,7 +708,7 @@ export function SpaceHeatmap({
         </DialogContent>
       </Dialog>
 
-      {/* Zone detail TV view — EXPE showcase mode only */}
+      {/* Zone detail TV view */}
       <ZoneDetailDialog
         zone={selectedZone}
         onClose={() => setSelectedZone(null)}
@@ -717,6 +722,14 @@ export function SpaceHeatmap({
           imgAspectRatio,
           spaceId: space?.id ?? null,
         }}
+        demoDetection={isDemo && selectedZone ? (() => {
+          const study = allActiveStudies.find(s => s.monitoredZoneId === selectedZone.id)
+          if (!study) return null
+          const rows = demoDetectionsPerStudy?.[study.study_id]
+          if (rows && rows.length > 0) return rows[7] ?? rows.at(-1) ?? null
+          if (demoDetections && demoDetections.length > 0) return demoDetections[7] ?? demoDetections.at(-1) ?? null
+          return null
+        })() : undefined}
       />
 
       {/* BE Insight dialog (from completed study) */}

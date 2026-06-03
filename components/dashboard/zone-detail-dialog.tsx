@@ -45,6 +45,7 @@ interface ZoneDetailDialogProps {
   onClose: () => void
   activeStudies: ActiveStudyEntry[]
   mapGeometry: MapGeometry
+  demoDetection?: RawDetectionRow | null
 }
 
 type RawDetectionRow = {
@@ -67,7 +68,8 @@ function parseDetectionRow(row: RawDetectionRow): DetectionValues {
   }
 }
 
-export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: ZoneDetailDialogProps) {
+export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry, demoDetection }: ZoneDetailDialogProps) {
+  const isDemo = demoDetection !== undefined
   const [values, setValues] = useState<DetectionValues>({
     occupancy: null,
     collaborationIndex: null,
@@ -76,16 +78,13 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
   })
   const [notesExpanded, setNotesExpanded] = useState(true)
 
-  // isLive is driven by a live Supabase subscription rather than the server-rendered
-  // activeStudies prop, which goes stale when n8n resets a study back to draft after
-  // our server action already returned success.
   const [isLive, setIsLive] = useState(() =>
-    activeStudies.some(s => s.monitoredZoneId === zone?.id && s.status === "running")
+    isDemo || activeStudies.some(s => s.monitoredZoneId === zone?.id && s.status === "running")
   )
 
-  // Subscribe to BE_studies changes so isLive reflects actual DB state, not stale props
   useEffect(() => {
     if (!zone) return
+    if (isDemo) { setIsLive(true); return }
     const { spaceId } = mapGeometry
     if (!spaceId) {
       setIsLive(activeStudies.some(s => s.monitoredZoneId === zone.id && s.status === "running"))
@@ -126,13 +125,18 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [zone?.id, mapGeometry.spaceId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [zone?.id, mapGeometry.spaceId, isDemo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!zone) return
 
     setValues({ occupancy: null, collaborationIndex: null, notes: null, timestamp: null })
     setNotesExpanded(true)
+
+    if (isDemo) {
+      if (demoDetection) setValues(parseDetectionRow(demoDetection))
+      return
+    }
 
     const supabase = createClient()
 
@@ -146,7 +150,6 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
         if (data?.[0]) setValues(parseDetectionRow(data[0] as RawDetectionRow))
       })
 
-    // Subscribing by zone_id (not study_id) auto-transitions across studies
     const channel = supabase
       .channel(`zone-detail-${zone.id}`)
       .on("postgres_changes", {
@@ -161,7 +164,7 @@ export function ZoneDetailDialog({ zone, onClose, activeStudies, mapGeometry }: 
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [zone?.id])
+  }, [zone?.id, isDemo, demoDetection])
 
   const zoneImageSrc = zone ? (ZONE_IMAGES[zone.id] ?? null) : null
 
