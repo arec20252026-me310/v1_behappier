@@ -21,6 +21,7 @@ import {
   BE_INSIGHT_OUTPUT_EXPE_Q, BE_INSIGHT_OUTPUT_EXPE_I,
   DEMO_DETECTIONS_EXPE_Q, DEMO_DETECTIONS_EXPE_I,
   EXPE_STUDY_Q_ID, EXPE_STUDY_I_ID,
+  EXPE_QUIET_ZONE_ID, EXPE_INTERACTION_ZONE_ID,
 } from "@/lib/demo-seeds"
 
 const ACTIVE_STATUSES = ["running", "analyzing"]
@@ -133,8 +134,12 @@ export default async function DashboardPage() {
               studies={[]}
               cameras={demoCameras}
               livePreviewMetrics={scenario === "study-in-progress" ? null : demoLive}
-              completedStudy={demoCompletedStudy}
-              completedStudyInsights={demoCompletedInsights}
+              completedStudy={!isExpe ? demoCompletedStudy : null}
+              completedStudyInsights={!isExpe ? demoCompletedInsights : null}
+              completedZoneInsights={isExpe && hasInsights ? [
+                { zoneId: EXPE_QUIET_ZONE_ID, studyId: EXPE_STUDY_Q_ID, insights: BE_INSIGHT_OUTPUT_EXPE_Q },
+                { zoneId: EXPE_INTERACTION_ZONE_ID, studyId: EXPE_STUDY_I_ID, insights: BE_INSIGHT_OUTPUT_EXPE_I },
+              ] : undefined}
               activeStudies={isExpe && scenario === "study-in-progress"
                 ? expeInProgressStudies!.map(s => ({
                     study_id: s.study_id,

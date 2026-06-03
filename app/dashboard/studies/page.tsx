@@ -9,7 +9,10 @@ import {
   DEMO_LGQ_SPACE, ZONES_LGQ, LGQ_SPACE_ID,
   BE_STUDY_IN_PROGRESS_LGQ, BE_STUDY_COMPLETE_LGQ, DEMO_DETECTIONS_LGQ, LGQ_STUDY_ID,
   DEMO_EXPE_SPACE, ZONES_EXPE, EXPE_SPACE_ID,
-  BE_STUDY_IN_PROGRESS_EXPE_Q, BE_STUDY_COMPLETE_EXPE_Q, DEMO_DETECTIONS_EXPE_Q, EXPE_STUDY_Q_ID,
+  BE_STUDY_IN_PROGRESS_EXPE_Q, BE_STUDY_IN_PROGRESS_EXPE_I,
+  BE_STUDY_COMPLETE_EXPE_Q, BE_STUDY_COMPLETE_EXPE_I,
+  DEMO_DETECTIONS_EXPE_Q, DEMO_DETECTIONS_EXPE_I,
+  EXPE_STUDY_Q_ID, EXPE_STUDY_I_ID,
 } from "@/lib/demo-seeds"
 
 export default async function StudiesPage() {
@@ -40,9 +43,13 @@ export default async function StudiesPage() {
 
   const beStudies = demo
     ? (scenario === "study-in-progress"
-        ? [isLGQ ? BE_STUDY_IN_PROGRESS_LGQ : isExpe ? BE_STUDY_IN_PROGRESS_EXPE_Q : BE_STUDY_IN_PROGRESS]
+        ? isExpe
+          ? [BE_STUDY_IN_PROGRESS_EXPE_Q, BE_STUDY_IN_PROGRESS_EXPE_I]
+          : [isLGQ ? BE_STUDY_IN_PROGRESS_LGQ : BE_STUDY_IN_PROGRESS]
         : (scenario === "study-complete" || scenario === "model-created")
-          ? [isLGQ ? BE_STUDY_COMPLETE_LGQ : isExpe ? BE_STUDY_COMPLETE_EXPE_Q : BE_STUDY_COMPLETE]
+          ? isExpe
+            ? [BE_STUDY_COMPLETE_EXPE_Q, BE_STUDY_COMPLETE_EXPE_I]
+            : [isLGQ ? BE_STUDY_COMPLETE_LGQ : BE_STUDY_COMPLETE]
           : [])
     : space ? ((await supabase
         .from("BE_studies")
@@ -74,6 +81,9 @@ export default async function StudiesPage() {
 
   const demoStudyId  = isLGQ ? LGQ_STUDY_ID  : isExpe ? EXPE_STUDY_Q_ID  : STUDY_ID
   const demoDetections = isLGQ ? DEMO_DETECTIONS_LGQ : isExpe ? DEMO_DETECTIONS_EXPE_Q : DEMO_DETECTIONS
+  const expeDemoDetectionsByStudy = isExpe
+    ? { [EXPE_STUDY_Q_ID]: DEMO_DETECTIONS_EXPE_Q, [EXPE_STUDY_I_ID]: DEMO_DETECTIONS_EXPE_I }
+    : undefined
 
   return (
     <div className="flex flex-col h-full">
@@ -93,7 +103,7 @@ export default async function StudiesPage() {
           spaceName={spaceName}
           demoDetectionsByStudy={
             demo && hasStudy
-              ? { [demoStudyId]: demoDetections }
+              ? (expeDemoDetectionsByStudy ?? { [demoStudyId]: demoDetections })
               : undefined
           }
         />
