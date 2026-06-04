@@ -97,21 +97,22 @@ function BiLineAxisLabel({ viewBox, value, angle = -90, fill = "currentColor", f
       </text>
     )
   }
-  // Estimate each label's vertical span (chars × advance) when rotated.
+  // Each label's vertical span when rotated = char count × advance (≈fontSize × 0.65).
+  // Center the two-line block around cy with a natural 1-line gap between them.
   const charPx = fontSize * 0.65
-  const nameHalf = (name.length * charPx) / 2
-  const unitHalf = (unit.length * charPx) / 2
-  const margin = fontSize * 0.4
-  // Pin name to one end of the viewBox and unit to the other so they never overlap.
+  const nameLen = name.length * charPx
+  const unitLen = unit.length * charPx
+  const gap = fontSize * 1.2
+  const total = nameLen + gap + unitLen
   // Left axis (-90, reads bottom→top): name at bottom (high y), unit at top (low y).
   // Right axis (+90, reads top→bottom): name at top (low y), unit at bottom (high y).
   const isLeft = angle < 0
   const nameY = isLeft
-    ? y + height - nameHalf - margin
-    : y + nameHalf + margin
+    ? cy + total / 2 - nameLen / 2
+    : cy - total / 2 + nameLen / 2
   const unitY = isLeft
-    ? y + unitHalf + margin
-    : y + height - unitHalf - margin
+    ? cy - total / 2 + unitLen / 2
+    : cy + total / 2 - unitLen / 2
   return (
     <g>
       <text transform={`translate(${cx},${nameY}) rotate(${angle})`} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fontSize}>{name}</text>
