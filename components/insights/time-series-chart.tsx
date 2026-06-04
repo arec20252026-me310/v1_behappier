@@ -98,13 +98,12 @@ function BiLineAxisLabel({ viewBox, value, angle = -90, fill = "currentColor", f
     )
   }
   // Horizontal word-wrapped label.
-  // Tick labels sit on the inner edge of each axis (~30px reserved).
-  // Place the title in the outer safe zone so it doesn't overlap the numbers.
-  const tickAreaW = 30
+  // Reserve different tick-label widths: left axis has integer ticks (~10px), right has decimals (~25px).
+  const tickAreaW = angle < 0 ? 10 : 25
   const safeW = Math.max(width - tickAreaW, 20)
   const cx = angle < 0
-    ? x + safeW / 2               // left axis: outer (left) half of axis area
-    : x + tickAreaW + safeW / 2   // right axis: outer (right) half of axis area
+    ? x + safeW / 2               // left axis: outer (left) portion
+    : x + tickAreaW + safeW / 2   // right axis: outer (right) portion
   const longestToken = [...name.split(' '), unit].reduce((a, b) => a.length > b.length ? a : b, '')
   const fs = Math.min(fontSize, Math.floor(safeW / (longestToken.length * 0.68)))
   const approxCharW = fs * 0.63
@@ -123,7 +122,7 @@ function BiLineAxisLabel({ viewBox, value, angle = -90, fill = "currentColor", f
   return (
     <g>
       {lines.map((line, i) => (
-        <text key={i} x={cx} y={startY + i * lineH} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fs}>{line}</text>
+        <text key={i} x={cx} y={startY + i * lineH} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fs} fontWeight="bold">{line}</text>
       ))}
     </g>
   )
@@ -319,17 +318,17 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
   const baseLabelFs = enlarged ? 20 : 18
   const axisLabelFs = (() => {
     if (!canDualAxis) return baseLabelFs
-    const cap = (label: string | undefined, axisW: number) => {
+    const cap = (label: string | undefined, axisW: number, tickAreaW: number) => {
       if (!label) return baseLabelFs
       const m = label.match(/^(.*?)\s*(\([^)]+\))$/)
       if (!m) return baseLabelFs
       const tokens = [...m[1].trim().split(' '), m[2]]
       const longest = tokens.reduce((a, b) => a.length > b.length ? a : b, '')
-      return Math.min(baseLabelFs, Math.floor(Math.max(axisW - 30, 20) / (longest.length * 0.68)))
+      return Math.min(baseLabelFs, Math.floor(Math.max(axisW - tickAreaW, 20) / (longest.length * 0.68)))
     }
     return Math.min(
-      cap(leftAxisLabel,  enlarged ? 153 : 141),
-      cap(rightAxisLabel, enlarged ? 207 : 190),
+      cap(leftAxisLabel,  enlarged ? 153 : 141, 10),  // left: integer ticks
+      cap(rightAxisLabel, enlarged ? 207 : 190, 25),  // right: decimal ticks
     )
   })()
 
