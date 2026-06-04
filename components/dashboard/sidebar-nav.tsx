@@ -26,26 +26,26 @@ import { stopExpeStudies } from "@/app/actions/expe-stop"
 import { EXPE_SPACE_ID } from "@/lib/demo-seeds"
 import { createClient } from "@/lib/supabase/client"
 
-function playCountdown(): Promise<void> {
-  return new Promise(resolve => {
-    const ctx = new AudioContext()
-    const beep = (startTime: number, freq: number, duration: number) => {
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.frequency.value = freq
-      gain.gain.setValueAtTime(0.4, startTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
-      osc.start(startTime)
-      osc.stop(startTime + duration)
-    }
-    beep(ctx.currentTime + 0, 880, 0.18)
-    beep(ctx.currentTime + 1, 880, 0.18)
-    beep(ctx.currentTime + 2, 880, 0.18)
-    beep(ctx.currentTime + 3, 1046, 0.5)
-    setTimeout(() => { ctx.close(); resolve() }, 3600)
-  })
+async function playCountdown(): Promise<void> {
+  const ctx = new AudioContext()
+  await ctx.resume()
+  const beep = (startTime: number, freq: number, duration: number) => {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = freq
+    gain.gain.setValueAtTime(0.6, startTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
+    osc.start(startTime)
+    osc.stop(startTime + duration)
+  }
+  const t = ctx.currentTime
+  beep(t + 0, 880, 0.25)
+  beep(t + 1, 880, 0.25)
+  beep(t + 2, 880, 0.25)
+  beep(t + 3, 1046, 0.6)
+  return new Promise(resolve => setTimeout(() => { ctx.close(); resolve() }, 3700))
 }
 
 const navItems = [
