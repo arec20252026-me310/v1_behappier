@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background h-full overflow-hidden">
+    <html lang="en" className="bg-background h-full overflow-hidden" suppressHydrationWarning>
       <head>
         {/* Apply dark class before first paint to avoid flash */}
         <script

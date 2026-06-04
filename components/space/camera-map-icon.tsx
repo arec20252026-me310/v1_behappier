@@ -50,13 +50,14 @@ export function CameraMapIcon({
   const toRad = (d: number) => (d * Math.PI) / 180
 
   const tip = { x: cx, y: cy }
+  const r4 = (n: number) => Math.round(n * 1e4) / 1e4
   const far1 = {
-    x: cx + coneLength * Math.cos(toRad(baseDeg - halfAngle)),
-    y: cy + coneLength * Math.sin(toRad(baseDeg - halfAngle)),
+    x: r4(cx + coneLength * Math.cos(toRad(baseDeg - halfAngle))),
+    y: r4(cy + coneLength * Math.sin(toRad(baseDeg - halfAngle))),
   }
   const far2 = {
-    x: cx + coneLength * Math.cos(toRad(baseDeg + halfAngle)),
-    y: cy + coneLength * Math.sin(toRad(baseDeg + halfAngle)),
+    x: r4(cx + coneLength * Math.cos(toRad(baseDeg + halfAngle))),
+    y: r4(cy + coneLength * Math.sin(toRad(baseDeg + halfAngle))),
   }
 
   // Arc from far1 to far2 along the radius coneLength
