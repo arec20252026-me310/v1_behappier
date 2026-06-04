@@ -97,26 +97,28 @@ function BiLineAxisLabel({ viewBox, value, angle = -90, fill = "currentColor", f
       </text>
     )
   }
-  // Each label's vertical span when rotated = char count × advance (≈fontSize × 0.65).
-  // Center the two-line block around cy with a natural 1-line gap between them.
-  const charPx = fontSize * 0.65
-  const nameLen = name.length * charPx
-  const unitLen = unit.length * charPx
-  const gap = fontSize * 1.2
-  const total = nameLen + gap + unitLen
-  // Left axis (-90, reads bottom→top): name at bottom (high y), unit at top (low y).
-  // Right axis (+90, reads top→bottom): name at top (low y), unit at bottom (high y).
-  const isLeft = angle < 0
-  const nameY = isLeft
-    ? cy + total / 2 - nameLen / 2
-    : cy - total / 2 + nameLen / 2
-  const unitY = isLeft
-    ? cy - total / 2 + unitLen / 2
-    : cy + total / 2 - unitLen / 2
+  // Horizontal word-wrapped label: cap font so the longest token fits in the axis margin width,
+  // then stack lines (name words + unit) centered vertically at cy.
+  const longestToken = [...name.split(' '), unit].reduce((a, b) => a.length > b.length ? a : b, '')
+  const fs = Math.min(fontSize, Math.floor(width / (longestToken.length * 0.68)))
+  const approxCharW = fs * 0.63
+  const maxLineW = width - 6
+  const nameLines: string[] = []
+  let cur = ''
+  for (const word of name.split(' ')) {
+    const candidate = cur ? `${cur} ${word}` : word
+    if (candidate.length * approxCharW <= maxLineW) { cur = candidate }
+    else { if (cur) nameLines.push(cur); cur = word }
+  }
+  if (cur) nameLines.push(cur)
+  const lines = [...nameLines, unit]
+  const lineH = fs * 1.4
+  const startY = cy - (lines.length * lineH) / 2 + lineH / 2
   return (
     <g>
-      <text transform={`translate(${cx},${nameY}) rotate(${angle})`} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fontSize}>{name}</text>
-      <text transform={`translate(${cx},${unitY}) rotate(${angle})`} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fontSize}>{unit}</text>
+      {lines.map((line, i) => (
+        <text key={i} x={cx} y={startY + i * lineH} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fs}>{line}</text>
+      ))}
     </g>
   )
 }
