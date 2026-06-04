@@ -85,12 +85,12 @@ interface BiLineLabelProps {
 function BiLineAxisLabel({ viewBox, value, angle = -90, fill = "currentColor", fontSize = 15 }: BiLineLabelProps) {
   if (!viewBox || !value) return null
   const { x, y, width, height } = viewBox
-  const cx = x + width / 2
   const cy = y + height / 2
   const match = value.match(/^(.*?)\s*(\([^)]+\))$/)
   const name = match ? match[1].trim() : value
   const unit = match && name.length > 0 ? match[2] : null
   if (!unit) {
+    const cx = x + width / 2
     return (
       <text transform={`translate(${cx},${cy}) rotate(${angle})`} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fontSize}>
         {name}
