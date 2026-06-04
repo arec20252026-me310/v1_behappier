@@ -89,7 +89,7 @@ function BiLineAxisLabel({ viewBox, value, angle = -90, fill = "currentColor", f
   const cy = y + height / 2
   const match = value.match(/^(.*?)\s*(\([^)]+\))$/)
   const name = match ? match[1].trim() : value
-  const unit = (match && match[1].trim().length > 0) ? match[2] : null
+  const unit = match && name.length > 0 ? match[2] : null
   if (!unit) {
     return (
       <text transform={`translate(${cx},${cy}) rotate(${angle})`} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fontSize}>
@@ -97,15 +97,21 @@ function BiLineAxisLabel({ viewBox, value, angle = -90, fill = "currentColor", f
       </text>
     )
   }
-  // Space the two lines far enough apart that they don't overlap.
-  // Each line's rendered height ≈ its char count × (fontSize × 0.65).
-  // Use viewBox height / 3 as the half-gap so the chart height governs spacing.
-  const halfGap = Math.max((height / 3) / 2, fontSize * 2.5)
-  // For left axis (-90): name at bottom (cy+half), unit at top (cy-half) — reads bottom-to-top
-  // For right axis (+90): name at top (cy-half), unit at bottom (cy+half) — reads top-to-bottom
+  // Estimate each label's vertical span (chars × advance) when rotated.
+  const charPx = fontSize * 0.65
+  const nameHalf = (name.length * charPx) / 2
+  const unitHalf = (unit.length * charPx) / 2
+  const margin = fontSize * 0.4
+  // Pin name to one end of the viewBox and unit to the other so they never overlap.
+  // Left axis (-90, reads bottom→top): name at bottom (high y), unit at top (low y).
+  // Right axis (+90, reads top→bottom): name at top (low y), unit at bottom (high y).
   const isLeft = angle < 0
-  const nameY = isLeft ? cy + halfGap : cy - halfGap
-  const unitY = isLeft ? cy - halfGap : cy + halfGap
+  const nameY = isLeft
+    ? y + height - nameHalf - margin
+    : y + nameHalf + margin
+  const unitY = isLeft
+    ? y + unitHalf + margin
+    : y + height - unitHalf - margin
   return (
     <g>
       <text transform={`translate(${cx},${nameY}) rotate(${angle})`} textAnchor="middle" dominantBaseline="middle" fill={fill} fontSize={fontSize}>{name}</text>
@@ -289,12 +295,8 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
   const rightSeries = canDualAxis
     ? (series.find(s => s !== leftSeries) ?? null)
     : null
-  // Use just the unit in parentheses as the axis label — short enough to never overlap.
-  // The series toggle above already shows the full name with color.
   function getSeriesAxisLabel(s: ChartSeries): string {
-    if (s.unit) return `(${s.unit})`
-    const match = s.title.match(/\(([^)]+)\)/)
-    if (match) return match[0]
+    if (s.unit && !s.title.includes("(")) return `${s.title} (${s.unit})`
     return s.title
   }
   const leftAxisLabel  = leftSeries  ? getSeriesAxisLabel(leftSeries)  : undefined
