@@ -63,7 +63,7 @@ async function startOneStudy(
     current_stage: "draft",
     created_at: new Date(ts + template.tsOffset).toISOString(),
     study_goal: STUDY_GOAL,
-    duration_seconds: 120,
+    duration_seconds: 60,
     metadata: {
       study_name: template.study_name,
       study_goal: STUDY_GOAL,
@@ -82,7 +82,7 @@ async function startOneStudy(
         study_id,
         zone_ids: [template.zone_id],
         behavior_targets: behaviorTargets,
-        setup_instructions: `Monitor the ${template.study_name.replace(" Occupancy and Collaboration Study", "")} for 2 minutes. Track occupancy count and collaboration index.`,
+        setup_instructions: `Monitor the ${template.study_name.replace(" Occupancy and Collaboration Study", "")} for 1 minute. Track occupancy count and collaboration index.`,
         camera_id: template.camera_id,
         review_mode,
       }),
