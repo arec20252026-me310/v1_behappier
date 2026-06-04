@@ -351,7 +351,7 @@ export function OccupancyChart({
               </p>
               <TimeSeriesChart
                 series={series}
-                height={n === 2 ? 280 : 160}
+                height={n === 2 ? 200 : 160}
                 xAxisLabel="Timestamp"
                 yAxisLabel={series.length === 1 ? series[0].title : undefined}
                 seriesDescriptions={metricDescriptions}
@@ -393,7 +393,7 @@ export function OccupancyChart({
               ) : (
                 <TimeSeriesChart
                   series={liveSeries}
-                  height={enlarged ? perStudyChartHeight : (n === 1 ? 200 : n === 2 ? 280 : 150)}
+                  height={enlarged ? perStudyChartHeight : (n === 1 ? 200 : n === 2 ? 180 : 150)}
                   xAxisLabel="Timestamp"
                   yAxisLabel={liveSeries.length === 1 ? liveSeries[0].title : undefined}
                   seriesDescriptions={metricDescriptions}
