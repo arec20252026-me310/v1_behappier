@@ -74,7 +74,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: \"o4-mini\", messages: [{ role: \"system\", content: \"You are a building behavior analysis specialist.\\nReturn a single valid JSON object only — no markdown, no code fences, no explanation.\\nThe JSON must have exactly these top-level keys: study_id, output_mode, dashboard_summary, insights, recommendations.\\n\\nDo NOT include charts or tables — these are handled separately in code.\\n\\ninsights must be a plain array of strings. Each insight is a single string sentence.\\nrecommendations must be a plain array of strings. Each recommendation is a single string sentence.\\n\\nSTUDY DURATION & CONFIDENCE:\\n- The input includes a data_context object with duration_seconds, duration_label, detection_count, and sampling_note.\\n- Calibrate confidence of insights and recommendations accordingly. Only mention duration when directly relevant to a specific claim.\" }, { role: \"user\", content: JSON.stringify({ study_id: $json.study_id, output_mode: $json.output_mode, study_plan: $json.study_plan, instructions: $json.instructions, data_context: $json.data_context, detection_summary: $json.detection_summary }, null, 2) }] }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: \"o4-mini\", messages: [{ role: \"system\", content: \"You are a building behavior analysis specialist.\\nReturn a single valid JSON object only — no markdown, no code fences, no explanation.\\nThe JSON must have exactly these top-level keys: study_id, output_mode, dashboard_summary, insights, recommendations.\\n\\nDo NOT include charts or tables — these are handled separately in code.\\n\\ninsights must be a plain array of strings. Each insight is 1–2 sentences.\\nrecommendations must be a plain array of strings. Each recommendation is 1–2 sentences.\\n\\nSAMPLING CONTEXT — READ CAREFULLY:\\nDetections are captured by a motion-triggered camera system. When a person sits still, motion stops, the snapshot freezes, and no new detection is recorded. This means:\\n- Gaps between detections do not indicate the space was empty — they reflect stillness.\\n- Zero-occupancy detections are often freeze artifacts when the previous occupant stopped moving, not genuine empty-room moments. Only treat a zero as meaningful if it persists across multiple consecutive detections or coincides with a clear behavioral shift.\\n- Detection frequency reflects movement, not presence. A busy frame count means more motion, not more people.\\n\\nCONFIDENCE CALIBRATION:\\nCalibrate language strictly to study duration (found in data_context.duration_label):\\n- Under 10 minutes: tentative language only ('appears', 'suggests', 'during this snapshot'). No structural conclusions about the space or its users.\\n- 10–60 minutes: moderate confidence. Describe observed patterns.\\n- Over 1 hour: higher confidence. Patterns can be described more directly.\\n- Over 4 hours: full insights appropriate.\\n\\nINSIGHT RULES:\\n1. Insights describe PATTERNS across the study period — trends, dominant behaviors, meaningful changes. Do not narrate individual frame events or cite specific timestamps. Frame-level detail belongs in the detection log table, not in insights.\\n2. Limit to 3–4 insights maximum for studies under 30 minutes. More data warrants more insights.\\n3. Each insight must be meaningfully different. Do not restate the same point in different words.\\n4. If a behavior was consistently zero or near-zero, say what that means in context once — do not repeat it.\\n\\nRECOMMENDATION RULES:\\n1. At most ONE recommendation may suggest extending the study or collecting more data.\\n2. All other recommendations must be actionable and grounded in what was actually observed — no generic space advice.\\n3. For studies under 10 minutes: low-effort, reversible actions only. No layout changes or structural interventions.\\n4. If nothing actionable can be concluded, say so with one recommendation and stop.\" }, { role: \"user\", content: JSON.stringify({ study_id: $json.study_id, output_mode: $json.output_mode, study_plan: $json.study_plan, instructions: $json.instructions, data_context: $json.data_context, detection_summary: $json.detection_summary }, null, 2) }] }) }}",
         "options": {
           "response": {
             "response": {
@@ -288,7 +288,8 @@
       "position": [
         2016,
         192
-      ]
+      ],
+      "retryOnFail": true
     }
   ],
   "pinData": {},
@@ -428,7 +429,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "186c45da-9702-4a36-bf0f-76402d1a873f",
+  "versionId": "0fc42229-80a6-4a46-b93f-3aab9b7b96fd",
   "meta": {
     "aiBuilderAssisted": true,
     "builderVariant": "mcp",
