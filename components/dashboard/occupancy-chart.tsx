@@ -425,7 +425,7 @@ export function OccupancyChart({
             Enlarge
           </Button>
         </CardHeader>
-        <CardContent className={isLive && allActiveStudies.length >= 3 ? "px-6 py-0 pb-1" : ""}>{renderCharts(false)}</CardContent>
+        <CardContent className={isLive && allActiveStudies.length >= 3 ? "px-2 py-0 pb-1" : "px-2"}>{renderCharts(false)}</CardContent>
       </Card>
 
       <Dialog open={isEnlarged} onOpenChange={(open) => !open && setIsEnlarged(false)}>
