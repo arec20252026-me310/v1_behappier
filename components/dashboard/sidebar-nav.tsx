@@ -35,7 +35,7 @@ async function playCountdown(): Promise<void> {
     osc.connect(gain)
     gain.connect(ctx.destination)
     osc.frequency.value = freq
-    gain.gain.setValueAtTime(0.6, startTime)
+    gain.gain.setValueAtTime(1.0, startTime)
     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
     osc.start(startTime)
     osc.stop(startTime + duration)
