@@ -316,7 +316,7 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
   const rightAxisColor = canDualAxis && rightSeries ? SERIES_COLORS[series.indexOf(rightSeries) % SERIES_COLORS.length] : "var(--chart-axis)"
 
   // Unified font size for both axis labels so they always render at the same size.
-  const baseLabelFs = enlarged ? 17 : 15
+  const baseLabelFs = enlarged ? 20 : 18
   const axisLabelFs = (() => {
     if (!canDualAxis) return baseLabelFs
     const cap = (label: string | undefined, axisW: number) => {
@@ -328,8 +328,8 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
       return Math.min(baseLabelFs, Math.floor(Math.max(axisW - 30, 20) / (longest.length * 0.68)))
     }
     return Math.min(
-      cap(leftAxisLabel,  enlarged ? 148 : 128),
-      cap(rightAxisLabel, enlarged ? 181 : 163),
+      cap(leftAxisLabel,  enlarged ? 153 : 141),
+      cap(rightAxisLabel, enlarged ? 207 : 190),
     )
   })()
 
@@ -666,8 +666,8 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
           <ComposedChart data={visibleData} margin={{ top: 8, right: canDualAxis ? (enlarged ? 8 : 4) : 16, left: 4, bottom: 36 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.01 260)" vertical={false} />
             <XAxis dataKey="_ms" type="number" domain={["dataMin", "dataMax"]} scale="linear" tickCount={5} tickFormatter={xTickFormatter} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} label={xAxisLabel ? { value: xAxisLabel, position: "insideBottom", offset: -10, fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />
-            {canDualAxis && <YAxis yAxisId="left" orientation="left" domain={axisDomain(leftSeries)} allowDecimals={axisAllowDecimals(leftSeries)} tickFormatter={axisTickFmt(leftSeries)} tick={{ fill: leftAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: leftAxisColor }} tickLine={{ stroke: leftAxisColor }} width={enlarged ? 148 : 128} label={leftAxisLabel ? <BiLineAxisLabel value={leftAxisLabel} angle={-90} fill={leftAxisColor} fontSize={axisLabelFs} /> : undefined} />}
-            {canDualAxis && <YAxis yAxisId="right" orientation="right" domain={axisDomain(rightSeries)} allowDecimals={axisAllowDecimals(rightSeries)} tickFormatter={axisTickFmt(rightSeries)} tick={{ fill: rightAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: rightAxisColor }} tickLine={{ stroke: rightAxisColor }} width={enlarged ? 181 : 163} label={rightAxisLabel ? <BiLineAxisLabel value={rightAxisLabel} angle={90} fill={rightAxisColor} fontSize={axisLabelFs} /> : undefined} />}
+            {canDualAxis && <YAxis yAxisId="left" orientation="left" domain={axisDomain(leftSeries)} allowDecimals={axisAllowDecimals(leftSeries)} tickFormatter={axisTickFmt(leftSeries)} tick={{ fill: leftAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: leftAxisColor }} tickLine={{ stroke: leftAxisColor }} width={enlarged ? 153 : 141} label={leftAxisLabel ? <BiLineAxisLabel value={leftAxisLabel} angle={-90} fill={leftAxisColor} fontSize={axisLabelFs} /> : undefined} />}
+            {canDualAxis && <YAxis yAxisId="right" orientation="right" domain={axisDomain(rightSeries)} allowDecimals={axisAllowDecimals(rightSeries)} tickFormatter={axisTickFmt(rightSeries)} tick={{ fill: rightAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: rightAxisColor }} tickLine={{ stroke: rightAxisColor }} width={enlarged ? 207 : 190} label={rightAxisLabel ? <BiLineAxisLabel value={rightAxisLabel} angle={90} fill={rightAxisColor} fontSize={axisLabelFs} /> : undefined} />}
             {!canDualAxis && <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />}
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
             {series.map((s, i) => {
