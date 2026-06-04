@@ -669,8 +669,8 @@ export function TimeSeriesChart({ series, height = 280, fillHeight = false, stud
             {canDualAxis && <YAxis yAxisId="right" orientation="right" domain={axisDomain(rightSeries)} allowDecimals={axisAllowDecimals(rightSeries)} tickFormatter={axisTickFmt(rightSeries)} tick={{ fill: rightAxisColor, fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: rightAxisColor }} tickLine={{ stroke: rightAxisColor }} width={enlarged ? 207 : 190} label={rightAxisLabel ? <BiLineAxisLabel value={rightAxisLabel} angle={90} fill={rightAxisColor} fontSize={axisLabelFs} /> : undefined} />}
             {!canDualAxis && <YAxis domain={[0, 'auto']} tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(2))} tick={{ fill: "var(--chart-axis)", fontSize: enlarged ? 16 : 14 }} axisLine={{ stroke: "var(--chart-axis)" }} tickLine={{ stroke: "var(--chart-axis)" }} width={enlarged ? 112 : 96} label={effectiveYAxisLabel ? { value: effectiveYAxisLabel, angle: -90, position: "center", fill: "var(--chart-axis)", fontSize: enlarged ? 17 : 15 } : undefined} />}
             <Tooltip content={<ChartTooltip seriesColors={seriesColors} />} />
-            {series.map((s, i) => {
-              const color = SERIES_COLORS[i % SERIES_COLORS.length]
+            {(canDualAxis ? [...series].sort((a) => a === leftSeries ? 1 : -1) : series).map((s, i) => {
+              const color = SERIES_COLORS[series.indexOf(s) % SERIES_COLORS.length]
               const isHidden = hidden.has(s.title)
               const axisId = getAxisId(s)
               const yAxisProp = axisId !== undefined ? { yAxisId: axisId } : {}
