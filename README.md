@@ -27,8 +27,12 @@ The platform has two main components:
 ├── components/             # React components
 │   ├── dashboard/           #   Core dashboard widgets (heatmap, chart, sidebar)
 │   ├── insights/            #   Time-series chart
+│   ├── metrics/             #   Behavior metrics library UI
+│   ├── models/              #   ML model viewer
+│   ├── settings/            #   Settings page components
 │   ├── space/               #   Space builder and camera map editor
-│   └── studies/             #   Study forms and live detection feed
+│   ├── studies/             #   Study forms and live detection feed
+│   └── ui/                  #   Shared UI primitives (shadcn/ui)
 ├── lib/                    # Shared utilities, types, Supabase client, demo seeds
 ├── n8n/                    # n8n workflow JSON files and documentation
 │   ├── *.json               #   One JSON per workflow (version control)
