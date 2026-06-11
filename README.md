@@ -1,7 +1,7 @@
-# BeHappier — v1
+# Looking Glass — v1
 
-Multi-agent camera behavior analysis system.
-n8n backend + frontend, managed through a synced local repo.
+AI-powered camera behavior analysis dashboard.
+Next.js frontend + n8n multi-agent backend, connected via Supabase.
 
 ---
 
@@ -9,14 +9,22 @@ n8n backend + frontend, managed through a synced local repo.
 
 ```
 /
-├── frontend/             # Frontend application
-├── n8n/
-│   ├── workflows/        # n8n workflow JSON files — source of truth
-│   └── docs/
-│       └── IMPLEMENTATION_GUIDE.md
-├── scripts/              # Sync scripts — see scripts/README.md
+├── app/                  # Next.js app router pages and API routes
+│   ├── actions/          # Server actions (expe-launch, expe-stop, etc.)
+│   ├── api/              # API routes (demo seed, file serving, n8n proxy)
+│   └── dashboard/        # Dashboard pages (main, studies, insights, space, metrics)
+├── components/           # React components
+│   ├── dashboard/        # Core dashboard widgets (heatmap, occupancy chart, sidebar)
+│   ├── insights/         # Time series chart
+│   ├── space/            # Space builder and camera map
+│   └── studies/          # Study forms and live detection feed
+├── lib/                  # Shared utilities, types, Supabase client, demo seeds
+├── n8n/                  # n8n workflow JSON files + implementation guides
+├── public/               # Static assets (floor plans, zone images)
+├── scripts/              # Utility scripts
 ├── .env.example          # Template for local environment variables
 ├── CLAUDE.md             # Instructions for Claude Code sessions
+├── INTEGRATION.md        # Frontend ↔ n8n integration reference
 └── README.md             # This file
 ```
 
@@ -25,36 +33,86 @@ n8n backend + frontend, managed through a synced local repo.
 ## Getting Started
 
 ### 1. Clone the repo
+
+Clone to a non-iCloud-synced location. The Desktop is iCloud-synced on Mac,
+which corrupts git's internal files. Use `~/Developer/` instead.
+
 ```bash
-git clone https://github.com/your-org/v1_behappier
-cd v1_behappier
+mkdir -p ~/Developer
+git clone https://github.com/arec20252026-me310/v1_behappier.git ~/Developer/v1_behappier
+cd ~/Developer/v1_behappier
 ```
 
 ### 2. Set up your environment
+
 ```bash
-cp .env.example .env
-# Open .env and fill in N8N_URL and N8N_API_KEY
+cp .env.example .env.local
+# Fill in values — see Environment Variables section below
 ```
 
-### 3. Make scripts executable
+### 3. Install dependencies and run
+
 ```bash
-chmod +x scripts/session-start.sh
-chmod +x scripts/session-end.sh
+npm install
+npm run dev
 ```
 
-### 4. Start a Claude Code session
-Open Claude Code in this repo. It will automatically read `CLAUDE.md`
-and run `session-start.sh` before doing anything else.
+Open `http://localhost:3000`. The first page load compiles on-demand and may take 10–30 seconds; subsequent navigations are instant.
 
 ---
 
-## n8n Workflows
+## Demo Spaces
 
-The 8 workflows that make up the backend are stored in `/n8n/workflows/`
-as JSON files. Full import instructions and node-by-node documentation
-are in `/n8n/docs/IMPLEMENTATION_GUIDE.md`.
+The dashboard supports three pre-configured demo spaces, selectable from the sidebar space switcher:
 
-See `scripts/README.md` for how syncing between n8n and GitHub works.
+| Space | Description |
+|---|---|
+| **EXPE** | Stanford ME310 experiment room — two zones (Quiet Zone, Interaction Zone), two cameras. Primary demo space. |
+| **Peterson Loft** | ME310 student lounge. |
+| **Looking Glass HQ** | Looking Glass headquarters office — Conference Room, Hot Desks, Kitchen, Meditation Room. |
+
+### EXPE Showcase Mode
+
+The EXPE space has a **Showcase Mode** toggle in the sidebar. When enabled:
+
+- Replaces the live data view with pre-seeded demo detections and charts
+- Shows three demo states via the scenario selector: **Study Running**, **Study Complete**, and **Model Ready**
+- Clicking the **Quiet Zone** or **Interaction Zone** in any active-study demo state opens a full-screen zone detail view showing occupancy count, collaboration index, and latest detection text
+- A **Launch Studies** button appears that triggers two real studies (one per zone) with a **3-2-1 audio countdown** before launch
+- Live studies run for **2 minutes** each
+
+### Demo scenarios (Peterson Loft / LGQ)
+
+The `/dashboard/demo` page seeds Peterson Loft demo data:
+
+| Scenario | What's seeded |
+|---|---|
+| `blank` | All data wiped |
+| `space-ready` | Space, zones, cameras |
+| `study-in-progress` | + running study + live preview metrics |
+| `study-complete` | + completed study + insight outputs |
+
+Seed data lives in `lib/demo-seeds.ts`. All seed rows use fixed synthetic UUIDs so they can be cleanly removed without touching real data.
+
+---
+
+## Charts
+
+The **Occupancy Chart** in the dashboard shows time-series data for active and completed studies.
+
+- When a study tracks exactly **2 behavior metrics** (e.g. Occupancy + Collaboration Index), the chart automatically shows a **dual Y-axis layout**: Occupancy on the left (integer ticks, `[0, auto]` domain) and Collaboration Index on the right (decimal ticks, `[0, 1]` domain fixed).
+- Axis labels are horizontal, bold, word-wrapped, and color-coded to their series.
+- The Occupancy line always renders on top of the Collaboration Index line.
+
+---
+
+## n8n Backend
+
+The 8 n8n workflows that power the AI pipeline are stored in `/n8n/` as JSON files.
+
+**n8n instance:** self-hosted at `100.74.234.95` (Tailscale). Accessible only on the ME310 Tailscale network.
+
+See `n8n/IMPLEMENTATION_GUIDE.md` for workflow-by-workflow documentation and `INTEGRATION.md` for how the frontend connects to it.
 
 ---
 
@@ -62,51 +120,27 @@ See `scripts/README.md` for how syncing between n8n and GitHub works.
 
 | Variable | Description |
 |---|---|
-| `N8N_URL` | Your n8n instance URL (e.g. `http://<tailscale-ip>:5678`) |
-| `N8N_API_KEY` | Your n8n API key (Settings → API in n8n) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
-| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for floor plan uploads |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (public) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key — server-side only; required for demo seeding |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for floor plan storage |
+| `N8N_URL` | n8n webhook base URL (e.g. `http://100.74.234.95:5678`) |
 
 Never commit `.env.local` to GitHub.
 
 ---
 
-## Micro-Studies
+## Collaboration Index
 
-Micro-studies are launched from the **Studies** page in the dashboard. The form collects:
+The Collaboration Index uses a **Tier 0/1/2 weighted formula**:
 
-| Form Field | How it reaches the database |
-|---|---|
-| **Study Name** | Included in `message_text`; n8n sets `study_goal` |
-| **Planned Duration** | Sent as `duration_seconds` in the POST body; n8n writes to `BE_studies.duration_seconds` |
-| **Hypothesis** | Included in `message_text` and sent as `hypothesis` in the POST body |
-| **Description** | Included in `message_text` and sent as `description` in the POST body |
-| **Target Zones** | Sent as `target_zones` (array of zone IDs) and included in `message_text`; n8n can store in `metadata` |
-| **Metrics to Track** | Sent as `target_metrics` (array of metric IDs) and included in `message_text`; n8n can store in `metadata` |
+```
+Score = (T2 × 1.0 + T1 × 0.5) / N, rounded to 2 decimals
+N = visible persons
 
-Fields set automatically (not from the form):
+Tier 0 (withdrawn): headphones in use, back fully turned, alone at separate furniture
+Tier 1 (co-present, not interacting): at shared furniture with others, no interaction signals
+Tier 2 (engaged): visibly speaking, mutual orientation, shared screen/whiteboard, or gesturing
+```
 
-| Field | Source |
-|---|---|
-| `id` | Auto-generated by Supabase (`gen_random_uuid()`) |
-| `study_id` | Generated by n8n |
-| `building_id` | `space.id` — sent in every POST |
-| `user_id` | Hardcoded `"behappier-user"` in the POST body |
-| `session_id` | `crypto.randomUUID()` — generated per browser session |
-| `status` / `current_stage` | Default `'draft'`; n8n advances through stages |
-| `study_plan` / `task_graph` / `graph_plan` | Generated by n8n agents |
-| `metadata` | Written by n8n; includes structured fields from the POST body |
-| `started_at` | Set by n8n when the study transitions from `planned` to active |
-| `live_preview_status` | Updated by n8n during monitoring |
-| `created_at` / `updated_at` | Auto-managed by Supabase |
-
-### Zone selection
-
-The zone dropdown in the form shows all zones configured for the space (from the `zones` table). Selecting zones:
-- Filters the camera configuration in `message_text` to only include cameras assigned to selected zones
-- Adds a `Target Zones:` line to the natural-language message sent to n8n
-- Sends the zone ID array as `target_zones` in the structured POST body
-
-If no zones are selected, all cameras are included and the agents decide which zones to focus on.
+Score range: 0.00–1.00. Updated in the `metrics` Supabase table.
